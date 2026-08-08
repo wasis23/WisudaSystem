@@ -83,14 +83,14 @@ const initCropper = () => {
         cropperInstance = new Cropper(imgEl, {
             aspectRatio: 3 / 4,
             initialAspectRatio: 3 / 4,
-            viewMode: 1,               // Mencegah kotak crop keluar dari batas gambar
+            viewMode: 3,               // PAKSA GAMBAR MEMESAR MENGISI PENUH CONTAINER (FULL HIGH)
             dragMode: 'move',          // Geser & zoom foto di belakang bingkai 3:4
-            autoCropArea: 1.0,         // Ukuran crop maksimal (100% tinggi gambar)
+            autoCropArea: 0.85,
             movable: true,
             zoomable: true,
             rotatable: true,
             scalable: false,
-            guides: true,
+            guides: false,
             highlight: false,
             cropBoxMovable: false,     // Terkunci di tengah
             cropBoxResizable: false,   // Tidak bisa di-resize (TETAP 3:4 PORTRAIT)
@@ -548,6 +548,11 @@ const submitForm = () => {
 </template>
 
 <style scoped>
+:deep(.cropper-container) {
+    width: 100% !important;
+    height: 100% !important;
+}
+
 :deep(.cropper-line),
 :deep(.cropper-point) {
     display: none !important;
