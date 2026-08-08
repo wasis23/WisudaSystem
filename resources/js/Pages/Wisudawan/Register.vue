@@ -83,23 +83,22 @@ const initCropper = () => {
         cropperInstance = new Cropper(imgEl, {
             aspectRatio: 3 / 4,
             initialAspectRatio: 3 / 4,
-            viewMode: 1,
-            dragMode: 'move',
-            autoCropArea: 0.85,
+            viewMode: 1,               // Mencegah kotak crop keluar dari batas gambar!
+            dragMode: 'move',          // Mengunci kursor untuk geser/zoom foto
+            autoCropArea: 0.8,
             movable: true,
             zoomable: true,
             rotatable: true,
             scalable: false,
             guides: true,
             highlight: false,
-            cropBoxMovable: false,
-            cropBoxResizable: false,
+            cropBoxMovable: false,     // Kotak crop terkunci di tengah
+            cropBoxResizable: false,   // Kotak crop TIDAK bisa di-resize (Tetap 3:4 Portrait)
             toggleDragModeOnDblclick: false,
             background: false,
             responsive: true,
             checkOrientation: true,
             ready() {
-                // Force 3:4 aspect ratio set on ready
                 this.cropper.setAspectRatio(3 / 4);
             }
         });
@@ -483,14 +482,13 @@ const submitForm = () => {
                     <button @click="closeCropModal" type="button" class="text-gray-400 hover:text-gray-700 dark:hover:text-white text-2xl leading-none">&times;</button>
                 </div>
 
-                <!-- Cropper Area: auto-height mengikuti gambar asli, tidak ada area hitam -->
-                <div class="relative overflow-hidden bg-slate-950" style="max-height: 60vh;">
+                <!-- Cropper Area: Fixed height 420px agar rasio 3:4 portrait terhitung secara sempurna -->
+                <div class="relative w-full h-[420px] bg-slate-950 flex items-center justify-center overflow-hidden">
                     <img
                         ref="cropperImgRef"
                         src=""
                         alt="Crop Preview"
-                        class="block w-full"
-                        style="max-height: 60vh; display: block;"
+                        class="max-w-full max-h-full block"
                     />
                 </div>
 
