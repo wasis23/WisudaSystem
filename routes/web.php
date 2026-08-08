@@ -2,7 +2,10 @@
 
 use App\Http\Controllers\Admin\BukuKenanganController;
 use App\Http\Controllers\Admin\DutyAssignmentController;
+use App\Http\Controllers\Admin\FakultasProdiController;
 use App\Http\Controllers\Admin\PeriodeWisudaController;
+use App\Http\Controllers\Admin\SimantaSyncController;
+use App\Http\Controllers\Admin\SimpegSyncController;
 use App\Http\Controllers\Admin\StageLayoutConfigController;
 use App\Http\Controllers\KioskScanController;
 use App\Http\Controllers\Panitia\PresensiWisudawanController;
@@ -99,6 +102,16 @@ Route::middleware(['auth', 'role:admin_utama'])->prefix('admin')->name('admin.')
 
     // Monitoring Presensi & Peserta Belum Hadir
     Route::get('/monitoring-presensi', [PresensiWisudawanController::class, 'listWisudawan'])->name('monitoring-presensi');
+
+    // ── SIMPEG Sync (cache pegawai dari SIMPEG) ──────────────────────────────
+    Route::get('/sync-simpeg',          [SimpegSyncController::class, 'index'])->name('sync-simpeg.index');
+    Route::post('/sync-simpeg',         [SimpegSyncController::class, 'sync'])->name('sync-simpeg.sync');
+    Route::get('/sync-simpeg/search',   [SimpegSyncController::class, 'search'])->name('sync-simpeg.search');
+
+    // ── SIMANTA Sync (cache mahasiswa lulus dari SIMANTA) ───────────────────
+    Route::get('/sync-simanta',         [SimantaSyncController::class, 'index'])->name('sync-simanta.index');
+    Route::post('/sync-simanta',        [SimantaSyncController::class, 'sync'])->name('sync-simanta.sync');
+    Route::get('/sync-simanta/data',    [SimantaSyncController::class, 'data'])->name('sync-simanta.data');
 });
 
 // 2. Security Scan Gate Route
