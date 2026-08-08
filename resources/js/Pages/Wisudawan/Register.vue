@@ -83,9 +83,9 @@ const initCropper = () => {
         cropperInstance = new Cropper(imgEl, {
             aspectRatio: 3 / 4,
             initialAspectRatio: 3 / 4,
-            viewMode: 3,               // PAKSA GAMBAR MEMESAR MENGISI PENUH CONTAINER (FULL HIGH)
+            viewMode: 1,               // Mencegah bingkai crop keluar dari batas fisik foto
             dragMode: 'move',          // Geser & zoom foto di belakang bingkai 3:4
-            autoCropArea: 0.85,
+            autoCropArea: 1.0,         // Ukuran crop maksimal pas mengikuti foto (100%)
             movable: true,
             zoomable: true,
             rotatable: true,
@@ -95,7 +95,7 @@ const initCropper = () => {
             cropBoxMovable: false,     // Terkunci di tengah
             cropBoxResizable: false,   // Tidak bisa di-resize (TETAP 3:4 PORTRAIT)
             toggleDragModeOnDblclick: false,
-            background: false,
+            background: false,         // Matikan pola catur kotak-kotak transparan
             responsive: true,
             checkOrientation: true,
             ready() {
@@ -551,6 +551,11 @@ const submitForm = () => {
 :deep(.cropper-container) {
     width: 100% !important;
     height: 100% !important;
+}
+
+:deep(.cropper-bg) {
+    background-image: none !important;
+    background-color: transparent !important;
 }
 
 :deep(.cropper-line),
