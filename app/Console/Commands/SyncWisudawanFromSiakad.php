@@ -24,14 +24,14 @@ class SyncWisudawanFromSiakad extends Command
      *
      * @var string
      */
-    protected $description = 'Tarik data wisudawan asli dari viewMahasiswaKeluar & viewMahasiswaPt SIAKAD lengkap dengan IPK & Judul Skripsi riil';
+    protected $description = 'Tarik data wisudawan 100% murni dan asli dari viewMahasiswaKeluar SIAKAD tanpa sampel/mock data';
 
     /**
      * Execute the console command.
      */
     public function handle(SimantaIntegrationService $simantaService)
     {
-        $this->info('Memulai proses penarikan data wisudawan riil dari SIAKAD & SIMANTA...');
+        $this->info('Memulai proses penarikan 100% data asli wisudawan dari SIAKAD...');
 
         $activePeriode = $this->option('periode')
             ? PeriodeWisuda::find($this->option('periode'))
@@ -42,11 +42,11 @@ class SyncWisudawanFromSiakad extends Command
             return 1;
         }
 
-        $this->info("Menghubungkan ke SIAKAD & SIMANTA untuk Periode Wisuda: {$activePeriode->nama_periode}...");
+        $this->info("Menghubungkan ke SIAKAD untuk Periode Wisuda: {$activePeriode->nama_periode}...");
 
         try {
             // 1. Pre-load viewMahasiswaPt map for biodata (NIK, Tempat/Tgl Lahir, Nama Ortu)
-            $this->info('Memuat biodata lengkap dari viewMahasiswaPt & wsia_mahasiswa...');
+            $this->info('Memuat biodata dari viewMahasiswaPt...');
             $ptStudents = DB::connection('siakad')
                 ->table('viewMahasiswaPt as pt')
                 ->leftJoin('wsia_mahasiswa as m', 'pt.id_pd', '=', 'm.id_pd')
@@ -67,10 +67,11 @@ class SyncWisudawanFromSiakad extends Command
                 ->get()
                 ->keyBy(fn($item) => strtoupper(trim($item->nim)));
 
-            // 2. Fetch real graduates from viewMahasiswaKeluar
+            // 2. Fetch real graduating students (LULUS) from viewMahasiswaKeluar
             $this->info('Memuat data kelulusan & judul skripsi asli dari viewMahasiswaKeluar...');
             $keluarQuery = DB::connection('siakad')
-                ->table('viewMahasiswaKeluar');
+                ->table('viewMahasiswaKeluar')
+                ->where('id_jns_keluar', '1'); // 1 = Lulus
 
             if ($limit = $this->option('limit')) {
                 $keluarQuery->take((int)$limit);
@@ -79,34 +80,21 @@ class SyncWisudawanFromSiakad extends Command
             $keluarList = $keluarQuery->get();
 
             if ($keluarList->isEmpty()) {
-                $this->warn('Tidak ada data di viewMahasiswaKeluar. Menggunakan viewMahasiswaPt...');
-                $keluarList = $ptStudents->values();
+                $this->warn('Tidak ada data kelulusan ditemukan di viewMahasiswaKeluar.');
+                return 0;
             }
 
-            $this->info("Ditemukan {$keluarList->count()} data wisudawan riil. Memproses sinkronisasi...");
+            $this->info("Ditemukan {$keluarList->count()} data wisudawan lulus di SIAKAD. Memproses sinkronisasi data asli...");
 
             // Pre-load ProgramStudi map
             $prodiMap = ProgramStudi::pluck('id', 'nama_prodi')->toArray();
 
             $recordsToUpsert = [];
             $now = now()->toDateTimeString();
-
-            // Seedable varied sample topics for realistic display when title is pending in SIAKAD
-            $sampleTopics = [
-                "Implementasi Sistem Informasi Berbasis Web untuk Efisiensi Layanan Operasional",
-                "Analisis dan Perancangan Sistem Manajemen Data Terpadu Berbasis Digital",
-                "Pengembangan Aplikasi Pelayanan Kesehatan & Informasi Medis Terintegrasi",
-                "Studi Evaluasi Efektivitas Manajemen Mutu dan Pelayanan Administrasi Publik",
-                "Penerapan Metode Klasifikasi Data dalam Meningkatkan Kualitas Layanan Informasi",
-                "Perancangan Sistem Pengolahan Data Transaksi dan Rekapitulasi Berbasis Database",
-                "Optimasi Tata Kelola Administrasi dan Dokumentasi Digital Berbasis Komputer",
-                "Analisis Sistem Pendukung Keputusan dalam Pemilihan Strategi Pelayanan Publik"
-            ];
-
             $processedNims = [];
 
-            foreach ($keluarList as $index => $item) {
-                $rawNim = $item->nipd ?? ($item->nim ?? null);
+            foreach ($keluarList as $item) {
+                $rawNim = $item->nipd ?? null;
                 if (empty($rawNim)) {
                     continue;
                 }
@@ -132,16 +120,9 @@ class SyncWisudawanFromSiakad extends Command
                 }
                 $prodiId = $prodiMap[$prodiName];
 
-                // 2. IPK & Predikat
-                $rawIpk = (float)($item->ipk ?? ($ptData->siakad_ipk ?? 0));
-                if ($rawIpk > 0) {
-                    $realIpk = number_format($rawIpk, 2, '.', '');
-                } else {
-                    // Generate realistic unique variation between 3.25 and 3.95 based on NIM CRC32
-                    $hash = abs(crc32($cleanNim));
-                    $calculatedIpk = 3.20 + (($hash % 71) / 100);
-                    $realIpk = number_format($calculatedIpk, 2, '.', '');
-                }
+                // 2. Pure Authentic IPK & Predikat
+                $rawIpk = (float)($item->ipk ?? 0);
+                $realIpk = number_format($rawIpk, 2, '.', '');
 
                 $ipkFloat = (float)$realIpk;
                 if ($ipkFloat >= 3.51) {
@@ -150,18 +131,15 @@ class SyncWisudawanFromSiakad extends Command
                     $predikat = 'Sangat Memuaskan';
                 } elseif ($ipkFloat >= 2.76) {
                     $predikat = 'Memuaskan';
-                } else {
+                } elseif ($ipkFloat > 0) {
                     $predikat = 'Cukup';
+                } else {
+                    $predikat = 'Belum Ada Nilai';
                 }
 
-                // 3. Judul Skripsi / Tugas Akhir
+                // 3. Pure Authentic Judul Skripsi / Tugas Akhir
                 $rawJudul = trim($item->judul_skripsi ?? '');
-                if (!empty($rawJudul) && $rawJudul !== '-') {
-                    $judulTa = $rawJudul;
-                } else {
-                    $topicIndex = abs(crc32($cleanNim)) % count($sampleTopics);
-                    $judulTa = $sampleTopics[$topicIndex] . " di " . $prodiName;
-                }
+                $judulTa = (!empty($rawJudul) && $rawJudul !== '-') ? $rawJudul : 'Belum Input Judul Skripsi';
 
                 // 4. Tanggal Lulus
                 $tglLulus = !empty($item->tgl_sk_yudisium) && $item->tgl_sk_yudisium !== '0000-00-00'
@@ -206,7 +184,7 @@ class SyncWisudawanFromSiakad extends Command
                 ];
             }
 
-            // Clean previous default fallback records and bulk upsert in chunks of 200
+            // Wipe and insert 100% pure authentic data
             Wisudawan::where('periode_wisuda_id', $activePeriode->id)->delete();
 
             $chunkSize = 200;
@@ -215,7 +193,7 @@ class SyncWisudawanFromSiakad extends Command
             }
 
             $this->newLine();
-            $this->info("Berhasil meretrieve & men-sinkronisasi " . count($recordsToUpsert) . " data wisudawan riil dari SIAKAD & SIMANTA!");
+            $this->info("Berhasil men-sinkronisasi " . count($recordsToUpsert) . " data wisudawan 100% murni dari SIAKAD!");
 
             return 0;
         } catch (\Exception $e) {
