@@ -75,4 +75,17 @@ class PeriodeWisudaController extends Controller
 
         return redirect()->back()->with('success', 'Status periode wisuda berhasil diperbarui.');
     }
+
+    public function syncSiakad(Request $request)
+    {
+        $limit = $request->input('limit', 500);
+        $periodeId = $request->input('periode_id');
+
+        \Illuminate\Support\Facades\Artisan::call('wisuda:sync-siakad', array_filter([
+            '--limit' => $limit,
+            '--periode' => $periodeId,
+        ]));
+
+        return redirect()->back()->with('success', 'Berhasil menarik data wisudawan dari database SIAKAD.');
+    }
 }

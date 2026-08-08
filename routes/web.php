@@ -81,6 +81,7 @@ Route::middleware(['auth', 'role:admin_utama'])->prefix('admin')->name('admin.')
     Route::get('/periode', [PeriodeWisudaController::class, 'index'])->name('periode.index');
     Route::post('/periode', [PeriodeWisudaController::class, 'store'])->name('periode.store');
     Route::patch('/periode/{id}/toggle', [PeriodeWisudaController::class, 'toggleActive'])->name('periode.toggle');
+    Route::post('/periode/sync-siakad', [PeriodeWisudaController::class, 'syncSiakad'])->name('periode.sync-siakad');
 
     // Precision Stage Layout Configurator
     Route::get('/stage-layout', [StageLayoutConfigController::class, 'edit'])->name('stage-layout.edit');
