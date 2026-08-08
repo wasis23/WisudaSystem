@@ -55,7 +55,7 @@ class SimpegIntegrationService
         if (empty($employees)) {
             try {
                 $query = DB::connection('simpeg')->table('wsia_profil');
-                $results = $query->orderBy('nama', 'asc')->take(100)->get();
+                $results = $query->orderBy('nama', 'asc')->get();
 
                 if ($results->count() > 0) {
                     $employees = $results->map(function ($emp) {
