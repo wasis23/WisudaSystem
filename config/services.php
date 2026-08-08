@@ -35,4 +35,9 @@ return [
         ],
     ],
 
+    'simpeg' => [
+        'url' => env('SIMPEG_API_URL', 'https://simpeg.poltekindonusa.ac.id/api/verify-login'),
+        'key' => env('SIMPEG_API_KEY', 'e844f45c5100479b91c0eb97793a84b8b85cc2fe21f50caf38807ff72408e143'),
+    ],
+
 ];

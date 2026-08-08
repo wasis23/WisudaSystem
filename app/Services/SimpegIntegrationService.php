@@ -9,16 +9,50 @@ use Illuminate\Support\Facades\Log;
 class SimpegIntegrationService
 {
     /**
-     * SIMPEG Live Base URL
+     * Get API URL and API Key from config/env
      */
-    protected string $simpegBaseUrl = 'https://simpeg.poltekindonusa.ac.id';
+    protected function getApiConfig(): array
+    {
+        $url = config('services.simpeg.url') ?: env('SIMPEG_API_URL', 'https://simpeg.poltekindonusa.ac.id/api/verify-login');
+        $key = config('services.simpeg.key') ?: env('SIMPEG_API_KEY', 'e844f45c5100479b91c0eb97793a84b8b85cc2fe21f50caf38807ff72408e143');
+
+        $baseUrl = str_replace('/api/verify-login', '', $url);
+
+        return [
+            'verify_url' => $url,
+            'employees_url' => rtrim($baseUrl, '/') . '/api/employees',
+            'key' => $key,
+        ];
+    }
 
     /**
-     * Get list of employees from SIMPEG database (wsia_profil table) or API
+     * Get list of employees from SIMPEG API or SIMPEG database (wsia_profil table)
      */
     public function getEmployees(string $search = null): array
     {
-        // 1. Try DB Connection (simpeg / hestiapanel_sistem_simpeg)
+        $apiConfig = $this->getApiConfig();
+
+        // 1. Try Live HTTP API call to https://simpeg.poltekindonusa.ac.id/api/employees
+        try {
+            $response = Http::withHeaders([
+                'X-API-KEY' => $apiConfig['key'],
+                'Accept' => 'application/json',
+            ])->timeout(5)->get($apiConfig['employees_url'], [
+                'search' => $search,
+                'q' => $search,
+            ]);
+
+            if ($response->successful()) {
+                $data = $response->json();
+                if (($data['status'] ?? '') === 'success' && isset($data['data']) && is_array($data['data'])) {
+                    return $data['data'];
+                }
+            }
+        } catch (\Exception $e) {
+            Log::warning('SIMPEG Employees API error: ' . $e->getMessage());
+        }
+
+        // 2. Try Direct DB Connection (simpeg / hestiapanel_sistem_simpeg)
         try {
             $query = DB::connection('simpeg')->table('wsia_profil');
 
@@ -58,7 +92,7 @@ class SimpegIntegrationService
             Log::warning('SIMPEG DB Integration error: ' . $e->getMessage());
         }
 
-        // 2. Fallback mock dataset for local development
+        // 3. Fallback mock dataset for local development
         $mockData = [
             ['id_sdm' => 'SDM001', 'nidn' => '0601018501', 'nip' => '1985010101', 'username' => 'security.andi', 'nama' => 'Andi Susanto (Security)', 'status' => 'Tendik', 'email' => 'andi.security@poltekindonusa.ac.id'],
             ['id_sdm' => 'SDM002', 'nidn' => '0602028802', 'nip' => '1988020202', 'username' => 'security.budi', 'nama' => 'Budi Santoso (Security)', 'status' => 'Tendik', 'email' => 'budi.security@poltekindonusa.ac.id'],
@@ -83,10 +117,14 @@ class SimpegIntegrationService
     public function verifyCredentials(string $username, string $password): ?array
     {
         $cleanUsername = trim($username);
+        $apiConfig = $this->getApiConfig();
 
-        // 1. Try Live HTTP API call to https://simpeg.poltekindonusa.ac.id/api/verify-login
+        // 1. Try Live HTTP API call to https://simpeg.poltekindonusa.ac.id/api/verify-login with X-API-KEY
         try {
-            $response = Http::timeout(5)->post($this->simpegBaseUrl . '/api/verify-login', [
+            $response = Http::withHeaders([
+                'X-API-KEY' => $apiConfig['key'],
+                'Accept' => 'application/json',
+            ])->timeout(5)->post($apiConfig['verify_url'], [
                 'username' => $cleanUsername,
                 'password' => $password,
             ]);
@@ -96,13 +134,15 @@ class SimpegIntegrationService
                 if (($data['status'] ?? '') === 'success' && isset($data['data'])) {
                     return [
                         'id_sdm' => $data['data']['id_sdm'] ?? null,
-                        'nidn' => $data['data']['nidn'] ?? null,
+                        'nidn' => $data['data']['nidn'] ?? $data['data']['username'] ?? null,
                         'nip' => $data['data']['nip'] ?? null,
                         'username' => $data['data']['username'] ?? $cleanUsername,
                         'nama' => $data['data']['name'] ?? $cleanUsername,
                         'email' => $cleanUsername . '@poltekindonusa.ac.id',
                     ];
                 }
+            } else {
+                Log::warning('SIMPEG Verify Login API response failed (' . $response->status() . '): ' . $response->body());
             }
         } catch (\Exception $e) {
             Log::warning('SIMPEG Live API error: ' . $e->getMessage());
