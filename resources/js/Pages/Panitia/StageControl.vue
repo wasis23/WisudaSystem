@@ -1,7 +1,7 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AdminLayout.vue';
 import { Head, Link } from '@inertiajs/vue3';
-import { ref, onMounted, onUnmounted } from 'vue';
+import { ref, computed, onMounted, onUnmounted } from 'vue';
 import axios from 'axios';
 
 const props = defineProps({
@@ -11,6 +11,24 @@ const props = defineProps({
 });
 
 const activeIndex = ref(props.initialIndex || 0);
+const searchQuery = ref('');
+
+const filteredWisudawans = computed(() => {
+    if (!props.wisudawans) return [];
+    if (!searchQuery.value.trim()) return props.wisudawans;
+    const q = searchQuery.value.toLowerCase().trim();
+    return props.wisudawans.filter(w =>
+        (w.nama_lengkap && w.nama_lengkap.toLowerCase().includes(q)) ||
+        (w.nim && w.nim.toLowerCase().includes(q))
+    );
+});
+
+const selectWisudawan = (w) => {
+    const originalIdx = props.wisudawans.findIndex(item => item.id === w.id);
+    if (originalIdx !== -1) {
+        selectCandidate(originalIdx);
+    }
+};
 
 let stageChannel = null;
 
@@ -144,51 +162,77 @@ const openStageDisplay = () => {
                 </div>
             </div>
 
-            <!-- Candidates Queue List Grid (Interactive Clickable) -->
-            <div class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm p-6 space-y-4">
-                <div class="flex items-center justify-between pb-3 border-b border-gray-100 dark:border-gray-700">
+            <!-- Candidates Queue List Grid (Interactive Clickable & Search Filter) -->
+            <div class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm p-6 space-y-5">
+                <div class="flex flex-col md:flex-row md:items-center justify-between pb-4 border-b border-gray-100 dark:border-gray-700 gap-4">
                     <div>
                         <h3 class="font-bold text-sm text-gray-900 dark:text-white flex items-center gap-2">
                             <svg class="w-4 h-4 text-indigo-600 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 002-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
                             </svg>
-                            <span>Daftar Antrean Wisudawan ({{ wisudawans?.length || 0 }})</span>
+                            <span>Daftar Antrean Wisudawan ({{ filteredWisudawans.length }} / {{ wisudawans?.length || 0 }})</span>
                         </h3>
-                        <p class="text-[11px] text-gray-500 mt-0.5">Klik pada salah satu nama wisudawan di bawah ini untuk menampilkan datanya di proyektor panggung secara instan.</p>
+                        <p class="text-[11px] text-gray-500 mt-0.5">Klik pada wisudawan di bawah ini untuk mengaktifkan tampilan proyektor panggung.</p>
+                    </div>
+
+                    <!-- Search Filter Box Input -->
+                    <div class="relative w-full md:w-80">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                            </svg>
+                        </div>
+                        <input
+                            v-model="searchQuery"
+                            type="text"
+                            placeholder="Cari Nama atau NIM Wisudawan..."
+                            class="w-full pl-9 pr-9 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl text-xs text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition"
+                        />
+                        <button
+                            v-if="searchQuery"
+                            @click="searchQuery = ''"
+                            type="button"
+                            class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 text-xs font-bold"
+                        >
+                            ✕
+                        </button>
                     </div>
                 </div>
 
-                <div v-if="wisudawans && wisudawans.length > 0" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                <div v-if="filteredWisudawans && filteredWisudawans.length > 0" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                     <div
-                        v-for="(w, idx) in wisudawans"
+                        v-for="w in filteredWisudawans"
                         :key="w.id"
-                        @click="selectCandidate(idx)"
+                        @click="selectWisudawan(w)"
                         :class="[
                             'p-4 rounded-xl border cursor-pointer transition flex items-center gap-3 select-none transform hover:scale-[1.01]',
-                            activeIndex === idx
+                            wisudawans[activeIndex]?.id === w.id
                                 ? 'bg-indigo-50 border-indigo-500 dark:bg-indigo-950/50 dark:border-indigo-500 shadow-md ring-2 ring-indigo-500/20'
                                 : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 hover:border-indigo-300 dark:hover:border-indigo-700'
                         ]"
                     >
                         <span :class="[
                             'w-8 h-8 rounded-lg font-bold text-xs flex items-center justify-center shrink-0 font-mono shadow-sm transition',
-                            activeIndex === idx ? 'bg-indigo-600 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300'
+                            wisudawans[activeIndex]?.id === w.id ? 'bg-indigo-600 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300'
                         ]">
-                            {{ idx + 1 }}
+                            {{ wisudawans.findIndex(item => item.id === w.id) + 1 }}
                         </span>
 
                         <div class="overflow-hidden min-w-0 flex-1">
                             <div class="flex items-center justify-between gap-1">
                                 <h4 class="font-bold text-xs text-gray-900 dark:text-white truncate">{{ w.nama_lengkap }}</h4>
-                                <span v-if="activeIndex === idx" class="text-[10px] bg-emerald-500 text-white font-extrabold px-2 py-0.5 rounded-full shrink-0">TAMPIL</span>
+                                <span v-if="wisudawans[activeIndex]?.id === w.id" class="text-[10px] bg-emerald-500 text-white font-extrabold px-2 py-0.5 rounded-full shrink-0">TAMPIL</span>
                             </div>
                             <p class="text-[11px] text-gray-500 font-mono truncate mt-0.5">{{ w.nim }} • {{ w.program_studi?.nama_prodi || 'Prodi' }}</p>
                         </div>
                     </div>
                 </div>
 
-                <div v-else class="py-8 text-center text-gray-400 text-xs">
-                    Belum ada wisudawan terdaftar dalam antrean periode wisuda ini.
+                <div v-else class="py-10 text-center space-y-2">
+                    <p class="text-gray-400 text-xs">Tidak ditemukan wisudawan dengan kata kunci "<strong class="text-gray-600 dark:text-gray-300">{{ searchQuery }}</strong>"</p>
+                    <button @click="searchQuery = ''" type="button" class="px-3 py-1 bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400 rounded-lg text-xs font-bold hover:underline">
+                        Reset Pencarian
+                    </button>
                 </div>
             </div>
 
