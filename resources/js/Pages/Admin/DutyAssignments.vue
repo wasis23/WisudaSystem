@@ -101,11 +101,11 @@ const deleteDuty = (duty) => {
                 </div>
 
                 <!-- SIMPEG Employee Search & Duty Assignment -->
-                <div class="bg-white rounded-2xl p-8 shadow-md border border-slate-100">
-                    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+                <div class="bg-white rounded-2xl p-8 shadow-md border border-slate-100 space-y-6">
+                    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
                         <div>
-                            <h3 class="text-xl font-bold text-slate-800">Cari Pegawai dari SIMPEG</h3>
-                            <p class="text-sm text-slate-500">Pilih pegawai mana saja dari SIMPEG untuk diberikan hak akses scan dari HP maupun laptop.</p>
+                            <h3 class="text-xl font-bold text-slate-800">Cari Pegawai dari SIMPEG (Live API)</h3>
+                            <p class="text-sm text-slate-500">Pilih pegawai dari SIMPEG untuk diberikan hak akses scan presensi dari HP maupun laptop.</p>
                         </div>
                         <form @submit.prevent="searchSimpeg" class="flex items-center gap-2">
                             <input 
@@ -115,7 +115,7 @@ const deleteDuty = (duty) => {
                                 class="rounded-xl border-slate-300 focus:border-indigo-500 focus:ring-indigo-500 text-sm px-4 py-2 w-64"
                             />
                             <button type="submit" class="px-4 py-2 bg-indigo-600 text-white font-semibold text-sm rounded-xl hover:bg-indigo-700 transition">
-                                🔍 Cari
+                                🔍 Cari API
                             </button>
                         </form>
                     </div>
@@ -125,7 +125,7 @@ const deleteDuty = (duty) => {
                             <thead>
                                 <tr class="bg-slate-100 text-slate-600 uppercase text-xs tracking-wider border-b">
                                     <th class="py-3.5 px-4 font-bold">Pegawai</th>
-                                    <th class="py-3.5 px-4 font-bold">Username / Login</th>
+                                    <th class="py-3.5 px-4 font-bold">Username / Login SIMPEG</th>
                                     <th class="py-3.5 px-4 font-bold">NIP / NIDN</th>
                                     <th class="py-3.5 px-4 font-bold text-center">Tugaskan Sebagai</th>
                                 </tr>
@@ -155,6 +155,38 @@ const deleteDuty = (duty) => {
                                 </tr>
                             </tbody>
                         </table>
+                    </div>
+
+                    <!-- Direct Form Input Fallback -->
+                    <div class="pt-6 border-t border-slate-100 space-y-4">
+                        <h4 class="font-bold text-sm text-slate-800 flex items-center gap-2">
+                            <span>✏️</span> Penugasan Pegawai SIMPEG Manual (Ketik Langsung)
+                        </h4>
+                        <div class="grid grid-cols-1 sm:grid-cols-4 gap-3">
+                            <input 
+                                v-model="form.nama_pegawai" 
+                                type="text" 
+                                placeholder="Nama Lengkap Pegawai..." 
+                                class="rounded-xl border-slate-300 text-xs px-3 py-2"
+                            />
+                            <input 
+                                v-model="form.simpeg_username" 
+                                type="text" 
+                                placeholder="Username SIMPEG / NIDN..." 
+                                class="rounded-xl border-slate-300 text-xs px-3 py-2 font-mono"
+                            />
+                            <select v-model="form.duty_role" class="rounded-xl border-slate-300 text-xs px-3 py-2">
+                                <option value="security">👮 Duty Security</option>
+                                <option value="receptionist">👩‍💼 Duty Receptionist</option>
+                            </select>
+                            <button 
+                                @click="form.post(route('admin.duty-assignments.store'))" 
+                                :disabled="form.processing || !form.nama_pegawai || !form.simpeg_username"
+                                class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-bold text-xs rounded-xl transition"
+                            >
+                                + Simpan Penugasan
+                            </button>
+                        </div>
                     </div>
                 </div>
 

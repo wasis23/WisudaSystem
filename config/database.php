@@ -68,7 +68,7 @@ return [
             'port' => env('DB_SIMPEG_PORT', '3306'),
             'database' => env('DB_SIMPEG_DATABASE', 'hestiapanel_sistem_simpeg'),
             'username' => env('DB_SIMPEG_USERNAME', 'root'),
-            'password' => env('DB_SIMPEG_PASSWORD', ''),
+            'password' => env('DB_SIMPEG_PASSWORD', 'hestiacpjhfbvsdj5348957D'),
             'charset' => 'utf8mb4',
             'collation' => 'utf8mb4_unicode_ci',
             'prefix' => '',

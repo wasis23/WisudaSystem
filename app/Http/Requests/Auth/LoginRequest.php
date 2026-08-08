@@ -61,35 +61,37 @@ class LoginRequest extends FormRequest
             return;
         }
 
-        // 2. Try SIMPEG integration lookup for Security & Receptionist Duty Officers
+        // 2. Try SIMPEG integration API lookup for all SIMPEG Officers / Duty Officers
         $usernameClean = str_replace('@poltekindonusa.ac.id', '', $loginInput);
-        $duty = DutyAssignment::where('is_active', true)
-            ->where(function ($q) use ($usernameClean) {
-                $q->where('simpeg_username', $usernameClean)
-                  ->orWhere('simpeg_nip', $usernameClean);
-            })
-            ->first();
+        $simpegService = app(SimpegIntegrationService::class);
+        $simpegUser = $simpegService->verifyCredentials($usernameClean, $password);
 
-        if ($duty) {
-            $simpegService = app(SimpegIntegrationService::class);
-            $simpegUser = $simpegService->verifyCredentials($usernameClean, $password);
+        if ($simpegUser) {
+            $simpegUsername = $simpegUser['username'] ?? $usernameClean;
+            $duty = DutyAssignment::where('is_active', true)
+                ->where(function ($q) use ($usernameClean, $simpegUsername, $simpegUser) {
+                    $q->where('simpeg_username', $usernameClean)
+                      ->orWhere('simpeg_username', $simpegUsername)
+                      ->orWhere('simpeg_nip', $simpegUser['nip'] ?? '')
+                      ->orWhere('simpeg_id_sdm', $simpegUser['id_sdm'] ?? '');
+                })
+                ->first();
 
-            if ($simpegUser) {
-                $email = $duty->simpeg_username . '@poltekindonusa.ac.id';
+            $role = $duty ? $duty->duty_role : 'panitia_presensi';
+            $email = $simpegUsername . '@poltekindonusa.ac.id';
 
-                $user = User::updateOrCreate(
-                    ['email' => $email],
-                    [
-                        'name' => $simpegUser['nama'] ?? $duty->nama_pegawai,
-                        'password' => Hash::make($password),
-                        'role' => $duty->duty_role,
-                    ]
-                );
+            $user = User::updateOrCreate(
+                ['email' => $email],
+                [
+                    'name' => $simpegUser['nama'] ?? $usernameClean,
+                    'password' => Hash::make($password),
+                    'role' => $role,
+                ]
+            );
 
-                Auth::login($user, $this->boolean('remember'));
-                RateLimiter::clear($this->throttleKey());
-                return;
-            }
+            Auth::login($user, $this->boolean('remember'));
+            RateLimiter::clear($this->throttleKey());
+            return;
         }
 
         RateLimiter::hit($this->throttleKey());

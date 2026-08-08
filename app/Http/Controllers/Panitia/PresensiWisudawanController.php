@@ -187,20 +187,45 @@ class PresensiWisudawanController extends Controller
             'jumlah_tamu_tambahan' => $sikeuQuota['total_allowed_guests'],
         ]);
 
-        $message = "PRESENSI BERHASIL! Selamat Datang, {$wisudawan->nama_lengkap} (NIM: {$wisudawan->nim}). Kuota Tamu & Snack: {$sikeuQuota['snack_quota']} Porsi. SIMANTA: {$simantaInfo['status_lulus']}.";
+        $message = "PRESENSI BERHASIL! Selamat Datang, {$wisudawan->nama_lengkap} (NIM: {$wisudawan->nim}). Kuota Tamu & Snack: {$sikeuQuota['snack_quota']} Porsi.";
+
+        $scannedData = [
+            'nama_lengkap' => $wisudawan->nama_lengkap,
+            'nim' => $wisudawan->nim,
+            'prodi' => $wisudawan->programStudi?->nama_prodi,
+            'pas_foto' => $wisudawan->pas_foto ? "/storage/{$wisudawan->pas_foto}" : null,
+            'nama_ayah' => $siakadInfo['nama_ayah'] ?? $wisudawan->nama_ayah ?? 'Data SIAKAD',
+            'nama_ibu' => $siakadInfo['nama_ibu'] ?? $wisudawan->nama_ibu ?? 'Data SIAKAD',
+            'status_simanta' => $simantaInfo['status_lulus'],
+            'tamu_kuota' => $sikeuQuota['total_allowed_guests'],
+            'snack_porsi' => $sikeuQuota['snack_quota'],
+            'waktu_presensi' => $wisudawan->waktu_presensi ? (is_string($wisudawan->waktu_presensi) ? $wisudawan->waktu_presensi : $wisudawan->waktu_presensi->format('H:i:s WIB')) : now()->format('H:i:s WIB'),
+            'tamu_tambahan_list' => $wisudawan->tamuTambahan ? $wisudawan->tamuTambahan->map(function($t) {
+                return [
+                    'id' => $t->id,
+                    'nama_tamu' => $t->nama_tamu,
+                    'hubungan' => $t->hubungan,
+                    'is_hadir' => $t->is_hadir,
+                    'snack_diambil' => $t->snack_diambil,
+                ];
+            }) : [],
+        ];
 
         if ($request->wantsJson()) {
             return response()->json([
                 'status' => 'success',
                 'message' => $message,
                 'wisudawan' => $wisudawan,
+                'scanned_data' => $scannedData,
                 'siakad' => $siakadInfo,
                 'simanta' => $simantaInfo,
                 'sikeu' => $sikeuQuota,
             ]);
         }
 
-        return redirect()->back()->with('success', $message);
+        return redirect()->back()
+            ->with('success', $message)
+            ->with('scannedWisudawan', $scannedData);
     }
 
     /**

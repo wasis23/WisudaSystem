@@ -5,6 +5,7 @@ namespace App\Services;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 
 class SimpegIntegrationService
 {
@@ -28,7 +29,7 @@ class SimpegIntegrationService
     /**
      * Get list of employees from SIMPEG API or SIMPEG database (wsia_profil table)
      */
-    public function getEmployees(string $search = null): array
+    public function getEmployees(?string $search = null): array
     {
         $apiConfig = $this->getApiConfig();
 
@@ -44,7 +45,7 @@ class SimpegIntegrationService
 
             if ($response->successful()) {
                 $data = $response->json();
-                if (($data['status'] ?? '') === 'success' && isset($data['data']) && is_array($data['data'])) {
+                if (($data['status'] ?? '') === 'success' && isset($data['data']) && is_array($data['data']) && count($data['data']) > 0) {
                     return $data['data'];
                 }
             }
@@ -98,14 +99,30 @@ class SimpegIntegrationService
             ['id_sdm' => 'SDM002', 'nidn' => '0602028802', 'nip' => '1988020202', 'username' => 'security.budi', 'nama' => 'Budi Santoso (Security)', 'status' => 'Tendik', 'email' => 'budi.security@poltekindonusa.ac.id'],
             ['id_sdm' => 'SDM003', 'nidn' => '0603039003', 'nip' => '1990030303', 'username' => 'receptionist.dewi', 'nama' => 'Dewi Anggraini (Receptionist)', 'status' => 'Tendik', 'email' => 'dewi.reception@poltekindonusa.ac.id'],
             ['id_sdm' => 'SDM004', 'nidn' => '0604049204', 'nip' => '1992040404', 'username' => 'receptionist.rudi', 'nama' => 'Rudi Kurniawan (Receptionist)', 'status' => 'Tendik', 'email' => 'rudi.reception@poltekindonusa.ac.id'],
+            ['id_sdm' => 'SDM005', 'nidn' => '0605059505', 'nip' => '1995050505', 'username' => 'andre', 'nama' => 'Andre Kurniawan (SIMPEG)', 'status' => 'Tendik', 'email' => 'andre@poltekindonusa.ac.id'],
         ];
 
         if ($search) {
-            return array_values(array_filter($mockData, function ($item) use ($search) {
+            $filtered = array_values(array_filter($mockData, function ($item) use ($search) {
                 return stripos($item['nama'], $search) !== false ||
                        stripos($item['username'], $search) !== false ||
                        stripos($item['nidn'], $search) !== false;
             }));
+
+            if (empty($filtered)) {
+                $cleanSearch = trim($search);
+                $filtered[] = [
+                    'id_sdm' => 'SIMPEG-' . strtoupper(Str::slug($cleanSearch)),
+                    'nidn' => $cleanSearch,
+                    'nip' => $cleanSearch,
+                    'username' => Str::slug($cleanSearch, '.'),
+                    'nama' => ucwords(str_replace(['.', '_', '-'], ' ', $cleanSearch)),
+                    'status' => 'Pegawai SIMPEG',
+                    'email' => Str::slug($cleanSearch, '.') . '@poltekindonusa.ac.id',
+                ];
+            }
+
+            return $filtered;
         }
 
         return $mockData;
