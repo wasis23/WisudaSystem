@@ -47,12 +47,12 @@ class SimantaIntegrationService
             Log::warning('SIMANTA Integration error: ' . $e->getMessage());
         }
 
-        // Mock fallback response for development/demo
+        // Real default response when data is not found in SIMANTA
         return [
-            'is_lulus' => true,
-            'status_lulus' => 'LULUS',
-            'tahun_lulus' => date('Y'),
-            'keterangan' => 'Status Terverifikasi (SIMANTA Lulus)',
+            'is_lulus' => false,
+            'status_lulus' => 'BELUM TERVERIFIKASI',
+            'tahun_lulus' => null,
+            'keterangan' => 'Data tidak ditemukan di database SIMANTA',
         ];
     }
 }

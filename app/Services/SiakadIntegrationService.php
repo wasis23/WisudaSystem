@@ -50,17 +50,6 @@ class SiakadIntegrationService
             Log::warning('SIAKAD Integration error: ' . $e->getMessage());
         }
 
-        // Mock fallback data for demonstration/development
-        return [
-            'nim' => $cleanNim,
-            'nama_lengkap' => 'Mahasiswa ' . $cleanNim,
-            'nama_ibu' => 'Siti Rahmawati',
-            'nama_ayah' => 'Budi Santoso',
-            'program_studi' => 'D3 Sistem Informasi',
-            'tempat_lahir' => 'Surakarta',
-            'tanggal_lahir' => '2001-05-15',
-            'no_hp' => '081234567890',
-            'alamat' => 'Surakarta, Jawa Tengah',
-        ];
+        return null;
     }
 }

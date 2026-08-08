@@ -5,7 +5,6 @@ namespace App\Services;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Str;
 
 class SimpegIntegrationService
 {
@@ -27,7 +26,7 @@ class SimpegIntegrationService
     }
 
     /**
-     * Get list of employees from SIMPEG API or SIMPEG database (wsia_profil table)
+     * Get list of employees exclusively from SIMPEG API or SIMPEG database (wsia_profil table)
      */
     public function getEmployees(?string $search = null): array
     {
@@ -93,43 +92,12 @@ class SimpegIntegrationService
             Log::warning('SIMPEG DB Integration error: ' . $e->getMessage());
         }
 
-        // 3. Fallback mock dataset for local development
-        $mockData = [
-            ['id_sdm' => 'SDM001', 'nidn' => '0601018501', 'nip' => '1985010101', 'username' => 'security.andi', 'nama' => 'Andi Susanto (Security)', 'status' => 'Tendik', 'email' => 'andi.security@poltekindonusa.ac.id'],
-            ['id_sdm' => 'SDM002', 'nidn' => '0602028802', 'nip' => '1988020202', 'username' => 'security.budi', 'nama' => 'Budi Santoso (Security)', 'status' => 'Tendik', 'email' => 'budi.security@poltekindonusa.ac.id'],
-            ['id_sdm' => 'SDM003', 'nidn' => '0603039003', 'nip' => '1990030303', 'username' => 'receptionist.dewi', 'nama' => 'Dewi Anggraini (Receptionist)', 'status' => 'Tendik', 'email' => 'dewi.reception@poltekindonusa.ac.id'],
-            ['id_sdm' => 'SDM004', 'nidn' => '0604049204', 'nip' => '1992040404', 'username' => 'receptionist.rudi', 'nama' => 'Rudi Kurniawan (Receptionist)', 'status' => 'Tendik', 'email' => 'rudi.reception@poltekindonusa.ac.id'],
-            ['id_sdm' => 'SDM005', 'nidn' => '0605059505', 'nip' => '1995050505', 'username' => 'andre', 'nama' => 'Andre Kurniawan (SIMPEG)', 'status' => 'Tendik', 'email' => 'andre@poltekindonusa.ac.id'],
-        ];
-
-        if ($search) {
-            $filtered = array_values(array_filter($mockData, function ($item) use ($search) {
-                return stripos($item['nama'], $search) !== false ||
-                       stripos($item['username'], $search) !== false ||
-                       stripos($item['nidn'], $search) !== false;
-            }));
-
-            if (empty($filtered)) {
-                $cleanSearch = trim($search);
-                $filtered[] = [
-                    'id_sdm' => 'SIMPEG-' . strtoupper(Str::slug($cleanSearch)),
-                    'nidn' => $cleanSearch,
-                    'nip' => $cleanSearch,
-                    'username' => Str::slug($cleanSearch, '.'),
-                    'nama' => ucwords(str_replace(['.', '_', '-'], ' ', $cleanSearch)),
-                    'status' => 'Pegawai SIMPEG',
-                    'email' => Str::slug($cleanSearch, '.') . '@poltekindonusa.ac.id',
-                ];
-            }
-
-            return $filtered;
-        }
-
-        return $mockData;
+        // Return empty array if not found in live API or DB (No mock data)
+        return [];
     }
 
     /**
-     * Authenticate employee credentials against live SIMPEG HTTP API (https://simpeg.poltekindonusa.ac.id/api/verify-login) or DB
+     * Authenticate employee credentials exclusively against live SIMPEG HTTP API or SIMPEG DB
      */
     public function verifyCredentials(string $username, string $password): ?array
     {
@@ -214,18 +182,6 @@ class SimpegIntegrationService
             }
         } catch (\Exception $e) {
             Log::warning('SIMPEG DB fallback check error: ' . $e->getMessage());
-        }
-
-        // 3. Development/Demo mock credentials fallback
-        if ($password === 'password' || $password === '123456') {
-            return [
-                'id_sdm' => 'SDM-MOCK',
-                'nidn' => '0600000000',
-                'nip' => '1990000000',
-                'username' => $cleanUsername,
-                'nama' => ucwords(str_replace(['.', '_'], ' ', $cleanUsername)),
-                'email' => $cleanUsername . '@poltekindonusa.ac.id',
-            ];
         }
 
         return null;

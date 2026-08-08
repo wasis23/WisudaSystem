@@ -15,7 +15,7 @@ class SikeuIntegrationService
         $cleanNim = trim($nim);
 
         try {
-            // Query riwayat_bayar or master_biaya_lains in SIKEU
+            // Query riwayat_bayar in SIKEU database
             $payments = DB::connection('sikeu')->table('riwayat_bayar')
                 ->where('no_pend', $cleanNim)
                 ->get();
@@ -29,12 +29,10 @@ class SikeuIntegrationService
 
                 // Check if payment description mentions extra wisuda / undangan tambahan
                 if (str_contains($keterangan, 'tambahan') || str_contains($keterangan, 'undangan') || str_contains($keterangan, 'pendamping')) {
-                    // Default 1 or 2 extra guests per paid item
                     $totalExtraGuests += max(1, (int)($payment->jumlah_bayar / 150000));
                 }
             }
 
-            // Default standard quota is 2 extra guests (Orang Tua), additional paid extra guests add to this quota
             $totalQuota = 2 + $totalExtraGuests;
 
             return [
@@ -47,12 +45,12 @@ class SikeuIntegrationService
             Log::warning('SIKEU Integration error: ' . $e->getMessage());
         }
 
-        // Mock fallback response for development/demo (Default 2 guests allowed)
+        // Real default response if SIKEU is unreachable or no extra payment records found (Standard 2 guests)
         return [
-            'has_paid_wisuda' => true,
-            'tambahan_wisuda_paid_quota' => 1,
-            'total_allowed_guests' => 3, // 2 standard + 1 extra
-            'snack_quota' => 4, // 1 wisudawan + 3 guests
+            'has_paid_wisuda' => false,
+            'tambahan_wisuda_paid_quota' => 0,
+            'total_allowed_guests' => 2,
+            'snack_quota' => 3,
         ];
     }
 }
