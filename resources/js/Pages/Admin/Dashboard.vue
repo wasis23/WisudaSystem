@@ -22,7 +22,7 @@ const tracerPercentage = computed(() => {
         <div class="space-y-6">
             
             <!-- TOP STATS CARDS GRID (EXACT PKL DASHBOARD CARD STYLE) -->
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-6">
                 
                 <!-- KPI 1: Total Wisudawan -->
                 <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-5 transition hover:shadow-md">
@@ -88,27 +88,6 @@ const tracerPercentage = computed(() => {
                     <div class="mt-3 flex items-center gap-1.5 text-xs text-amber-600 dark:text-amber-400 font-medium">
                         <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
                         Status: <span class="font-semibold">{{ stats?.activePeriode ? 'Aktif' : 'Standby' }}</span>
-                    </div>
-                </div>
-
-                <!-- KPI 4: Program Studi Master -->
-                <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-5 transition hover:shadow-md">
-                    <div class="flex items-center justify-between">
-                        <span class="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Program Studi</span>
-                        <div class="w-9 h-9 rounded-xl bg-blue-50 dark:bg-blue-950/50 text-blue-600 dark:text-blue-400 flex items-center justify-center">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                            </svg>
-                        </div>
-                    </div>
-                    <div class="mt-4 flex items-baseline gap-2">
-                        <span class="text-3xl font-black text-gray-900 dark:text-white tracking-tight">
-                            {{ stats?.totalProdi || 0 }}
-                        </span>
-                        <span class="text-xs font-medium text-gray-500">Prodi Aktif</span>
-                    </div>
-                    <div class="mt-3 text-xs text-gray-500 dark:text-gray-400 font-medium">
-                        Politeknik Indonusa Surakarta
                     </div>
                 </div>
 
