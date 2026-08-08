@@ -93,17 +93,14 @@ class StageDisplayController extends Controller
 
         $callback = function () use ($wisudawans) {
             $file = fopen('php://output', 'w');
-            // Write UTF-8 BOM so Excel opens CSV cleanly with UTF-8 characters and columns
+            // Write UTF-8 BOM for Excel compatibility
             fputs($file, "\xEF\xBB\xBF");
-            // Header row
-            fputcsv($file, ['No', 'NIM', 'Nama Lengkap', 'Program Studi', 'Urutan Tampil']);
+            // Header row (2 columns: NIM & Nomor Urut)
+            fputcsv($file, ['NIM', 'Nomor Urut']);
 
             foreach ($wisudawans as $index => $w) {
                 fputcsv($file, [
-                    $index + 1,
                     $w->nim,
-                    $w->nama_lengkap,
-                    $w->programStudi?->nama_prodi ?? '-',
                     $w->urutan_tampil ?? ($index + 1),
                 ]);
             }
@@ -144,11 +141,26 @@ class StageDisplayController extends Controller
             return back()->withErrors(['file' => 'File template kosong atau format tidak dapat dibaca.']);
         }
 
-        // Find which column is NIM (or default to 2nd column / index 1)
+        // Determine column indexes for NIM and Nomor Urut
         $header = array_map('strtolower', $rows[0]);
-        $nimColIndex = array_search('nim', $header);
+        $nimColIndex = false;
+        $orderColIndex = false;
+
+        foreach ($header as $idx => $colName) {
+            if (str_contains($colName, 'nim')) {
+                $nimColIndex = $idx;
+            }
+            if (str_contains($colName, 'urut') || str_contains($colName, 'nomor') || str_contains($colName, 'no')) {
+                $orderColIndex = $idx;
+            }
+        }
+
+        // Defaults if header not explicitly recognized
         if ($nimColIndex === false) {
-            $nimColIndex = 1; // Fallback to second column (No = col 0, NIM = col 1)
+            $nimColIndex = 0; // Default to first column for 2-column format
+        }
+        if ($orderColIndex === false) {
+            $orderColIndex = (count($rows[0]) > 1) ? 1 : 0;
         }
 
         $activePeriode = PeriodeWisuda::getActive() ?? PeriodeWisuda::latest()->first();
@@ -156,8 +168,9 @@ class StageDisplayController extends Controller
         $updatedCount = 0;
         $orderCounter = 1;
 
-        // Skip header if line 0 contains non-numeric text in NIM column
-        $startIndex = (isset($rows[0][$nimColIndex]) && !is_numeric(preg_replace('/[^0-9]/', '', $rows[0][$nimColIndex]))) ? 1 : 0;
+        // Skip header if first row contains column names ("nim", "nomor urut", etc)
+        $firstCell = preg_replace('/[^0-9]/', '', $rows[0][$nimColIndex] ?? '');
+        $startIndex = (empty($firstCell) && isset($rows[0][$nimColIndex]) && !is_numeric($rows[0][$nimColIndex])) ? 1 : 0;
 
         for ($i = $startIndex; $i < count($rows); $i++) {
             $row = $rows[$i];
@@ -168,12 +181,15 @@ class StageDisplayController extends Controller
             $rawNim = preg_replace('/[^0-9A-Za-z\-]/', '', $row[$nimColIndex]);
             if (empty($rawNim)) continue;
 
+            $customOrder = isset($row[$orderColIndex]) ? filter_var($row[$orderColIndex], FILTER_VALIDATE_INT) : false;
+            $targetOrder = ($customOrder !== false && $customOrder > 0) ? $customOrder : $orderCounter;
+
             $wisudawan = Wisudawan::where('periode_wisuda_id', $activePeriode?->id)
                 ->where('nim', $rawNim)
                 ->first();
 
             if ($wisudawan) {
-                $wisudawan->update(['urutan_tampil' => $orderCounter]);
+                $wisudawan->update(['urutan_tampil' => $targetOrder]);
                 $orderCounter++;
                 $updatedCount++;
             }
