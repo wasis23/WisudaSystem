@@ -75,26 +75,41 @@ const initCropper = () => {
         cropperInstance.destroy();
         cropperInstance = null;
     }
-    if (!cropperImgRef.value) return;
-    cropperImgRef.value.src = rawImageSrc;
-    cropperInstance = new Cropper(cropperImgRef.value, {
-        aspectRatio: 3 / 4,
-        viewMode: 1,
-        dragMode: 'move',          // Mengunci canvas agar hanya gambar yang digeser/di-zoom
-        autoCropArea: 0.8,
-        movable: true,
-        zoomable: true,
-        rotatable: true,           // Mengaktifkan fitur rotasi
-        scalable: false,
-        guides: true,
-        highlight: false,
-        cropBoxMovable: false,     // Kotak crop terkunci di tempat
-        cropBoxResizable: false,   // Kotak crop TIDAK bisa di-resize sama sekali
-        toggleDragModeOnDblclick: false,
-        background: false,
-        responsive: true,
-        checkOrientation: true,
-    });
+    const imgEl = cropperImgRef.value;
+    if (!imgEl) return;
+
+    const startCropper = () => {
+        if (cropperInstance) cropperInstance.destroy();
+        cropperInstance = new Cropper(imgEl, {
+            aspectRatio: 3 / 4,
+            initialAspectRatio: 3 / 4,
+            viewMode: 1,
+            dragMode: 'move',
+            autoCropArea: 0.85,
+            movable: true,
+            zoomable: true,
+            rotatable: true,
+            scalable: false,
+            guides: true,
+            highlight: false,
+            cropBoxMovable: false,
+            cropBoxResizable: false,
+            toggleDragModeOnDblclick: false,
+            background: false,
+            responsive: true,
+            checkOrientation: true,
+            ready() {
+                // Force 3:4 aspect ratio set on ready
+                this.cropper.setAspectRatio(3 / 4);
+            }
+        });
+    };
+
+    imgEl.onload = startCropper;
+    imgEl.src = rawImageSrc;
+    if (imgEl.complete) {
+        startCropper();
+    }
 };
 
 const zoomIn = () => cropperInstance?.zoom(0.15);
