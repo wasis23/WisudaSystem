@@ -14,6 +14,7 @@ class Wisudawan extends Model
     protected $fillable = [
         'user_id',
         'periode_wisuda_id',
+        'urutan_tampil',
         'program_studi_id',
         'nim',
         'nama_lengkap',

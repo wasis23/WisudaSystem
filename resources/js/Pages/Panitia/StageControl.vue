@@ -1,6 +1,6 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AdminLayout.vue';
-import { Head, Link } from '@inertiajs/vue3';
+import { Head, Link, router, usePage } from '@inertiajs/vue3';
 import { ref, computed, onMounted, onUnmounted } from 'vue';
 import axios from 'axios';
 
@@ -12,6 +12,36 @@ const props = defineProps({
 
 const activeIndex = ref(props.initialIndex || 0);
 const searchQuery = ref('');
+const fileInputRef = ref(null);
+const isUploading = ref(false);
+
+const downloadTemplate = () => {
+    window.location.href = route('panitia.stage-control.download-template');
+};
+
+const triggerFileInput = () => {
+    if (fileInputRef.value) {
+        fileInputRef.value.click();
+    }
+};
+
+const handleFileUpload = (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    isUploading.value = true;
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    router.post(route('panitia.stage-control.upload-template'), formData, {
+        preserveScroll: true,
+        onFinish: () => {
+            isUploading.value = false;
+            if (fileInputRef.value) fileInputRef.value.value = '';
+        },
+    });
+};
 
 const filteredWisudawans = computed(() => {
     if (!props.wisudawans) return [];
@@ -110,19 +140,69 @@ const openStageDisplay = () => {
                         <span>Konsol Operator Layar Panggung</span>
                     </h2>
                     <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                        Pilih nama wisudawan atau tekan tombol Next/Prev untuk langsung mengontrol tampilan layar panggung (Stage Display) secara real-time.
+                        Pilih nama wisudawan atau atur urutan pemanggilan via Excel/CSV untuk mengontrol layar proyektor panggung secara real-time.
                     </p>
                 </div>
 
-                <button
-                    @click="openStageDisplay"
-                    class="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl transition shadow-sm flex items-center gap-2"
-                >
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                    </svg>
-                    <span>Buka Layar Presentasi ➔</span>
-                </button>
+                <div class="flex flex-wrap items-center gap-2.5 shrink-0">
+                    <button
+                        type="button"
+                        @click="downloadTemplate"
+                        class="px-4 py-2.5 bg-emerald-50 dark:bg-emerald-950/40 hover:bg-emerald-100 border border-emerald-300 dark:border-emerald-700 text-emerald-700 dark:text-emerald-300 font-bold text-xs rounded-xl transition flex items-center gap-1.5 shadow-sm"
+                        title="Download file template urutan pemanggilan wisudawan (format CSV / Excel dengan kolom No & NIM)"
+                    >
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                        </svg>
+                        <span>Download Template</span>
+                    </button>
+
+                    <button
+                        type="button"
+                        @click="triggerFileInput"
+                        :disabled="isUploading"
+                        class="px-4 py-2.5 bg-amber-50 dark:bg-amber-950/40 hover:bg-amber-100 border border-amber-300 dark:border-amber-700 text-amber-700 dark:text-amber-300 font-bold text-xs rounded-xl transition flex items-center gap-1.5 shadow-sm disabled:opacity-50"
+                        title="Upload file template urutan pemanggilan wisudawan untuk memperbarui antrean secara otomatis"
+                    >
+                        <svg v-if="!isUploading" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                        </svg>
+                        <svg v-else class="w-4 h-4 animate-spin text-amber-600" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        <span>{{ isUploading ? 'Mengunggah...' : 'Upload Urutan' }}</span>
+                    </button>
+                    <input
+                        type="file"
+                        ref="fileInputRef"
+                        accept=".csv,.txt,.xlsx,.xls"
+                        @change="handleFileUpload"
+                        class="hidden"
+                    />
+
+                    <button
+                        @click="openStageDisplay"
+                        class="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl transition shadow-sm flex items-center gap-2"
+                    >
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                        </svg>
+                        <span>Buka Layar Presentasi ➔</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Flash Alert Message -->
+            <div v-if="$page.props.flash?.success" class="p-4 rounded-xl bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-200 text-xs font-bold flex items-center justify-between shadow-sm">
+                <span class="flex items-center gap-2">
+                    ✅ {{ $page.props.flash.success }}
+                </span>
+            </div>
+            <div v-if="$page.props.errors?.file" class="p-4 rounded-xl bg-rose-50 dark:bg-rose-950/50 border border-rose-200 dark:border-rose-800 text-rose-800 dark:text-rose-200 text-xs font-bold flex items-center justify-between shadow-sm">
+                <span class="flex items-center gap-2">
+                    ⚠️ {{ $page.props.errors.file }}
+                </span>
             </div>
 
             <!-- Active Candidate Preview Banner -->

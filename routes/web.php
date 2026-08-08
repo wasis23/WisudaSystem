@@ -99,6 +99,8 @@ Route::middleware(['auth', 'role:panitia_presensi,admin_utama'])->prefix('paniti
     Route::get('/stage-display/active-wisudawan', [StageDisplayController::class, 'getActiveWisudawan'])->name('stage-display.get-active');
     Route::get('/stage-control', [StageDisplayController::class, 'control'])->name('stage-control');
     Route::post('/stage-control/active-wisudawan', [StageDisplayController::class, 'setActiveWisudawan'])->name('stage-control.set-active');
+    Route::get('/stage-control/download-template', [StageDisplayController::class, 'downloadTemplate'])->name('stage-control.download-template');
+    Route::post('/stage-control/upload-template', [StageDisplayController::class, 'uploadTemplate'])->name('stage-control.upload-template');
 });
 
 // 3. Wisudawan Routes
