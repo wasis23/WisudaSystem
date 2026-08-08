@@ -23,14 +23,14 @@ class SyncWisudawanFromSiakad extends Command
      *
      * @var string
      */
-    protected $description = 'Tarik data mahasiswa dari SIAKAD database langsung ke tabel wisudawan';
+    protected $description = 'Tarik data mahasiswa dari SIAKAD database lengkap dengan IPK & Judul TA ke tabel wisudawan';
 
     /**
      * Execute the console command.
      */
     public function handle()
     {
-        $this->info('Memulai proses penarikan data mahasiswa dari SIAKAD...');
+        $this->info('Memulai proses penarikan data mahasiswa & nilai dari SIAKAD...');
 
         $activePeriode = $this->option('periode')
             ? PeriodeWisuda::find($this->option('periode'))
@@ -47,6 +47,10 @@ class SyncWisudawanFromSiakad extends Command
             $query = DB::connection('siakad')
                 ->table('viewMahasiswaPt as pt')
                 ->leftJoin('wsia_mahasiswa as m', 'pt.id_pd', '=', 'm.id_pd')
+                ->leftJoin('viewMahasiswaKeluar as mk', 'pt.nipd', '=', 'mk.nipd')
+                ->leftJoin('wsia_kuliah_mahasiswa as km', function ($join) {
+                    $join->on('pt.id_reg_pd', '=', 'km.id_reg_pd');
+                })
                 ->select(
                     'pt.nipd as nim',
                     'pt.nm_pd as nama_lengkap',
@@ -60,7 +64,11 @@ class SyncWisudawanFromSiakad extends Command
                     'm.tgl_lahir as tanggal_lahir',
                     'm.nm_ayah as nama_ayah',
                     'm.nm_ibu_kandung as nama_ibu',
-                    'm.ds_kel as alamat'
+                    'm.ds_kel as alamat',
+                    'km.ipk as siakad_ipk',
+                    'mk.judul_skripsi',
+                    'mk.tgl_keluar',
+                    'mk.tgl_sk_yudisium'
                 );
 
             if ($limit = $this->option('limit')) {
@@ -99,7 +107,33 @@ class SyncWisudawanFromSiakad extends Command
                     ]
                 );
 
-                // 2. Create or update Wisudawan record
+                // 2. Calculate real IPK & Predikat
+                $realIpk = !empty($student->siakad_ipk) && (float)$student->siakad_ipk > 0
+                    ? number_format((float)$student->siakad_ipk, 2, '.', '')
+                    : '3.50';
+
+                $ipkFloat = (float)$realIpk;
+                if ($ipkFloat >= 3.51) {
+                    $predikat = 'Dengan Pujian (Cumlaude)';
+                } elseif ($ipkFloat >= 3.01) {
+                    $predikat = 'Sangat Memuaskan';
+                } elseif ($ipkFloat >= 2.76) {
+                    $predikat = 'Memuaskan';
+                } else {
+                    $predikat = 'Cukup';
+                }
+
+                // 3. Judul Tugas Akhir
+                $judulTa = !empty(trim($student->judul_skripsi ?? '')) && trim($student->judul_skripsi) !== '-'
+                    ? trim($student->judul_skripsi)
+                    : 'Tugas Akhir ' . $prodiName;
+
+                // 4. Tanggal Lulus
+                $tglLulus = !empty($student->tgl_sk_yudisium) && $student->tgl_sk_yudisium !== '0000-00-00'
+                    ? $student->tgl_sk_yudisium
+                    : (!empty($student->tgl_keluar) && $student->tgl_keluar !== '0000-00-00' ? $student->tgl_keluar : date('Y-m-d'));
+
+                // 5. Create or update Wisudawan record
                 Wisudawan::updateOrCreate(
                     ['nim' => $cleanNim],
                     [
@@ -115,10 +149,10 @@ class SyncWisudawanFromSiakad extends Command
                         'nama_ayah'         => $student->nama_ayah ?? null,
                         'nama_ibu'          => $student->nama_ibu ?? null,
                         'alamat'            => $student->alamat ?? null,
-                        'ipk'               => '3.50',
-                        'predikat_kelulusan'=> 'Sangat Memuaskan',
-                        'judul_ta'          => 'Tugas Akhir ' . $prodiName,
-                        'tanggal_lulus'     => date('Y-m-d'),
+                        'ipk'               => $realIpk,
+                        'predikat_kelulusan'=> $predikat,
+                        'judul_ta'          => $judulTa,
+                        'tanggal_lulus'     => $tglLulus,
                         'status_verifikasi' => 'verified',
                         'qr_code_token'     => Str::random(32),
                     ]
@@ -130,7 +164,7 @@ class SyncWisudawanFromSiakad extends Command
 
             $bar->finish();
             $this->newLine();
-            $this->info("Berhasil meretrieve & men-sinkronisasi {$syncedCount} data wisudawan dari SIAKAD!");
+            $this->info("Berhasil meretrieve & men-sinkronisasi {$syncedCount} data wisudawan (termasuk IPK & Judul TA) dari SIAKAD!");
 
             return 0;
         } catch (\Exception $e) {
