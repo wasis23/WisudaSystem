@@ -444,6 +444,7 @@ const submitForm = () => {
                             movable: false,
                             resizable: false
                         }"
+                        image-restriction="none"
                         :auto-zoom="true"
                     />
                 </div>
