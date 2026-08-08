@@ -139,9 +139,6 @@ const openStageDisplay = () => {
                         </svg>
                         <span>Konsol Operator Layar Panggung</span>
                     </h2>
-                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                        Pilih nama wisudawan atau atur urutan pemanggilan via Excel/CSV untuk mengontrol layar proyektor panggung secara real-time.
-                    </p>
                 </div>
 
                 <div class="flex flex-wrap items-center gap-2.5 shrink-0">
