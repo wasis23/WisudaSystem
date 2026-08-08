@@ -14,6 +14,16 @@ const props = defineProps({
 const page = usePage();
 const user = computed(() => page.props.auth.user);
 
+const roleLabel = computed(() => {
+    switch (user.value?.role) {
+        case 'admin_utama': return 'Admin';
+        case 'security': return 'Security';
+        case 'receptionist': return 'Receptionist';
+        case 'wisudawan': return 'Wisudawan';
+        default: return 'Admin';
+    }
+});
+
 const isDarkMode = ref(false);
 const toggleDarkMode = () => {
     isDarkMode.value = !isDarkMode.value;
@@ -222,7 +232,7 @@ const shouldHideSidebar = computed(() => props.hideSidebar);
                             Sistem Informasi Wisuda
                         </h2>
                         <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                            Halo, <span class="font-semibold text-indigo-600 dark:text-indigo-400">{{ user?.name || 'Panitia Wisuda' }}</span> (OPERATOR / PANITIA)
+                            Halo, <span class="font-semibold text-indigo-600 dark:text-indigo-400">{{ user?.name || 'Panitia Wisuda' }}</span> ({{ roleLabel }})
                         </p>
                     </div>
                 </div>
