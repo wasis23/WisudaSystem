@@ -84,18 +84,24 @@ const initCropper = () => {
         autoCropArea: 0.8,
         movable: true,
         zoomable: true,
-        rotatable: false,
+        rotatable: true,           // Mengaktifkan fitur rotasi
         scalable: false,
         guides: true,
         highlight: false,
         cropBoxMovable: false,     // Kotak crop terkunci di tempat
         cropBoxResizable: false,   // Kotak crop TIDAK bisa di-resize sama sekali
-        toggleDragModeOnDblclick: false, // Mencegah dblclick merubah mode
+        toggleDragModeOnDblclick: false,
         background: false,
         responsive: true,
         checkOrientation: true,
     });
 };
+
+const zoomIn = () => cropperInstance?.zoom(0.15);
+const zoomOut = () => cropperInstance?.zoom(-0.15);
+const rotateLeft = () => cropperInstance?.rotate(-90);
+const rotateRight = () => cropperInstance?.rotate(90);
+const resetCrop = () => cropperInstance?.reset();
 
 const applyCrop = () => {
     if (!cropperInstance) return;
@@ -463,34 +469,60 @@ const submitForm = () => {
                 </div>
 
                 <!-- Cropper Area: auto-height mengikuti gambar asli, tidak ada area hitam -->
-                <div class="relative overflow-hidden" style="max-height: 70vh; background: #000;">
+                <div class="relative overflow-hidden bg-slate-950" style="max-height: 60vh;">
                     <img
                         ref="cropperImgRef"
                         src=""
                         alt="Crop Preview"
                         class="block w-full"
-                        style="max-height: 70vh; display: block;"
+                        style="max-height: 60vh; display: block;"
                     />
                 </div>
 
-                <!-- Modal Footer Actions -->
-                <div class="px-6 py-4 border-t border-gray-200 dark:border-gray-700 flex items-center justify-between gap-3">
-                    <div class="text-xs text-gray-500 dark:text-gray-400 space-y-0.5">
-                        <p>🖱️ <strong>Geser</strong> kotak untuk mengatur posisi</p>
-                        <p>🔍 <strong>Scroll</strong> untuk zoom in/out</p>
+                <!-- Quick Control Toolbar (Rotate, Zoom, Reset) -->
+                <div class="px-6 py-2.5 bg-slate-100 dark:bg-slate-800/80 border-t border-b border-gray-200 dark:border-gray-700/60 flex flex-wrap items-center justify-between gap-2">
+                    <div class="flex items-center gap-1.5">
+                        <span class="text-[11px] font-bold text-gray-500 dark:text-gray-400 mr-1 uppercase tracking-wider">Rotasi:</span>
+                        <button type="button" @click="rotateLeft" title="Putar 90° Kiri" class="p-1.5 rounded-lg bg-white dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 border border-gray-300 dark:border-gray-600 text-xs font-bold text-gray-700 dark:text-gray-200 transition flex items-center gap-1">
+                            ↪ 90° Kiri
+                        </button>
+                        <button type="button" @click="rotateRight" title="Putar 90° Kanan" class="p-1.5 rounded-lg bg-white dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 border border-gray-300 dark:border-gray-600 text-xs font-bold text-gray-700 dark:text-gray-200 transition flex items-center gap-1">
+                            ↩ 90° Kanan
+                        </button>
                     </div>
-                    <div class="flex gap-3">
+
+                    <div class="flex items-center gap-1.5">
+                        <span class="text-[11px] font-bold text-gray-500 dark:text-gray-400 mr-1 uppercase tracking-wider">Zoom & Reset:</span>
+                        <button type="button" @click="zoomOut" title="Zoom Out" class="px-2.5 py-1.5 rounded-lg bg-white dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 border border-gray-300 dark:border-gray-600 text-xs font-black text-gray-700 dark:text-gray-200 transition">
+                            ➖ Zoom
+                        </button>
+                        <button type="button" @click="zoomIn" title="Zoom In" class="px-2.5 py-1.5 rounded-lg bg-white dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 border border-gray-300 dark:border-gray-600 text-xs font-black text-gray-700 dark:text-gray-200 transition">
+                            ➕ Zoom
+                        </button>
+                        <button type="button" @click="resetCrop" title="Reset Posisi" class="px-2.5 py-1.5 rounded-lg bg-amber-500/10 dark:bg-amber-500/20 hover:bg-amber-500/20 border border-amber-300 dark:border-amber-700 text-xs font-bold text-amber-700 dark:text-amber-300 transition">
+                            ↺ Reset
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Modal Footer Actions -->
+                <div class="px-6 py-4 flex items-center justify-between gap-3">
+                    <div class="text-[11px] text-gray-500 dark:text-gray-400 space-y-0.5">
+                        <p class="flex items-center gap-1">👤 <strong>Garis Putih:</strong> Posisikan kepala & bahu di dalam garis panduan</p>
+                        <p class="flex items-center gap-1">🖱️ <strong>Geser / Zoom:</strong> Sesuaikan ukuran wajah agar proporsional</p>
+                    </div>
+                    <div class="flex gap-3 shrink-0">
                         <button
                             type="button"
                             @click="closeCropModal"
-                            class="px-5 py-2.5 rounded-xl border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 text-sm font-semibold hover:bg-gray-50 dark:hover:bg-gray-800 transition"
+                            class="px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 text-xs font-bold hover:bg-gray-50 dark:hover:bg-gray-800 transition"
                         >
                             Batal
                         </button>
                         <button
                             type="button"
                             @click="applyCrop"
-                            class="px-6 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold transition shadow-sm"
+                            class="px-6 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-extrabold transition shadow-md shadow-indigo-500/20"
                         >
                             ✅ Gunakan Foto Ini
                         </button>
@@ -507,8 +539,43 @@ const submitForm = () => {
 :deep(.cropper-point) {
     display: none !important;
 }
+
 :deep(.cropper-view-box) {
-    outline: 2px solid #6366f1 !important;
+    outline: 2.5px solid #6366f1 !important;
     outline-color: #6366f1 !important;
+    box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.45);
+}
+
+/* Face Alignment Oval & Shoulder Guide Overlay */
+:deep(.cropper-view-box::after) {
+    content: '';
+    position: absolute;
+    top: 14%;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 52%;
+    height: 48%;
+    border: 2px dashed rgba(255, 255, 255, 0.85);
+    border-radius: 50% 50% 45% 45%;
+    pointer-events: none;
+    box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.4);
+}
+
+:deep(.cropper-view-box::before) {
+    content: 'AREA WAJAH';
+    position: absolute;
+    top: 5%;
+    left: 50%;
+    transform: translateX(-50%);
+    color: #ffffff;
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 0.8px;
+    pointer-events: none;
+    white-space: nowrap;
+    background: rgba(99, 102, 241, 0.85);
+    padding: 2px 10px;
+    border-radius: 999px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.3);
 }
 </style>
