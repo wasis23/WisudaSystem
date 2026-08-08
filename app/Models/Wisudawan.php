@@ -38,6 +38,7 @@ class Wisudawan extends Model
         'is_hadir',
         'is_in_auditorium',
         'waktu_presensi',
+        'waktu_presensi_venue',
         'is_tracer_study_filled',
         'tracer_status_pekerjaan',
         'tracer_nama_instansi',
@@ -53,6 +54,8 @@ class Wisudawan extends Model
         'is_tracer_study_filled' => 'boolean',
         'is_hadir' => 'boolean',
         'is_in_auditorium' => 'boolean',
+        'waktu_presensi' => 'datetime',
+        'waktu_presensi_venue' => 'datetime',
         'jumlah_tamu_tambahan' => 'integer',
         'tamu_tambahan_scanned' => 'integer',
     ];

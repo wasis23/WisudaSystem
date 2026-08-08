@@ -161,71 +161,111 @@ class PresensiWisudawanController extends Controller
 
         $token = trim($request->qr_code_token);
 
+        // 1. Search as Wisudawan Token
         $wisudawan = Wisudawan::with(['programStudi', 'tamuTambahan'])
             ->where('qr_code_token', $token)
             ->orWhere('nim', $token)
             ->first();
 
-        if (!$wisudawan) {
-            return redirect()->back()->with('error', "QR Code Invalid ($token). Data wisudawan tidak ditemukan.");
+        if ($wisudawan) {
+            if ($wisudawan->status_verifikasi !== 'verified') {
+                return redirect()->back()->with('error', "AKSES DITOLAK: Wisudawan {$wisudawan->nama_lengkap} (NIM: {$wisudawan->nim}) belum lolos verifikasi!");
+            }
+
+            $simantaInfo = $this->simantaService->getGraduationStatus($wisudawan->nim);
+            $sikeuQuota = $this->sikeuService->getExtraWisudaQuota($wisudawan->nim);
+
+            // Stage 1 (Security / Gate) vs Stage 2 (Venue Entrance)
+            if (!$wisudawan->is_hadir) {
+                $wisudawan->update([
+                    'is_hadir' => true,
+                    'waktu_presensi' => now(),
+                    'status_kelulusan_simanta' => $simantaInfo['status_lulus'],
+                    'jumlah_tamu_tambahan' => $sikeuQuota['total_allowed_guests'],
+                ]);
+                $message = "🟢 SCAN 1 [SECURITY GATE] BERHASIL! Selamat Datang Wisudawan: {$wisudawan->nama_lengkap} (NIM: {$wisudawan->nim}). Presensi Halaman Depan.";
+            } elseif (!$wisudawan->is_in_auditorium) {
+                $wisudawan->update([
+                    'is_in_auditorium' => true,
+                    'waktu_presensi_venue' => now(),
+                ]);
+                $message = "🔵 SCAN 2 [STAF VENUE] PRESENSI AUDITORIUM BERHASIL! Wisudawan: {$wisudawan->nama_lengkap} (NIM: {$wisudawan->nim}) resmi memasuki venue.";
+            } else {
+                $message = "ℹ️ WISUDAWAN SUDAH DIPRESENSI 2X (GATE & VENUE): {$wisudawan->nama_lengkap} (NIM: {$wisudawan->nim}).";
+            }
+
+            $scannedData = [
+                'nama_lengkap' => $wisudawan->nama_lengkap,
+                'nim' => $wisudawan->nim,
+                'prodi' => $wisudawan->programStudi?->nama_prodi,
+                'pas_foto' => $wisudawan->pas_foto ? "/storage/{$wisudawan->pas_foto}" : null,
+                'nama_ayah' => $siakadInfo['nama_ayah'] ?? $wisudawan->nama_ayah ?? 'Data SIAKAD',
+                'nama_ibu' => $siakadInfo['nama_ibu'] ?? $wisudawan->nama_ibu ?? 'Data SIAKAD',
+                'status_simanta' => $simantaInfo['status_lulus'],
+                'tamu_kuota' => $sikeuQuota['total_allowed_guests'],
+                'snack_porsi' => $sikeuQuota['snack_quota'],
+                'waktu_presensi' => $wisudawan->waktu_presensi ? (is_string($wisudawan->waktu_presensi) ? $wisudawan->waktu_presensi : $wisudawan->waktu_presensi->format('H:i:s WIB')) : now()->format('H:i:s WIB'),
+                'tamu_tambahan_list' => $wisudawan->tamuTambahan ? $wisudawan->tamuTambahan->map(function($t) {
+                    return [
+                        'id' => $t->id,
+                        'nama_tamu' => $t->nama_tamu,
+                        'hubungan' => $t->hubungan,
+                        'is_hadir' => $t->is_hadir,
+                        'snack_diambil' => $t->snack_diambil,
+                    ];
+                }) : [],
+            ];
+
+            if ($request->wantsJson()) {
+                return response()->json([
+                    'status' => 'success',
+                    'message' => $message,
+                    'wisudawan' => $wisudawan,
+                    'scanned_data' => $scannedData,
+                    'siakad' => $siakadInfo,
+                    'simanta' => $simantaInfo,
+                    'sikeu' => $sikeuQuota,
+                ]);
+            }
+
+            return redirect()->back()
+                ->with('success', $message)
+                ->with('scannedWisudawan', $scannedData);
         }
 
-        if ($wisudawan->status_verifikasi !== 'verified') {
-            return redirect()->back()->with('error', "AKSES DITOLAK: Wisudawan {$wisudawan->nama_lengkap} (NIM: {$wisudawan->nim}) belum lolos verifikasi!");
+        // 2. Search as Guest Token
+        $guest = WisudawanTamuTambahan::with('wisudawan.programStudi')
+            ->where('qr_guest_token', $token)
+            ->first();
+
+        if ($guest) {
+            $wisudawanMain = $guest->wisudawan;
+
+            if (!$guest->is_hadir_gate && !$guest->is_hadir) {
+                $guest->update([
+                    'is_hadir_gate' => true,
+                    'is_hadir' => true,
+                    'waktu_presensi_gate' => now(),
+                ]);
+                $message = "🟢 SCAN 1 [SECURITY GATE] BERHASIL! Tamu/Pendamping: {$guest->nama_tamu} (Wisudawan: {$wisudawanMain->nama_lengkap}). Presensi Halaman Depan.";
+            } elseif (!$guest->is_hadir_venue) {
+                $guest->update([
+                    'is_hadir_venue' => true,
+                    'snack_diambil' => true,
+                    'waktu_presensi_venue' => now(),
+                ]);
+                $message = "🔵 SCAN 2 [STAF VENUE] PRESENSI AUDITORIUM BERHASIL! Tamu/Pendamping: {$guest->nama_tamu} (Wisudawan: {$wisudawanMain->nama_lengkap}) & Penyerahan Paket Snack.";
+            } else {
+                $message = "ℹ️ TAMU/PENDAMPING SUDAH DIPRESENSI 2X (GATE & VENUE): {$guest->nama_tamu} (Wisudawan: {$wisudawanMain->nama_lengkap}).";
+            }
+
+            if ($request->wantsJson()) {
+                return response()->json(['status' => 'success', 'message' => $message, 'guest' => $guest]);
+            }
+            return redirect()->back()->with('success', $message);
         }
 
-        // Retrieve extra guest allowance from SIKEU & graduation status from SIMANTA
-        $simantaInfo = $this->simantaService->getGraduationStatus($wisudawan->nim);
-        $sikeuQuota = $this->sikeuService->getExtraWisudaQuota($wisudawan->nim);
-        $siakadInfo = $this->siakadService->getStudentByNim($wisudawan->nim);
-
-        $wisudawan->update([
-            'is_hadir' => true,
-            'is_in_auditorium' => true,
-            'waktu_presensi' => $wisudawan->waktu_presensi ?? now(),
-            'status_kelulusan_simanta' => $simantaInfo['status_lulus'],
-            'jumlah_tamu_tambahan' => $sikeuQuota['total_allowed_guests'],
-        ]);
-
-        $message = "PRESENSI BERHASIL! Selamat Datang, {$wisudawan->nama_lengkap} (NIM: {$wisudawan->nim}). Kuota Tamu & Snack: {$sikeuQuota['snack_quota']} Porsi.";
-
-        $scannedData = [
-            'nama_lengkap' => $wisudawan->nama_lengkap,
-            'nim' => $wisudawan->nim,
-            'prodi' => $wisudawan->programStudi?->nama_prodi,
-            'pas_foto' => $wisudawan->pas_foto ? "/storage/{$wisudawan->pas_foto}" : null,
-            'nama_ayah' => $siakadInfo['nama_ayah'] ?? $wisudawan->nama_ayah ?? 'Data SIAKAD',
-            'nama_ibu' => $siakadInfo['nama_ibu'] ?? $wisudawan->nama_ibu ?? 'Data SIAKAD',
-            'status_simanta' => $simantaInfo['status_lulus'],
-            'tamu_kuota' => $sikeuQuota['total_allowed_guests'],
-            'snack_porsi' => $sikeuQuota['snack_quota'],
-            'waktu_presensi' => $wisudawan->waktu_presensi ? (is_string($wisudawan->waktu_presensi) ? $wisudawan->waktu_presensi : $wisudawan->waktu_presensi->format('H:i:s WIB')) : now()->format('H:i:s WIB'),
-            'tamu_tambahan_list' => $wisudawan->tamuTambahan ? $wisudawan->tamuTambahan->map(function($t) {
-                return [
-                    'id' => $t->id,
-                    'nama_tamu' => $t->nama_tamu,
-                    'hubungan' => $t->hubungan,
-                    'is_hadir' => $t->is_hadir,
-                    'snack_diambil' => $t->snack_diambil,
-                ];
-            }) : [],
-        ];
-
-        if ($request->wantsJson()) {
-            return response()->json([
-                'status' => 'success',
-                'message' => $message,
-                'wisudawan' => $wisudawan,
-                'scanned_data' => $scannedData,
-                'siakad' => $siakadInfo,
-                'simanta' => $simantaInfo,
-                'sikeu' => $sikeuQuota,
-            ]);
-        }
-
-        return redirect()->back()
-            ->with('success', $message)
-            ->with('scannedWisudawan', $scannedData);
+        return redirect()->back()->with('error', "QR Code Invalid ($token). Data wisudawan / tamu undangan tidak ditemukan.");
     }
 
     /**

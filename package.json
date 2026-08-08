@@ -21,6 +21,7 @@
     "dependencies": {
         "cropperjs": "^2.1.1",
         "html5-qrcode": "^2.3.8",
+        "qrcode.vue": "^3.10.0",
         "vue-advanced-cropper": "^2.8.9"
     }
 }

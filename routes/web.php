@@ -11,6 +11,7 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Wisudawan\ExtraGuestController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Str;
 use Inertia\Inertia;
 
 /*
@@ -137,7 +138,34 @@ Route::middleware(['auth', 'role:panitia_presensi,admin_utama'])->prefix('paniti
 Route::middleware(['auth', 'role:wisudawan,admin_utama'])->prefix('wisudawan')->name('wisudawan.')->group(function () {
     Route::get('/dashboard', function () {
         $user = auth()->user();
-        $wisudawan = $user->wisudawan ? $user->wisudawan->load(['programStudi', 'tamuTambahan']) : null;
+        $wisudawan = $user->wisudawan;
+
+        if ($wisudawan) {
+            // Ensure student has a QR token
+            if (!$wisudawan->qr_code_token) {
+                $wisudawan->update(['qr_code_token' => 'WSD-' . ($wisudawan->nim ?? Str::random(8))]);
+            }
+
+            // Auto-generate default 2 guests if wisudawan has filled biodata and has 0 guests
+            if ($wisudawan->tamuTambahan()->count() === 0) {
+                \App\Models\WisudawanTamuTambahan::create([
+                    'wisudawan_id' => $wisudawan->id,
+                    'nama_tamu' => 'Pendamping 1 (Orang Tua/Wali)',
+                    'hubungan' => 'Orang Tua / Wali',
+                    'qr_guest_token' => 'GST-1-' . ($wisudawan->nim ?? Str::random(8)),
+                ]);
+
+                \App\Models\WisudawanTamuTambahan::create([
+                    'wisudawan_id' => $wisudawan->id,
+                    'nama_tamu' => 'Pendamping 2 (Orang Tua/Wali)',
+                    'hubungan' => 'Orang Tua / Wali',
+                    'qr_guest_token' => 'GST-2-' . ($wisudawan->nim ?? Str::random(8)),
+                ]);
+            }
+
+            $wisudawan->load(['programStudi', 'tamuTambahan']);
+        }
+
         return Inertia::render('Wisudawan/Dashboard', [
             'wisudawan' => $wisudawan,
             'stageConfig' => \App\Models\StageLayoutConfig::getDefaultConfig(),

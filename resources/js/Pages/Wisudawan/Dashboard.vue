@@ -2,6 +2,7 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import { Head, usePage, Link } from '@inertiajs/vue3';
 import { computed } from 'vue';
+import QrcodeVue from 'qrcode.vue';
 
 const props = defineProps({
     wisudawan: Object,
@@ -11,6 +12,14 @@ const page = usePage();
 const user = computed(() => page.props.auth.user);
 const wisudawanData = computed(() => props.wisudawan || user.value?.wisudawan);
 const isTracerStudyFilled = computed(() => Boolean(wisudawanData.value?.is_tracer_study_filled));
+const isBiodataFilled = computed(() => Boolean(wisudawanData.value?.pas_foto || wisudawanData.value?.nim));
+
+const guest1 = computed(() => wisudawanData.value?.tamu_tambahan?.[0]);
+const guest2 = computed(() => wisudawanData.value?.tamu_tambahan?.[1]);
+
+const printTickets = () => {
+    window.print();
+};
 </script>
 
 <template>
@@ -167,6 +176,193 @@ const isTracerStudyFilled = computed(() => Boolean(wisudawanData.value?.is_trace
                         </div>
                     </div>
 
+                </div>
+
+                <!-- DIGITAL BARCODE & E-TICKET SECTION -->
+                <div v-if="isBiodataFilled" class="bg-white dark:bg-slate-800 rounded-3xl border border-slate-200 dark:border-slate-700 p-6 sm:p-8 shadow-sm space-y-6">
+                    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-slate-100 dark:border-slate-700">
+                        <div>
+                            <div class="flex items-center gap-2">
+                                <span class="px-3 py-1 bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 font-bold text-xs rounded-full">
+                                    ✓ BIODATA TERVERIFIKASI
+                                </span>
+                                <span class="text-xs text-slate-400">3 Barcode Presensi Digital (1 Mahasiswa + 2 Pendamping)</span>
+                            </div>
+                            <h3 class="text-xl font-black text-slate-900 dark:text-white mt-1 flex items-center gap-2">
+                                🎫 E-Ticket & Barcode Presensi Wisuda
+                            </h3>
+                            <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                                Barcode ini berlaku untuk <strong>2x Scan Presensi</strong>: 1️⃣ Oleh Security di Halaman Depan & 2️⃣ Oleh Staf Presensi di Pintu Masuk Venue Auditorium.
+                            </p>
+                        </div>
+
+                        <button
+                            @click="printTickets"
+                            class="px-5 py-2.5 bg-slate-900 hover:bg-slate-800 dark:bg-indigo-600 dark:hover:bg-indigo-700 text-white font-bold text-xs rounded-xl transition flex items-center gap-2 shrink-0 shadow-sm"
+                        >
+                            <span>🖨️</span>
+                            <span>Cetak / Simpan E-Ticket (PDF)</span>
+                        </button>
+                    </div>
+
+                    <!-- 3 BARCODES GRID -->
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6" id="ticket-print-area">
+                        
+                        <!-- CARD 1: BARCODE MAHASISWA -->
+                        <div class="bg-gradient-to-b from-indigo-50/50 to-white dark:from-slate-900/50 dark:to-slate-800 rounded-2xl border-2 border-indigo-200 dark:border-indigo-800 p-5 flex flex-col items-center text-center space-y-4 shadow-sm relative overflow-hidden">
+                            <div class="w-full bg-indigo-600 text-white py-1.5 px-3 rounded-xl font-extrabold text-xs uppercase tracking-wider">
+                                🎓 Mahasiswa Wisudawan
+                            </div>
+
+                            <div class="bg-white p-3 rounded-2xl border border-indigo-100 shadow-inner">
+                                <QrcodeVue
+                                    :value="wisudawanData?.qr_code_token || ('WSD-' + (wisudawanData?.nim || 'STUDENT'))"
+                                    :size="150"
+                                    level="H"
+                                    render-as="svg"
+                                />
+                            </div>
+
+                            <div>
+                                <h4 class="font-extrabold text-sm text-slate-900 dark:text-white">
+                                    {{ wisudawanData?.nama_lengkap }}
+                                </h4>
+                                <p class="text-xs font-mono font-bold text-indigo-600 dark:text-indigo-400 mt-0.5">
+                                    NIM: {{ wisudawanData?.nim }}
+                                </p>
+                                <span class="text-[10px] text-slate-400 block mt-1 font-mono bg-slate-100 dark:bg-slate-700 px-2 py-0.5 rounded">
+                                    ID: {{ wisudawanData?.qr_code_token }}
+                                </span>
+                            </div>
+
+                            <!-- SCAN STATUS TIMELINE -->
+                            <div class="w-full pt-3 border-t border-slate-100 dark:border-slate-700 space-y-1.5 text-left text-[11px]">
+                                <div class="flex items-center justify-between">
+                                    <span class="text-slate-500">1. Security (Gate):</span>
+                                    <span :class="['font-bold px-2 py-0.5 rounded-full text-[10px]', wisudawanData?.is_hadir ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800']">
+                                        {{ wisudawanData?.is_hadir ? '✓ Scanned' : '⏳ Belum Scan' }}
+                                    </span>
+                                </div>
+                                <div class="flex items-center justify-between">
+                                    <span class="text-slate-500">2. Staf Venue (Auditorium):</span>
+                                    <span :class="['font-bold px-2 py-0.5 rounded-full text-[10px]', wisudawanData?.is_in_auditorium ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800']">
+                                        {{ wisudawanData?.is_in_auditorium ? '✓ Scanned' : '⏳ Belum Scan' }}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- CARD 2: PENDAMPING 1 -->
+                        <div class="bg-gradient-to-b from-blue-50/50 to-white dark:from-slate-900/50 dark:to-slate-800 rounded-2xl border-2 border-blue-200 dark:border-blue-800 p-5 flex flex-col items-center text-center space-y-4 shadow-sm relative overflow-hidden">
+                            <div class="w-full bg-blue-600 text-white py-1.5 px-3 rounded-xl font-extrabold text-xs uppercase tracking-wider">
+                                👥 Pendamping / Orang Tua #1
+                            </div>
+
+                            <div class="bg-white p-3 rounded-2xl border border-blue-100 shadow-inner">
+                                <QrcodeVue
+                                    :value="guest1?.qr_guest_token || ('GST-1-' + (wisudawanData?.nim || 'GUEST1'))"
+                                    :size="150"
+                                    level="H"
+                                    render-as="svg"
+                                />
+                            </div>
+
+                            <div>
+                                <h4 class="font-extrabold text-sm text-slate-900 dark:text-white">
+                                    {{ guest1?.nama_tamu || 'Pendamping 1 (Orang Tua/Wali)' }}
+                                </h4>
+                                <p class="text-xs font-semibold text-blue-600 dark:text-blue-400 mt-0.5">
+                                    {{ guest1?.hubungan || 'Orang Tua / Wali' }}
+                                </p>
+                                <span class="text-[10px] text-slate-400 block mt-1 font-mono bg-slate-100 dark:bg-slate-700 px-2 py-0.5 rounded">
+                                    ID: {{ guest1?.qr_guest_token || ('GST-1-' + wisudawanData?.nim) }}
+                                </span>
+                            </div>
+
+                            <!-- SCAN STATUS TIMELINE -->
+                            <div class="w-full pt-3 border-t border-slate-100 dark:border-slate-700 space-y-1.5 text-left text-[11px]">
+                                <div class="flex items-center justify-between">
+                                    <span class="text-slate-500">1. Security (Gate):</span>
+                                    <span :class="['font-bold px-2 py-0.5 rounded-full text-[10px]', (guest1?.is_hadir_gate || guest1?.is_hadir) ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800']">
+                                        {{ (guest1?.is_hadir_gate || guest1?.is_hadir) ? '✓ Scanned' : '⏳ Belum Scan' }}
+                                    </span>
+                                </div>
+                                <div class="flex items-center justify-between">
+                                    <span class="text-slate-500">2. Staf Venue (Auditorium):</span>
+                                    <span :class="['font-bold px-2 py-0.5 rounded-full text-[10px]', guest1?.is_hadir_venue ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800']">
+                                        {{ guest1?.is_hadir_venue ? '✓ Scanned & Snack' : '⏳ Belum Scan' }}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- CARD 3: PENDAMPING 2 -->
+                        <div class="bg-gradient-to-b from-purple-50/50 to-white dark:from-slate-900/50 dark:to-slate-800 rounded-2xl border-2 border-purple-200 dark:border-purple-800 p-5 flex flex-col items-center text-center space-y-4 shadow-sm relative overflow-hidden">
+                            <div class="w-full bg-purple-600 text-white py-1.5 px-3 rounded-xl font-extrabold text-xs uppercase tracking-wider">
+                                👥 Pendamping / Orang Tua #2
+                            </div>
+
+                            <div class="bg-white p-3 rounded-2xl border border-purple-100 shadow-inner">
+                                <QrcodeVue
+                                    :value="guest2?.qr_guest_token || ('GST-2-' + (wisudawanData?.nim || 'GUEST2'))"
+                                    :size="150"
+                                    level="H"
+                                    render-as="svg"
+                                />
+                            </div>
+
+                            <div>
+                                <h4 class="font-extrabold text-sm text-slate-900 dark:text-white">
+                                    {{ guest2?.nama_tamu || 'Pendamping 2 (Orang Tua/Wali)' }}
+                                </h4>
+                                <p class="text-xs font-semibold text-purple-600 dark:text-purple-400 mt-0.5">
+                                    {{ guest2?.hubungan || 'Orang Tua / Wali' }}
+                                </p>
+                                <span class="text-[10px] text-slate-400 block mt-1 font-mono bg-slate-100 dark:bg-slate-700 px-2 py-0.5 rounded">
+                                    ID: {{ guest2?.qr_guest_token || ('GST-2-' + wisudawanData?.nim) }}
+                                </span>
+                            </div>
+
+                            <!-- SCAN STATUS TIMELINE -->
+                            <div class="w-full pt-3 border-t border-slate-100 dark:border-slate-700 space-y-1.5 text-left text-[11px]">
+                                <div class="flex items-center justify-between">
+                                    <span class="text-slate-500">1. Security (Gate):</span>
+                                    <span :class="['font-bold px-2 py-0.5 rounded-full text-[10px]', (guest2?.is_hadir_gate || guest2?.is_hadir) ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800']">
+                                        {{ (guest2?.is_hadir_gate || guest2?.is_hadir) ? '✓ Scanned' : '⏳ Belum Scan' }}
+                                    </span>
+                                </div>
+                                <div class="flex items-center justify-between">
+                                    <span class="text-slate-500">2. Staf Venue (Auditorium):</span>
+                                    <span :class="['font-bold px-2 py-0.5 rounded-full text-[10px]', guest2?.is_hadir_venue ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800']">
+                                        {{ guest2?.is_hadir_venue ? '✓ Scanned & Snack' : '⏳ Belum Scan' }}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
+                <!-- ALERT IF BIODATA IS NOT FILLED -->
+                <div v-else class="bg-amber-50 dark:bg-amber-950/40 border-2 border-amber-300 dark:border-amber-700/60 rounded-3xl p-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+                    <div class="flex items-center gap-3">
+                        <span class="text-3xl">🎫</span>
+                        <div>
+                            <h4 class="font-extrabold text-slate-900 dark:text-white text-sm">
+                                Barcode Presensi Digital Belum Tersedia
+                            </h4>
+                            <p class="text-xs text-slate-600 dark:text-slate-300 mt-0.5">
+                                Harap selesaikan pengisian <strong>Biodata & Live Preview Layar Wisuda</strong> terlebih dahulu untuk memunculkan Barcode Presensi Wisudawan & 2 Pendamping.
+                            </p>
+                        </div>
+                    </div>
+                    <Link
+                        v-if="isTracerStudyFilled"
+                        :href="route('wisudawan.pendaftaran.form')"
+                        class="px-5 py-2.5 bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs rounded-xl transition shrink-0"
+                    >
+                        Isi Biodata Sekarang →
+                    </Link>
                 </div>
 
             </div>
