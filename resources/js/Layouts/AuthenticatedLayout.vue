@@ -74,9 +74,6 @@ const roleBadgeClass = computed(() => {
                                     <NavLink :href="route('admin.periode.index')" :active="route().current('admin.periode.*')">
                                         Periode Wisuda
                                     </NavLink>
-                                    <NavLink :href="route('admin.prodi.index')" :active="route().current('admin.prodi.*')">
-                                        Program Studi
-                                    </NavLink>
                                     <NavLink :href="route('admin.stage-layout.edit')" :active="route().current('admin.stage-layout.*')">
                                         Presisi Layar
                                     </NavLink>
@@ -217,9 +214,6 @@ const roleBadgeClass = computed(() => {
                         <template v-if="user?.role === 'admin_utama'">
                             <ResponsiveNavLink :href="route('admin.periode.index')" :active="route().current('admin.periode.*')">
                                 Periode Wisuda
-                            </ResponsiveNavLink>
-                            <ResponsiveNavLink :href="route('admin.prodi.index')" :active="route().current('admin.prodi.*')">
-                                Program Studi
                             </ResponsiveNavLink>
                             <ResponsiveNavLink :href="route('admin.stage-layout.edit')" :active="route().current('admin.stage-layout.*')">
                                 Presisi Layar

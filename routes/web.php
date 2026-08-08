@@ -3,7 +3,6 @@
 use App\Http\Controllers\Admin\BukuKenanganController;
 use App\Http\Controllers\Admin\DutyAssignmentController;
 use App\Http\Controllers\Admin\PeriodeWisudaController;
-use App\Http\Controllers\Admin\ProgramStudiController;
 use App\Http\Controllers\Admin\StageLayoutConfigController;
 use App\Http\Controllers\KioskScanController;
 use App\Http\Controllers\Panitia\PresensiWisudawanController;
@@ -82,11 +81,6 @@ Route::middleware(['auth', 'role:admin_utama'])->prefix('admin')->name('admin.')
     Route::post('/periode', [PeriodeWisudaController::class, 'store'])->name('periode.store');
     Route::patch('/periode/{id}/toggle', [PeriodeWisudaController::class, 'toggleActive'])->name('periode.toggle');
 
-    // Program Studi Management
-    Route::get('/prodi', [ProgramStudiController::class, 'index'])->name('prodi.index');
-    Route::post('/prodi', [ProgramStudiController::class, 'store'])->name('prodi.store');
-    Route::put('/prodi/{id}', [ProgramStudiController::class, 'update'])->name('prodi.update');
-
     // Precision Stage Layout Configurator
     Route::get('/stage-layout', [StageLayoutConfigController::class, 'edit'])->name('stage-layout.edit');
     Route::post('/stage-layout', [StageLayoutConfigController::class, 'update'])->name('stage-layout.update');
@@ -135,6 +129,8 @@ Route::middleware(['auth', 'role:panitia_presensi,admin_utama'])->prefix('paniti
     Route::get('/stage-display/active-wisudawan', [StageDisplayController::class, 'getActiveWisudawan'])->name('stage-display.get-active');
     Route::get('/stage-control', [StageDisplayController::class, 'control'])->name('stage-control');
     Route::post('/stage-control/active-wisudawan', [StageDisplayController::class, 'setActiveWisudawan'])->name('stage-control.set-active');
+    Route::get('/stage-control/download-template', [StageDisplayController::class, 'downloadTemplate'])->name('stage-control.download-template');
+    Route::post('/stage-control/upload-template', [StageDisplayController::class, 'uploadTemplate'])->name('stage-control.upload-template');
 });
 
 // 5. Wisudawan Routes

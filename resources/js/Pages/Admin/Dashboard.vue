@@ -22,7 +22,7 @@ const tracerPercentage = computed(() => {
         <div class="space-y-6">
             
             <!-- TOP STATS CARDS GRID (EXACT PKL DASHBOARD CARD STYLE) -->
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-6">
                 
                 <!-- KPI 1: Total Wisudawan -->
                 <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-5 transition hover:shadow-md">
@@ -117,8 +117,6 @@ const tracerPercentage = computed(() => {
                         <div class="bg-emerald-500 h-full rounded-full transition-all duration-500" :style="{ width: `${tracerPercentage}%` }"></div>
                     </div>
                 </div>
-
-            </div>
 
             <!-- MAIN MODULES SECTION -->
             <div class="space-y-4">
