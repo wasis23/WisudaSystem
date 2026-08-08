@@ -117,6 +117,7 @@ const tracerPercentage = computed(() => {
                         <div class="bg-emerald-500 h-full rounded-full transition-all duration-500" :style="{ width: `${tracerPercentage}%` }"></div>
                     </div>
                 </div>
+            </div>
 
             <!-- MAIN MODULES SECTION -->
             <div class="space-y-4">
@@ -189,7 +190,6 @@ const tracerPercentage = computed(() => {
                             </p>
                         </div>
                     </div>
-
                 </div>
             </div>
 
