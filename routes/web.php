@@ -38,8 +38,6 @@ Route::get('/dashboard', function () {
         return redirect()->route('security.scan');
     } elseif ($user->role === 'receptionist') {
         return redirect()->route('receptionist.scan');
-    } elseif ($user->role === 'panitia_presensi') {
-        return redirect()->route('panitia.presensi');
     }
 
     $activePeriode = \App\Models\PeriodeWisuda::getActive() ?? \App\Models\PeriodeWisuda::latest()->first();
@@ -103,20 +101,20 @@ Route::middleware(['auth', 'role:admin_utama'])->prefix('admin')->name('admin.')
 });
 
 // 2. Security Scan Gate Route
-Route::middleware(['auth', 'role:security,admin_utama,panitia_presensi'])->prefix('security')->name('security.')->group(function () {
+Route::middleware(['auth', 'role:security,admin_utama'])->prefix('security')->name('security.')->group(function () {
     Route::get('/scan', [PresensiWisudawanController::class, 'mobileSecurityScan'])->name('scan');
     Route::post('/scan', [PresensiWisudawanController::class, 'scan'])->name('scan.process');
 });
 
 // 3. Receptionist Scan Gate Route
-Route::middleware(['auth', 'role:receptionist,admin_utama,panitia_presensi'])->prefix('receptionist')->name('receptionist.')->group(function () {
+Route::middleware(['auth', 'role:receptionist,admin_utama'])->prefix('receptionist')->name('receptionist.')->group(function () {
     Route::get('/scan', [PresensiWisudawanController::class, 'mobileReceptionistScan'])->name('scan');
     Route::post('/scan', [PresensiWisudawanController::class, 'scan'])->name('scan.process');
     Route::post('/guest-presensi/{id}', [PresensiWisudawanController::class, 'processGuestAttendance'])->name('guest.toggle');
 });
 
-// 4. Panitia Presensi & Stage Routes
-Route::middleware(['auth', 'role:panitia_presensi,admin_utama'])->prefix('panitia')->name('panitia.')->group(function () {
+// 4. Stage Control Routes (Admin Utama)
+Route::middleware(['auth', 'role:admin_utama'])->prefix('panitia')->name('panitia.')->group(function () {
     // Presensi Gate (Barcode / Kamera Scan)
     Route::get('/presensi', [PresensiWisudawanController::class, 'index'])->name('presensi');
     Route::get('/presensi/gate', [PresensiWisudawanController::class, 'index'])->name('presensi.gate');

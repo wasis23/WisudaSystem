@@ -46,11 +46,6 @@ class User extends Authenticatable
         return $this->role === 'admin_utama';
     }
 
-    public function isPanitiaPresensi(): bool
-    {
-        return $this->role === 'panitia_presensi';
-    }
-
     public function isWisudawan(): bool
     {
         return $this->role === 'wisudawan';

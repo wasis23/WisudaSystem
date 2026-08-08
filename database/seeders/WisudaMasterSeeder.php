@@ -96,11 +96,11 @@ class WisudaMasterSeeder extends Seeder
         );
 
         User::firstOrCreate(
-            ['email' => 'panitia.presensi@poltekindonusa.ac.id'],
+            ['email' => 'security@poltekindonusa.ac.id'],
             [
-                'name' => 'Panitia Gate Presensi',
+                'name' => 'Security Gate Presensi',
                 'password' => Hash::make('password'),
-                'role' => 'panitia_presensi',
+                'role' => 'security',
             ]
         );
 

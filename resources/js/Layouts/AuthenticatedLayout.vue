@@ -14,7 +14,6 @@ const user = computed(() => page.props.auth.user);
 const roleLabel = computed(() => {
     switch (user.value?.role) {
         case 'admin_utama': return 'Admin Utama';
-        case 'panitia_presensi': return 'Panitia Presensi';
         case 'security': return 'Security Officer';
         case 'receptionist': return 'Receptionist';
         case 'wisudawan': return 'Wisudawan';
@@ -25,7 +24,6 @@ const roleLabel = computed(() => {
 const roleBadgeClass = computed(() => {
     switch (user.value?.role) {
         case 'admin_utama': return 'bg-purple-100 text-purple-800 dark:bg-purple-900/60 dark:text-purple-300 border-purple-200 dark:border-purple-700';
-        case 'panitia_presensi': return 'bg-amber-100 text-amber-800 dark:bg-amber-900/60 dark:text-amber-300 border-amber-200 dark:border-amber-700';
         case 'security': return 'bg-amber-500/20 text-amber-600 dark:text-amber-400 border-amber-300 dark:border-amber-700';
         case 'receptionist': return 'bg-purple-500/20 text-purple-600 dark:text-purple-400 border-purple-300 dark:border-purple-700';
         default: return 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900/60 dark:text-indigo-300 border-indigo-200 dark:border-indigo-700';
@@ -94,15 +92,6 @@ const roleBadgeClass = computed(() => {
                                 <template v-if="user?.role === 'receptionist'">
                                     <NavLink :href="route('receptionist.scan')" :active="route().current('receptionist.scan')">
                                         👩‍💼 Scan Reception & Snack
-                                    </NavLink>
-                                </template>
-
-                                <template v-if="user?.role === 'panitia_presensi'">
-                                    <NavLink :href="route('panitia.presensi')" :active="route().current('panitia.presensi')">
-                                        Scanner QR Gate
-                                    </NavLink>
-                                    <NavLink :href="route('panitia.stage-control')" :active="route().current('panitia.stage-control')">
-                                        Stage Console
                                     </NavLink>
                                 </template>
 

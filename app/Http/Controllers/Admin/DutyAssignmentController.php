@@ -75,11 +75,7 @@ class DutyAssignmentController extends Controller
         $email = $dutyAssignment->simpeg_username . '@poltekindonusa.ac.id';
         $user = User::where('email', $email)->first();
         if ($user) {
-            if (!$dutyAssignment->is_active) {
-                $user->update(['role' => 'panitia_presensi']);
-            } else {
-                $user->update(['role' => $dutyAssignment->duty_role]);
-            }
+            $user->update(['role' => $dutyAssignment->duty_role]);
         }
 
         return redirect()->back()->with('success', 'Status tugas pegawai berhasil diperbarui.');

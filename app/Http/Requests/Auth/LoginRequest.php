@@ -116,7 +116,13 @@ class LoginRequest extends FormRequest
                     })
                     ->first();
 
-                $role = $duty ? $duty->duty_role : 'panitia_presensi';
+                if (!$duty) {
+                    throw ValidationException::withMessages([
+                        'email' => 'Akun pegawai Anda (' . ($simpegUser['nama'] ?? $nidn) . ') belum ditugaskan sebagai Security atau Receptionist oleh Admin Utama.',
+                    ]);
+                }
+
+                $role = $duty->duty_role;
 
                 $user = User::updateOrCreate(
                     ['email' => $email],
@@ -169,7 +175,13 @@ class LoginRequest extends FormRequest
                     })
                     ->first();
 
-                $role = $duty ? $duty->duty_role : 'panitia_presensi';
+                if (!$duty) {
+                    throw ValidationException::withMessages([
+                        'email' => 'Akun pegawai Anda (' . ($simpegUser['nama'] ?? $nidn) . ') belum ditugaskan sebagai Security atau Receptionist oleh Admin Utama.',
+                    ]);
+                }
+
+                $role = $duty->duty_role;
 
                 $user = User::updateOrCreate(
                     ['email' => $email],
