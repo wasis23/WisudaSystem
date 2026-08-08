@@ -4,6 +4,8 @@ namespace App\Http\Requests\Auth;
 
 use App\Models\DutyAssignment;
 use App\Models\User;
+use App\Models\Wisudawan;
+use App\Services\SiakadAuthService;
 use App\Services\SimpegIntegrationService;
 use Illuminate\Auth\Events\Lockout;
 use Illuminate\Contracts\Validation\ValidationRule;
@@ -16,29 +18,30 @@ use Illuminate\Validation\ValidationException;
 
 class LoginRequest extends FormRequest
 {
-    /**
-     * Determine if the user is authorized to make this request.
-     */
     public function authorize(): bool
     {
         return true;
     }
 
     /**
-     * Get the validation rules that apply to the request.
-     *
      * @return array<string, ValidationRule|array<mixed>|string>
      */
     public function rules(): array
     {
         return [
-            'email' => ['required', 'string'],
+            'email'    => ['required', 'string'],
             'password' => ['required', 'string'],
         ];
     }
 
     /**
      * Attempt to authenticate the request's credentials.
+     *
+     * Strategy:
+     *  1. Input diawali huruf  → NIM Mahasiswa → autentikasi via SIAKAD API
+     *  2. Input semua angka    → NIDN Pegawai/Dosen → autentikasi via SIMPEG API
+     *  3. Input mengandung '@' → Email Admin → autentikasi DB lokal
+     *  4. Fallback             → DB lokal biasa
      *
      * @throws ValidationException
      */
@@ -47,12 +50,95 @@ class LoginRequest extends FormRequest
         $this->ensureIsNotRateLimited();
 
         $loginInput = trim($this->input('email'));
-        $password = $this->input('password');
+        $password   = $this->input('password');
 
-        // 1. First try standard local Laravel authentication
+        // ─────────────────────────────────────────────────────────────
+        // STRATEGY A: NIM (diawali huruf) → Mahasiswa via SIAKAD
+        // ─────────────────────────────────────────────────────────────
+        if (preg_match('/^[a-zA-Z]/', $loginInput)) {
+            $nim = strtoupper($loginInput);
+            $siakadAuth = app(SiakadAuthService::class);
+            $mahasiswaData = $siakadAuth->verifyMahasiswa($nim, $password);
+
+            if ($mahasiswaData) {
+                $email = $mahasiswaData['email'] ?? ($nim . '@poltekindonusa.ac.id');
+
+                // Create/update local user record for the mahasiswa
+                $user = User::updateOrCreate(
+                    ['email' => $email],
+                    [
+                        'name'     => $mahasiswaData['nama'],
+                        'password' => Hash::make($password),
+                        'role'     => 'wisudawan',
+                    ]
+                );
+
+                // Auto-create or link Wisudawan profile if not exists
+                if (!$user->wisudawan) {
+                    Wisudawan::firstOrCreate(
+                        ['nim' => $nim],
+                        [
+                            'user_id'    => $user->id,
+                            'nama_lengkap' => $mahasiswaData['nama'],
+                        ]
+                    );
+                } else {
+                    // Ensure user_id linkage is correct
+                    $user->wisudawan()->update(['user_id' => $user->id]);
+                }
+
+                Auth::login($user, $this->boolean('remember'));
+                RateLimiter::clear($this->throttleKey());
+                return;
+            }
+
+            // NIM format tapi SIAKAD gagal → lanjut ke fallback lokal
+        }
+
+        // ─────────────────────────────────────────────────────────────
+        // STRATEGY B: NIDN (semua angka) → Dosen/Staf via SIMPEG
+        // ─────────────────────────────────────────────────────────────
+        elseif (preg_match('/^[0-9]+$/', $loginInput)) {
+            $nidn = $loginInput;
+            $simpegService = app(SimpegIntegrationService::class);
+            $simpegUser = $simpegService->verifyCredentials($nidn, $password);
+
+            if ($simpegUser) {
+                $simpegUsername = $simpegUser['username'] ?? $nidn;
+                $email = $simpegUsername . '@poltekindonusa.ac.id';
+
+                $duty = DutyAssignment::where('is_active', true)
+                    ->where(function ($q) use ($nidn, $simpegUsername, $simpegUser) {
+                        $q->where('simpeg_username', $nidn)
+                          ->orWhere('simpeg_username', $simpegUsername)
+                          ->orWhere('simpeg_nip', $simpegUser['nip'] ?? '')
+                          ->orWhere('simpeg_id_sdm', $simpegUser['id_sdm'] ?? '');
+                    })
+                    ->first();
+
+                $role = $duty ? $duty->duty_role : 'panitia_presensi';
+
+                $user = User::updateOrCreate(
+                    ['email' => $email],
+                    [
+                        'name'     => $simpegUser['nama'] ?? $simpegUsername,
+                        'password' => Hash::make($password),
+                        'role'     => $role,
+                    ]
+                );
+
+                Auth::login($user, $this->boolean('remember'));
+                RateLimiter::clear($this->throttleKey());
+                return;
+            }
+        }
+
+        // ─────────────────────────────────────────────────────────────
+        // STRATEGY C: Email / Fallback → DB Lokal (Admin Utama, dll.)
+        // ─────────────────────────────────────────────────────────────
         $isEmail = filter_var($loginInput, FILTER_VALIDATE_EMAIL);
         $credentials = [
-            $isEmail ? 'email' : 'email' => $isEmail ? $loginInput : $loginInput . '@poltekindonusa.ac.id',
+            'email'    => $isEmail ? $loginInput : $loginInput . '@poltekindonusa.ac.id',
             'password' => $password,
         ];
 
@@ -61,43 +147,49 @@ class LoginRequest extends FormRequest
             return;
         }
 
-        // 2. Try SIMPEG integration API lookup for all SIMPEG Officers / Duty Officers
-        $usernameClean = str_replace('@poltekindonusa.ac.id', '', $loginInput);
-        $simpegService = app(SimpegIntegrationService::class);
-        $simpegUser = $simpegService->verifyCredentials($usernameClean, $password);
+        // ─────────────────────────────────────────────────────────────
+        // STRATEGY D: Username non-angka non-huruf (pegawai manual)
+        //             → SIMPEG API juga (username simpeg seperti "andi.susanto")
+        // ─────────────────────────────────────────────────────────────
+        if (!$isEmail) {
+            $usernameClean = str_replace('@poltekindonusa.ac.id', '', $loginInput);
+            $simpegService = app(SimpegIntegrationService::class);
+            $simpegUser = $simpegService->verifyCredentials($usernameClean, $password);
 
-        if ($simpegUser) {
-            $simpegUsername = $simpegUser['username'] ?? $usernameClean;
-            $duty = DutyAssignment::where('is_active', true)
-                ->where(function ($q) use ($usernameClean, $simpegUsername, $simpegUser) {
-                    $q->where('simpeg_username', $usernameClean)
-                      ->orWhere('simpeg_username', $simpegUsername)
-                      ->orWhere('simpeg_nip', $simpegUser['nip'] ?? '')
-                      ->orWhere('simpeg_id_sdm', $simpegUser['id_sdm'] ?? '');
-                })
-                ->first();
+            if ($simpegUser) {
+                $simpegUsername = $simpegUser['username'] ?? $usernameClean;
+                $email = $simpegUsername . '@poltekindonusa.ac.id';
 
-            $role = $duty ? $duty->duty_role : 'panitia_presensi';
-            $email = $simpegUsername . '@poltekindonusa.ac.id';
+                $duty = DutyAssignment::where('is_active', true)
+                    ->where(function ($q) use ($usernameClean, $simpegUsername, $simpegUser) {
+                        $q->where('simpeg_username', $usernameClean)
+                          ->orWhere('simpeg_username', $simpegUsername)
+                          ->orWhere('simpeg_nip', $simpegUser['nip'] ?? '')
+                          ->orWhere('simpeg_id_sdm', $simpegUser['id_sdm'] ?? '');
+                    })
+                    ->first();
 
-            $user = User::updateOrCreate(
-                ['email' => $email],
-                [
-                    'name' => $simpegUser['nama'] ?? $usernameClean,
-                    'password' => Hash::make($password),
-                    'role' => $role,
-                ]
-            );
+                $role = $duty ? $duty->duty_role : 'panitia_presensi';
 
-            Auth::login($user, $this->boolean('remember'));
-            RateLimiter::clear($this->throttleKey());
-            return;
+                $user = User::updateOrCreate(
+                    ['email' => $email],
+                    [
+                        'name'     => $simpegUser['nama'] ?? $usernameClean,
+                        'password' => Hash::make($password),
+                        'role'     => $role,
+                    ]
+                );
+
+                Auth::login($user, $this->boolean('remember'));
+                RateLimiter::clear($this->throttleKey());
+                return;
+            }
         }
 
         RateLimiter::hit($this->throttleKey());
 
         throw ValidationException::withMessages([
-            'email' => trans('auth.failed'),
+            'email' => 'Kredensial tidak valid. Pastikan NIM / NIDN / Email dan Password Anda benar.',
         ]);
     }
 
@@ -124,11 +216,8 @@ class LoginRequest extends FormRequest
         ]);
     }
 
-    /**
-     * Get the rate limiting throttle key for the request.
-     */
     public function throttleKey(): string
     {
-        return Str::transliterate(Str::lower($this->string('email')).'|'.$this->ip());
+        return Str::transliterate(Str::lower($this->string('email')) . '|' . $this->ip());
     }
 }

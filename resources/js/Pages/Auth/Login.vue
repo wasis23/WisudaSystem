@@ -4,7 +4,7 @@ import InputError from '@/Components/InputError.vue';
 import InputLabel from '@/Components/InputLabel.vue';
 import TextInput from '@/Components/TextInput.vue';
 import { Head, Link, useForm } from '@inertiajs/vue3';
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
 
 defineProps({
     canResetPassword: {
@@ -19,6 +19,16 @@ const form = useForm({
     email: '',
     password: '',
     remember: false,
+});
+
+// Deteksi tipe input secara reaktif untuk petunjuk dinamis
+const inputType = computed(() => {
+    const val = form.email.trim();
+    if (!val) return null;
+    if (/^[a-zA-Z]/.test(val)) return 'nim';      // Diawali huruf → NIM Mahasiswa
+    if (/^[0-9]+$/.test(val)) return 'nidn';      // Semua angka → NIDN Dosen/Staf
+    if (/@/.test(val)) return 'email';            // Mengandung @ → Email Admin
+    return 'username';                            // Lainnya → Username SIMPEG
 });
 
 const showPassword = ref(false);
@@ -80,12 +90,16 @@ const submit = () => {
                     </div>
                     <ul class="space-y-1.5 text-[11px] text-blue-200/90">
                         <li class="flex items-start gap-2">
-                            <span class="text-amber-400 font-bold">•</span>
-                            <span>Gunakan Email / NIM dan Password terdaftar Anda.</span>
+                            <span class="text-amber-400 font-bold">🎓</span>
+                            <span><strong class="text-amber-300">Mahasiswa:</strong> Gunakan <strong class="text-white">NIM</strong> (diawali huruf, contoh: <span class="font-mono">D23098</span>) + Password SIAKAD.</span>
                         </li>
                         <li class="flex items-start gap-2">
-                            <span class="text-amber-400 font-bold">•</span>
-                            <span>Sistem melayani akses Wisudawan, Panitia Presensi, dan Administrator.</span>
+                            <span class="text-amber-400 font-bold">👩‍🏫</span>
+                            <span><strong class="text-amber-300">Dosen / Staf:</strong> Gunakan <strong class="text-white">NIDN</strong> (semua angka) + Password SIMPEG.</span>
+                        </li>
+                        <li class="flex items-start gap-2">
+                            <span class="text-amber-400 font-bold">⚙️</span>
+                            <span><strong class="text-amber-300">Admin:</strong> Gunakan <strong class="text-white">Email</strong> + Password sistem.</span>
                         </li>
                     </ul>
                 </div>
@@ -124,24 +138,38 @@ const submit = () => {
 
                     <form @submit.prevent="submit" class="space-y-4">
                         
-                        <!-- Email / NIM Field -->
+                        <!-- NIM / NIDN / Email Field (Smart Auth) -->
                         <div class="space-y-1.5">
-                            <InputLabel for="email" value="Alamat Email / NIM" class="text-xs font-bold text-slate-700" />
+                            <InputLabel for="email" value="NIM / NIDN / Email" class="text-xs font-bold text-slate-700" />
                             <div class="relative">
+                                <!-- Dynamic icon based on input type -->
                                 <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400 text-sm">
-                                    📧
+                                    <span v-if="inputType === 'nim'">🎓</span>
+                                    <span v-else-if="inputType === 'nidn'">👩‍🏫</span>
+                                    <span v-else-if="inputType === 'email'">📧</span>
+                                    <span v-else>🔑</span>
                                 </div>
                                 <TextInput
                                     id="email"
-                                    type="email"
+                                    type="text"
                                     class="pl-10 block w-full text-sm border-slate-300 focus:border-blue-700 focus:ring-blue-700 rounded-xl py-2.5 shadow-sm"
                                     v-model="form.email"
                                     required
                                     autofocus
                                     autocomplete="username"
-                                    placeholder="nama@email.com atau NIM"
+                                    placeholder="NIM (D23098) / NIDN (angka) / Email admin"
                                 />
                             </div>
+                            <!-- Dynamic hint based on input detection -->
+                            <p v-if="inputType === 'nim'" class="text-[11px] text-emerald-600 font-semibold flex items-center gap-1">
+                                ✓ Terdeteksi sebagai <strong>NIM Mahasiswa</strong> → Login via SIAKAD
+                            </p>
+                            <p v-else-if="inputType === 'nidn'" class="text-[11px] text-blue-600 font-semibold flex items-center gap-1">
+                                ✓ Terdeteksi sebagai <strong>NIDN Dosen/Staf</strong> → Login via SIMPEG
+                            </p>
+                            <p v-else-if="inputType === 'email'" class="text-[11px] text-slate-500 font-semibold flex items-center gap-1">
+                                ✓ Terdeteksi sebagai <strong>Email Administrator</strong>
+                            </p>
                             <InputError class="text-xs mt-1" :message="form.errors.email" />
                         </div>
 
