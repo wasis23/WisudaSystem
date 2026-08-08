@@ -38,6 +38,8 @@ Route::get('/dashboard', function () {
         return redirect()->route('security.scan');
     } elseif ($user->role === 'receptionist') {
         return redirect()->route('receptionist.scan');
+    } elseif ($user->role === 'panitia_presensi') {
+        return redirect()->route('panitia.presensi');
     }
 
     $activePeriode = \App\Models\PeriodeWisuda::getActive() ?? \App\Models\PeriodeWisuda::latest()->first();
