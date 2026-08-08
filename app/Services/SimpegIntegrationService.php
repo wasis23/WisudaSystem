@@ -31,69 +31,67 @@ class SimpegIntegrationService
     public function getEmployees(?string $search = null): array
     {
         $apiConfig = $this->getApiConfig();
+        $employees = [];
 
-        // 1. Try Live HTTP API call to https://simpeg.poltekindonusa.ac.id/api/employees
+        // 1. Fetch complete employees list from Live SIMPEG HTTP API
+        // Note: We don't pass search parameter in GET URL because live SIMPEG API throws 500 error when search query string is appended.
         try {
             $response = Http::withHeaders([
                 'X-API-KEY' => $apiConfig['key'],
                 'Accept' => 'application/json',
-            ])->timeout(5)->get($apiConfig['employees_url'], [
-                'search' => $search,
-                'q' => $search,
-            ]);
+            ])->timeout(8)->get($apiConfig['employees_url']);
 
             if ($response->successful()) {
                 $data = $response->json();
                 if (($data['status'] ?? '') === 'success' && isset($data['data']) && is_array($data['data']) && count($data['data']) > 0) {
-                    return $data['data'];
+                    $employees = $data['data'];
                 }
             }
         } catch (\Exception $e) {
             Log::warning('SIMPEG Employees API error: ' . $e->getMessage());
         }
 
-        // 2. Try Direct DB Connection (simpeg / hestiapanel_sistem_simpeg)
-        try {
-            $query = DB::connection('simpeg')->table('wsia_profil');
+        // 2. Try Direct DB Connection (simpeg / hestiapanel_sistem_simpeg) if API returned empty
+        if (empty($employees)) {
+            try {
+                $query = DB::connection('simpeg')->table('wsia_profil');
+                $results = $query->orderBy('nama', 'asc')->take(100)->get();
 
-            if ($search) {
-                $query->where(function ($q) use ($search) {
-                    $q->where('nama', 'like', "%{$search}%")
-                      ->orWhere('NIDN', 'like', "%{$search}%")
-                      ->orWhere('username', 'like', "%{$search}%");
-
-                    $columns = [];
-                    try {
-                        $columns = DB::connection('simpeg')->getSchemaBuilder()->getColumnListing('wsia_profil');
-                    } catch (\Exception $e) {}
-
-                    if (in_array('nip', $columns)) {
-                        $q->orWhere('nip', 'like', "%{$search}%");
-                    }
-                });
+                if ($results->count() > 0) {
+                    $employees = $results->map(function ($emp) {
+                        return [
+                            'id_sdm' => $emp->id_sdm ?? null,
+                            'nidn' => $emp->NIDN ?? $emp->nidn ?? null,
+                            'nip' => $emp->nip ?? $emp->nik ?? null,
+                            'username' => $emp->username ?? $emp->NIDN ?? $emp->email ?? 'pegawai_' . ($emp->id_sdm ?? rand(100, 999)),
+                            'nama' => $emp->nama ?? 'Pegawai Indonusa',
+                            'status' => $emp->status ?? 'Tendik',
+                            'email' => $emp->email ?? null,
+                        ];
+                    })->toArray();
+                }
+            } catch (\Exception $e) {
+                Log::warning('SIMPEG DB Integration error: ' . $e->getMessage());
             }
-
-            $results = $query->orderBy('nama', 'asc')->take(50)->get();
-
-            if ($results->count() > 0) {
-                return $results->map(function ($emp) {
-                    return [
-                        'id_sdm' => $emp->id_sdm ?? null,
-                        'nidn' => $emp->NIDN ?? $emp->nidn ?? null,
-                        'nip' => $emp->nip ?? $emp->nik ?? null,
-                        'username' => $emp->username ?? $emp->NIDN ?? $emp->email ?? 'pegawai_' . ($emp->id_sdm ?? rand(100, 999)),
-                        'nama' => $emp->nama ?? 'Pegawai Indonusa',
-                        'status' => $emp->status ?? 'Tendik',
-                        'email' => $emp->email ?? null,
-                    ];
-                })->toArray();
-            }
-        } catch (\Exception $e) {
-            Log::warning('SIMPEG DB Integration error: ' . $e->getMessage());
         }
 
-        // Return empty array if not found in live API or DB (No mock data)
-        return [];
+        // Filter results locally in-memory if search parameter is provided
+        if ($search && !empty($employees)) {
+            $cleanSearch = strtolower(trim($search));
+            $employees = array_values(array_filter($employees, function ($emp) use ($cleanSearch) {
+                $nama = strtolower($emp['nama'] ?? '');
+                $username = strtolower($emp['username'] ?? '');
+                $nidn = strtolower($emp['nidn'] ?? '');
+                $nip = strtolower($emp['nip'] ?? '');
+
+                return str_contains($nama, $cleanSearch) ||
+                       str_contains($username, $cleanSearch) ||
+                       str_contains($nidn, $cleanSearch) ||
+                       str_contains($nip, $cleanSearch);
+            }));
+        }
+
+        return $employees;
     }
 
     /**
