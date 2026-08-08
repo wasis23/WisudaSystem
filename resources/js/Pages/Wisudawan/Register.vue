@@ -1,8 +1,9 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import { Head, useForm } from '@inertiajs/vue3';
-import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue';
-import Cropper from 'cropperjs';
+import { ref, computed } from 'vue';
+import { Cropper } from 'vue-advanced-cropper';
+import 'vue-advanced-cropper/dist/style.css';
 
 const props = defineProps({
     wisudawan: Object,
@@ -14,10 +15,9 @@ const props = defineProps({
 // Photo & cropper state
 const photoPreview = ref(props.wisudawan?.pas_foto ? `/storage/${props.wisudawan.pas_foto}` : null);
 const showCropModal = ref(false);
-const cropperImgRef = ref(null);
+const cropperRef = ref(null);
 const cropperFileInputRef = ref(null);
-let cropperInstance = null;
-let rawImageSrc = null;
+const rawImageSrc = ref('');
 
 const form = useForm({
     program_studi_id: props.wisudawan?.program_studi_id || (props.programStudis?.[0]?.id || ''),
@@ -61,74 +61,34 @@ const openFilePicker = () => {
 const handlePhotoChange = (e) => {
     const file = e.target.files[0];
     if (!file) return;
-    rawImageSrc = URL.createObjectURL(file);
+    rawImageSrc.value = URL.createObjectURL(file);
     showCropModal.value = true;
-    nextTick(() => {
-        initCropper();
-    });
-    // Reset input so same file can be re-selected
     e.target.value = '';
 };
 
-const initCropper = () => {
-    if (cropperInstance) {
-        cropperInstance.destroy();
-        cropperInstance = null;
-    }
-    const imgEl = cropperImgRef.value;
-    if (!imgEl) return;
-
-    const startCropper = () => {
-        if (cropperInstance) cropperInstance.destroy();
-        cropperInstance = new Cropper(imgEl, {
-            aspectRatio: 3 / 4,
-            initialAspectRatio: 3 / 4,
-            viewMode: 1,               // Mencegah bingkai crop keluar dari batas fisik foto
-            dragMode: 'move',          // Geser & zoom foto di belakang bingkai 3:4
-            autoCropArea: 1.0,         // Ukuran crop maksimal pas mengikuti foto (100%)
-            movable: true,
-            zoomable: true,
-            rotatable: true,
-            scalable: false,
-            guides: false,
-            highlight: false,
-            cropBoxMovable: false,     // Terkunci di tengah
-            cropBoxResizable: false,   // Tidak bisa di-resize (TETAP 3:4 PORTRAIT)
-            toggleDragModeOnDblclick: false,
-            background: false,         // Matikan pola catur kotak-kotak transparan
-            responsive: true,
-            checkOrientation: true,
-            ready() {
-                this.cropper.setAspectRatio(3 / 4);
-            }
-        });
-    };
-
-    imgEl.onload = startCropper;
-    imgEl.src = rawImageSrc;
-    if (imgEl.complete) {
-        startCropper();
-    }
-};
-
-const zoomIn = () => cropperInstance?.zoom(0.15);
-const zoomOut = () => cropperInstance?.zoom(-0.15);
-const rotateLeft = () => cropperInstance?.rotate(-90);
-const rotateRight = () => cropperInstance?.rotate(90);
-const resetCrop = () => cropperInstance?.reset();
+const zoomIn = () => cropperRef.value?.zoom(1.15);
+const zoomOut = () => cropperRef.value?.zoom(0.85);
+const rotateLeft = () => cropperRef.value?.rotate(-90);
+const rotateRight = () => cropperRef.value?.rotate(90);
+const resetCrop = () => cropperRef.value?.refresh();
 
 const applyCrop = () => {
-    if (!cropperInstance) return;
-    cropperInstance.getCroppedCanvas({
-        width: 600,
-        height: 800,
-        imageSmoothingEnabled: true,
-        imageSmoothingQuality: 'high',
-    }).toBlob((blob) => {
-        // Set the cropped file into form
+    if (!cropperRef.value) return;
+    const { canvas } = cropperRef.value.getResult();
+    if (!canvas) return;
+
+    // Rescale canvas to 600x800 for high precision
+    const finalCanvas = document.createElement('canvas');
+    finalCanvas.width = 600;
+    finalCanvas.height = 800;
+    const ctx = finalCanvas.getContext('2d');
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+    ctx.drawImage(canvas, 0, 0, 600, 800);
+
+    finalCanvas.toBlob((blob) => {
         const croppedFile = new File([blob], 'pas_foto.jpg', { type: 'image/jpeg' });
         form.pas_foto = croppedFile;
-        // Update live preview
         photoPreview.value = URL.createObjectURL(blob);
         closeCropModal();
     }, 'image/jpeg', 0.92);
@@ -136,14 +96,6 @@ const applyCrop = () => {
 
 const closeCropModal = () => {
     showCropModal.value = false;
-    if (cropperInstance) {
-        cropperInstance.destroy();
-        cropperInstance = null;
-    }
-    if (rawImageSrc) {
-        URL.revokeObjectURL(rawImageSrc);
-        rawImageSrc = null;
-    }
 };
 
 // Canvas scale observer for exact 1280x720 preview
@@ -171,7 +123,6 @@ onMounted(() => {
 onUnmounted(() => {
     window.removeEventListener('resize', updateScale);
     if (resizeObserver) resizeObserver.disconnect();
-    if (cropperInstance) cropperInstance.destroy();
 });
 
 const submitForm = () => {
@@ -482,13 +433,18 @@ const submitForm = () => {
                     <button @click="closeCropModal" type="button" class="text-gray-400 hover:text-gray-700 dark:hover:text-white text-2xl leading-none">&times;</button>
                 </div>
 
-                <!-- Cropper Area: Fixed height 520px dengan foto besar di tengah -->
-                <div class="relative w-full h-[520px] bg-slate-950 flex items-center justify-center overflow-hidden p-2">
-                    <img
-                        ref="cropperImgRef"
-                        src=""
-                        alt="Crop Preview"
-                        class="max-h-[500px] max-w-full block mx-auto"
+                <!-- Instagram / WA Style Cropper Area (Fixed 450px Height) -->
+                <div class="relative w-full h-[450px] bg-slate-950 flex items-center justify-center overflow-hidden">
+                    <Cropper
+                        ref="cropperRef"
+                        class="w-full h-full"
+                        :src="rawImageSrc"
+                        :stencil-props="{
+                            aspectRatio: 3 / 4,
+                            movable: false,
+                            resizable: false
+                        }"
+                        :auto-zoom="true"
                     />
                 </div>
 
@@ -548,29 +504,17 @@ const submitForm = () => {
 </template>
 
 <style scoped>
-:deep(.cropper-container) {
-    width: 100% !important;
-    height: 100% !important;
+:deep(.vue-advanced-cropper) {
+    background: #090d16 !important;
 }
 
-:deep(.cropper-bg) {
-    background-image: none !important;
-    background-color: transparent !important;
+:deep(.vue-rectangle-stencil) {
+    border: 2.5px solid #6366f1 !important;
+    box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.7) !important;
 }
 
-:deep(.cropper-line),
-:deep(.cropper-point) {
-    display: none !important;
-}
-
-:deep(.cropper-view-box) {
-    outline: 2.5px solid #6366f1 !important;
-    outline-color: #6366f1 !important;
-    box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.45);
-}
-
-/* Face Alignment Oval & Shoulder Guide Overlay */
-:deep(.cropper-view-box::after) {
+/* Face Alignment Oval & Shoulder Guide Overlay inside Instagram/WA Stencil */
+:deep(.vue-rectangle-stencil::after) {
     content: '';
     position: absolute;
     top: 14%;
@@ -584,7 +528,7 @@ const submitForm = () => {
     box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.4);
 }
 
-:deep(.cropper-view-box::before) {
+:deep(.vue-rectangle-stencil::before) {
     content: 'AREA WAJAH';
     position: absolute;
     top: 5%;
