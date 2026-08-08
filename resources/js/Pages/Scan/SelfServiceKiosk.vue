@@ -30,7 +30,10 @@ const startCamera = async () => {
     try {
         isCameraActive.value = true;
         html5QrCode = new Html5Qrcode("kiosk-camera-reader");
-        const config = { fps: 15, qrbox: { width: 240, height: 240 } };
+        const config = { 
+            fps: 15, 
+            qrbox: (w, h) => ({ width: Math.min(w, h) * 0.75, height: Math.min(w, h) * 0.75 }) 
+        };
 
         try {
             await html5QrCode.start(
@@ -196,11 +199,11 @@ onUnmounted(() => {
             <div v-if="!activeWisudawan && !errorMessage" class="text-center max-w-4xl mx-auto space-y-6 animate-fade-in">
                 
                 <!-- Live Laptop Camera Box -->
-                <div class="relative w-80 h-64 md:w-96 md:h-72 mx-auto rounded-3xl overflow-hidden border-4 border-amber-400/60 shadow-2xl shadow-amber-500/10 bg-slate-900 flex items-center justify-center">
-                    <div id="kiosk-camera-reader" class="w-full h-full object-cover"></div>
+                <div class="relative w-80 h-72 md:w-[440px] md:h-[320px] mx-auto rounded-3xl overflow-hidden border-4 border-amber-400/80 shadow-2xl shadow-amber-500/20 bg-slate-900 flex items-center justify-center">
+                    <div id="kiosk-camera-reader" class="w-full h-full"></div>
                     
                     <!-- Scanner Corner Brackets -->
-                    <div class="absolute inset-0 pointer-events-none p-4 flex flex-col justify-between">
+                    <div class="absolute inset-0 pointer-events-none p-4 flex flex-col justify-between z-10">
                         <div class="flex justify-between">
                             <div class="w-8 h-8 border-t-4 border-l-4 border-amber-400 rounded-tl-lg"></div>
                             <div class="w-8 h-8 border-t-4 border-r-4 border-amber-400 rounded-tr-lg"></div>
@@ -212,10 +215,13 @@ onUnmounted(() => {
                     </div>
 
                     <!-- Scanning Indicator Badge -->
-                    <div class="absolute top-3 bg-slate-950/80 backdrop-blur border border-amber-500/30 px-3 py-1 rounded-full text-[10px] font-bold text-amber-300 flex items-center gap-1.5 shadow">
+                    <div class="absolute top-3 z-10 bg-slate-950/80 backdrop-blur border border-amber-500/30 px-3 py-1 rounded-full text-[10px] font-bold text-amber-300 flex items-center gap-1.5 shadow">
                         <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
                         Kamera Laptop Siap Scan QR
                     </div>
+
+                    <!-- Scanning Line Animation -->
+                    <div class="absolute inset-x-0 h-0.5 bg-gradient-to-r from-transparent via-amber-400 to-transparent animate-scan-line pointer-events-none z-10"></div>
                 </div>
 
                 <div class="space-y-2">
@@ -318,3 +324,42 @@ onUnmounted(() => {
 
     </div>
 </template>
+
+<style>
+#kiosk-camera-reader {
+    width: 100% !important;
+    height: 100% !important;
+    border: none !important;
+    position: absolute !important;
+    inset: 0 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    overflow: hidden !important;
+}
+
+#kiosk-camera-reader video {
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: cover !important;
+    border-radius: 1.5rem !important;
+}
+
+#kiosk-camera-reader__scan_region {
+    width: 100% !important;
+    height: 100% !important;
+    position: absolute !important;
+    inset: 0 !important;
+}
+
+#kiosk-camera-reader__scan_region video {
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: cover !important;
+}
+
+#kiosk-camera-reader__scan_region img,
+#kiosk-camera-reader__dashboard {
+    display: none !important;
+}
+</style>
