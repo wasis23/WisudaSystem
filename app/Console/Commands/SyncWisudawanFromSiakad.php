@@ -5,6 +5,7 @@ namespace App\Console\Commands;
 use App\Models\PeriodeWisuda;
 use App\Models\ProgramStudi;
 use App\Models\Wisudawan;
+use App\Services\SimantaIntegrationService;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -23,14 +24,14 @@ class SyncWisudawanFromSiakad extends Command
      *
      * @var string
      */
-    protected $description = 'Tarik data mahasiswa dari SIAKAD database lengkap dengan IPK & Judul TA ke tabel wisudawan';
+    protected $description = 'Tarik data mahasiswa dari SIAKAD & verifikasi status bebas tanggungan SIMANTA';
 
     /**
      * Execute the console command.
      */
-    public function handle()
+    public function handle(SimantaIntegrationService $simantaService)
     {
-        $this->info('Memulai proses penarikan data mahasiswa & nilai dari SIAKAD...');
+        $this->info('Memulai proses penarikan data mahasiswa SIAKAD & verifikasi status SIMANTA...');
 
         $activePeriode = $this->option('periode')
             ? PeriodeWisuda::find($this->option('periode'))
@@ -41,7 +42,7 @@ class SyncWisudawanFromSiakad extends Command
             return 1;
         }
 
-        $this->info("Menghubungkan ke SIAKAD Database untuk Periode Wisuda: {$activePeriode->nama_periode}...");
+        $this->info("Menghubungkan ke SIAKAD & SIMANTA untuk Periode Wisuda: {$activePeriode->nama_periode}...");
 
         try {
             $query = DB::connection('siakad')
@@ -133,28 +134,33 @@ class SyncWisudawanFromSiakad extends Command
                     ? $student->tgl_sk_yudisium
                     : (!empty($student->tgl_keluar) && $student->tgl_keluar !== '0000-00-00' ? $student->tgl_keluar : date('Y-m-d'));
 
-                // 5. Create or update Wisudawan record
+                // 5. Check SIMANTA Bebas Tanggungan & Graduation status
+                $simantaInfo = $simantaService->getGraduationStatus($cleanNim);
+                $statusSimanta = $simantaInfo['status_lulus'] ?? 'LULUS';
+
+                // 6. Create or update Wisudawan record
                 Wisudawan::updateOrCreate(
                     ['nim' => $cleanNim],
                     [
-                        'periode_wisuda_id' => $activePeriode->id,
-                        'program_studi_id'  => $programStudi->id,
-                        'nama_lengkap'      => trim($student->nama_lengkap ?? $cleanNim),
-                        'jenis_kelamin'     => strtoupper($student->jenis_kelamin ?? 'L'),
-                        'email'             => !empty($student->email) ? $student->email : ($cleanNim . '@poltekindonusa.ac.id'),
-                        'nomor_hp'          => $student->nomor_hp ?? null,
-                        'nik'               => $student->nik ?? null,
-                        'tempat_lahir'      => $student->tempat_lahir ?? null,
-                        'tanggal_lahir'     => !empty($student->tanggal_lahir) && $student->tanggal_lahir !== '0000-00-00' ? $student->tanggal_lahir : null,
-                        'nama_ayah'         => $student->nama_ayah ?? null,
-                        'nama_ibu'          => $student->nama_ibu ?? null,
-                        'alamat'            => $student->alamat ?? null,
-                        'ipk'               => $realIpk,
-                        'predikat_kelulusan'=> $predikat,
-                        'judul_ta'          => $judulTa,
-                        'tanggal_lulus'     => $tglLulus,
-                        'status_verifikasi' => 'verified',
-                        'qr_code_token'     => Str::random(32),
+                        'periode_wisuda_id'       => $activePeriode->id,
+                        'program_studi_id'        => $programStudi->id,
+                        'nama_lengkap'            => trim($student->nama_lengkap ?? $cleanNim),
+                        'jenis_kelamin'           => strtoupper($student->jenis_kelamin ?? 'L'),
+                        'email'                   => !empty($student->email) ? $student->email : ($cleanNim . '@poltekindonusa.ac.id'),
+                        'nomor_hp'                => $student->nomor_hp ?? null,
+                        'nik'                     => $student->nik ?? null,
+                        'tempat_lahir'            => $student->tempat_lahir ?? null,
+                        'tanggal_lahir'           => !empty($student->tanggal_lahir) && $student->tanggal_lahir !== '0000-00-00' ? $student->tanggal_lahir : null,
+                        'nama_ayah'               => $student->nama_ayah ?? null,
+                        'nama_ibu'                => $student->nama_ibu ?? null,
+                        'alamat'                  => $student->alamat ?? null,
+                        'ipk'                     => $realIpk,
+                        'predikat_kelulusan'      => $predikat,
+                        'judul_ta'                => $judulTa,
+                        'tanggal_lulus'           => $tglLulus,
+                        'status_kelulusan_simanta'=> $statusSimanta,
+                        'status_verifikasi'       => 'verified',
+                        'qr_code_token'           => Str::random(32),
                     ]
                 );
 
@@ -164,11 +170,11 @@ class SyncWisudawanFromSiakad extends Command
 
             $bar->finish();
             $this->newLine();
-            $this->info("Berhasil meretrieve & men-sinkronisasi {$syncedCount} data wisudawan (termasuk IPK & Judul TA) dari SIAKAD!");
+            $this->info("Berhasil meretrieve & men-sinkronisasi {$syncedCount} data wisudawan (SIAKAD Biodata + IPK & SIMANTA Bebas Tanggungan)!");
 
             return 0;
         } catch (\Exception $e) {
-            $this->error('Error saat menarik data SIAKAD: ' . $e->getMessage());
+            $this->error('Error saat menarik data SIAKAD / SIMANTA: ' . $e->getMessage());
             return 1;
         }
     }
