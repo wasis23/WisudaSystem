@@ -2,7 +2,6 @@
 
 use App\Http\Controllers\Admin\BukuKenanganController;
 use App\Http\Controllers\Admin\PeriodeWisudaController;
-use App\Http\Controllers\Admin\ProgramStudiController;
 use App\Http\Controllers\Admin\StageLayoutConfigController;
 use App\Http\Controllers\Panitia\PresensiWisudawanController;
 use App\Http\Controllers\Panitia\StageDisplayController;
@@ -67,11 +66,6 @@ Route::middleware(['auth', 'role:admin_utama'])->prefix('admin')->name('admin.')
     Route::get('/periode', [PeriodeWisudaController::class, 'index'])->name('periode.index');
     Route::post('/periode', [PeriodeWisudaController::class, 'store'])->name('periode.store');
     Route::patch('/periode/{id}/toggle', [PeriodeWisudaController::class, 'toggleActive'])->name('periode.toggle');
-
-    // Program Studi Management
-    Route::get('/prodi', [ProgramStudiController::class, 'index'])->name('prodi.index');
-    Route::post('/prodi', [ProgramStudiController::class, 'store'])->name('prodi.store');
-    Route::put('/prodi/{id}', [ProgramStudiController::class, 'update'])->name('prodi.update');
 
     // Precision Stage Layout Configurator
     Route::get('/stage-layout', [StageLayoutConfigController::class, 'edit'])->name('stage-layout.edit');
