@@ -130,23 +130,22 @@ const tracerPercentage = computed(() => {
 
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                     
-                    <!-- Card 1: Program Studi -->
+                    <!-- Card 1: Presisi Layar Wisuda -->
                     <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-6 flex flex-col justify-between space-y-4">
                         <div class="flex items-start justify-between">
                             <div class="w-10 h-10 rounded-xl bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400 flex items-center justify-center">
                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l9-5-9-5-9 5 9 5z" />
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0112 20.055a11.952 11.952 0 01-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z" />
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                                 </svg>
                             </div>
-                            <Link :href="route('admin.prodi.index')" class="text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:underline">
-                                Kelola ➔
+                            <Link :href="route('admin.stage-layout.edit')" class="text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:underline">
+                                Atur ➔
                             </Link>
                         </div>
                         <div>
-                            <h4 class="font-bold text-sm text-gray-900 dark:text-white">Program Studi</h4>
+                            <h4 class="font-bold text-sm text-gray-900 dark:text-white">Presisi Layar Wisuda</h4>
                             <p class="text-xs text-gray-500 dark:text-gray-400 mt-1 leading-relaxed">
-                                Tambah dan atur master data jenjang D3/D4/S1 serta nama Kaprodi Politeknik Indonusa.
+                                Konfigurasi tata letak elemen visual (koordinat, ukuran font & foto) untuk proyektor panggung.
                             </p>
                         </div>
                     </div>
