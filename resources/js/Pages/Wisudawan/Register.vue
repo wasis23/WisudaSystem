@@ -83,17 +83,17 @@ const initCropper = () => {
         cropperInstance = new Cropper(imgEl, {
             aspectRatio: 3 / 4,
             initialAspectRatio: 3 / 4,
-            viewMode: 1,               // Mencegah kotak crop keluar dari batas gambar!
-            dragMode: 'move',          // Mengunci kursor untuk geser/zoom foto
-            autoCropArea: 0.8,
+            viewMode: 3,               // MENGISI TERANGKANVAS CONTAINER (BESAR/FULL HIGH & TIDAK BISA KELUAR FOTO!)
+            dragMode: 'move',          // Geser & zoom foto di belakang bingkai
+            autoCropArea: 0.85,
             movable: true,
             zoomable: true,
             rotatable: true,
             scalable: false,
             guides: true,
             highlight: false,
-            cropBoxMovable: false,     // Kotak crop terkunci di tengah
-            cropBoxResizable: false,   // Kotak crop TIDAK bisa di-resize (Tetap 3:4 Portrait)
+            cropBoxMovable: false,     // Terkunci di tengah
+            cropBoxResizable: false,   // Tidak bisa di-resize
             toggleDragModeOnDblclick: false,
             background: false,
             responsive: true,
@@ -482,13 +482,13 @@ const submitForm = () => {
                     <button @click="closeCropModal" type="button" class="text-gray-400 hover:text-gray-700 dark:hover:text-white text-2xl leading-none">&times;</button>
                 </div>
 
-                <!-- Cropper Area: Fixed height 420px agar rasio 3:4 portrait terhitung secara sempurna -->
-                <div class="relative w-full h-[420px] bg-slate-950 flex items-center justify-center overflow-hidden">
+                <!-- Cropper Area: Fixed height 480px (Full High) dengan foto mengisi penuh container -->
+                <div class="relative w-full h-[480px] bg-slate-950 flex items-center justify-center overflow-hidden">
                     <img
                         ref="cropperImgRef"
                         src=""
                         alt="Crop Preview"
-                        class="max-w-full max-h-full block"
+                        class="block w-full"
                     />
                 </div>
 
