@@ -47,11 +47,59 @@ const tracerPercentage = computed(() => {
                     </div>
                 </div>
 
-                <!-- KPI 2: Tracer Study Terisi -->
+                <!-- KPI 2: PESERTA BELUM DATANG (IMPORTANT FOR ADMIN) -->
+                <div class="bg-gradient-to-br from-amber-500 to-amber-600 text-white rounded-2xl shadow-lg p-5 transition hover:shadow-xl relative overflow-hidden">
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs font-bold text-amber-100 uppercase tracking-wider">BELUM HADIR (BELUM DATANG)</span>
+                        <div class="w-9 h-9 rounded-xl bg-amber-400/30 text-white flex items-center justify-center text-lg">
+                            ⏳
+                        </div>
+                    </div>
+                    <div class="mt-4 flex items-baseline gap-2">
+                        <span class="text-4xl font-black tracking-tight">
+                            {{ stats?.belumHadirCount ?? 0 }}
+                        </span>
+                        <span class="text-xs font-medium text-amber-100">Peserta Belum Hadir</span>
+                    </div>
+                    <div class="mt-3">
+                        <Link 
+                            :href="route('admin.monitoring-presensi', { status: 'belum_hadir' })" 
+                            class="inline-flex items-center gap-1 text-xs font-bold text-amber-950 bg-white hover:bg-amber-50 px-3 py-1.5 rounded-lg transition shadow-sm"
+                        >
+                            <span>🔍 Cek Daftar Peserta Belum Datang &rarr;</span>
+                        </Link>
+                    </div>
+                </div>
+
+                <!-- KPI 3: HADIR GATE & AUDITORIUM -->
+                <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-emerald-100 dark:border-emerald-900/50 p-5 transition hover:shadow-md">
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Sudah Hadir Gate / Auditorium</span>
+                        <div class="w-9 h-9 rounded-xl bg-emerald-50 dark:bg-emerald-950/50 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="mt-4 flex items-baseline gap-2">
+                        <span class="text-3xl font-black text-gray-900 dark:text-white tracking-tight">
+                            {{ stats?.hadirCount || 0 }}
+                        </span>
+                        <span class="text-xs font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded-full">
+                            {{ stats?.auditoriumCount || 0 }} di Ballroom
+                        </span>
+                    </div>
+                    <div class="mt-3 flex items-center gap-1.5 text-xs text-emerald-600 dark:text-emerald-400 font-medium">
+                        <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                        Tercatat Gate Scan
+                    </div>
+                </div>
+
+                <!-- KPI 4: Tracer Study Terisi -->
                 <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-5 transition hover:shadow-md">
                     <div class="flex items-center justify-between">
                         <span class="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Tracer Study Terisi</span>
-                        <div class="w-9 h-9 rounded-xl bg-emerald-50 dark:bg-emerald-950/50 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
+                        <div class="w-9 h-9 rounded-xl bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400 flex items-center justify-center">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                             </svg>
@@ -67,48 +115,6 @@ const tracerPercentage = computed(() => {
                     </div>
                     <div class="mt-3 w-full bg-gray-100 dark:bg-gray-700 h-1.5 rounded-full overflow-hidden">
                         <div class="bg-emerald-500 h-full rounded-full transition-all duration-500" :style="{ width: `${tracerPercentage}%` }"></div>
-                    </div>
-                </div>
-
-                <!-- KPI 3: Periode Berjalan -->
-                <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-5 transition hover:shadow-md">
-                    <div class="flex items-center justify-between">
-                        <span class="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Periode Berjalan</span>
-                        <div class="w-9 h-9 rounded-xl bg-amber-50 dark:bg-amber-950/50 text-amber-600 dark:text-amber-400 flex items-center justify-center">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                            </svg>
-                        </div>
-                    </div>
-                    <div class="mt-4">
-                        <span class="text-base font-bold text-gray-900 dark:text-white block truncate">
-                            {{ stats?.activePeriode?.nama_periode || 'Gelombang I 2026' }}
-                        </span>
-                    </div>
-                    <div class="mt-3 flex items-center gap-1.5 text-xs text-amber-600 dark:text-amber-400 font-medium">
-                        <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
-                        Status: <span class="font-semibold">{{ stats?.activePeriode ? 'Aktif' : 'Standby' }}</span>
-                    </div>
-                </div>
-
-                <!-- KPI 4: Program Studi Master -->
-                <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-5 transition hover:shadow-md">
-                    <div class="flex items-center justify-between">
-                        <span class="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Program Studi</span>
-                        <div class="w-9 h-9 rounded-xl bg-blue-50 dark:bg-blue-950/50 text-blue-600 dark:text-blue-400 flex items-center justify-center">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                            </svg>
-                        </div>
-                    </div>
-                    <div class="mt-4 flex items-baseline gap-2">
-                        <span class="text-3xl font-black text-gray-900 dark:text-white tracking-tight">
-                            {{ stats?.totalProdi || 0 }}
-                        </span>
-                        <span class="text-xs font-medium text-gray-500">Prodi Aktif</span>
-                    </div>
-                    <div class="mt-3 text-xs text-gray-500 dark:text-gray-400 font-medium">
-                        Politeknik Indonusa Surakarta
                     </div>
                 </div>
 
@@ -183,6 +189,74 @@ const tracerPercentage = computed(() => {
                             <p class="text-xs text-gray-500 dark:text-gray-400 mt-1 leading-relaxed">
                                 Lihat daftar lengkap wisudawan terdaftar dan cetak kompilasi PDF Buku Kenangan Wisuda.
                             </p>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- SCAN GATES & ACCESS PREVIEW SECTION -->
+            <div class="space-y-4">
+                <h3 class="text-sm font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                    <span class="text-base">📱</span>
+                    <span>Akses Modul Gate Scanner & TV Kiosk Display</span>
+                </h3>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                    
+                    <!-- Gate 1: Security Mobile Scanner -->
+                    <div class="bg-gradient-to-br from-amber-900/10 via-amber-900/5 to-transparent border border-amber-500/20 dark:border-amber-500/30 rounded-2xl p-5 space-y-3">
+                        <div class="flex items-center justify-between">
+                            <span class="text-2xl">👮</span>
+                            <Link :href="route('security.scan')" class="px-3 py-1 bg-amber-500 text-slate-950 font-bold text-xs rounded-lg hover:bg-amber-400 transition">
+                                Buka Preview &rarr;
+                            </Link>
+                        </div>
+                        <div>
+                            <h4 class="font-bold text-sm text-gray-900 dark:text-white">Gate Scan Security</h4>
+                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Scanner presensi mobile via kamera HP untuk petugas Security di gerbang masuk.</p>
+                        </div>
+                    </div>
+
+                    <!-- Gate 2: Receptionist & Snack Mobile Scanner -->
+                    <div class="bg-gradient-to-br from-purple-900/10 via-purple-900/5 to-transparent border border-purple-500/20 dark:border-purple-500/30 rounded-2xl p-5 space-y-3">
+                        <div class="flex items-center justify-between">
+                            <span class="text-2xl">👩‍💼</span>
+                            <Link :href="route('receptionist.scan')" class="px-3 py-1 bg-purple-600 text-white font-bold text-xs rounded-lg hover:bg-purple-500 transition">
+                                Buka Preview &rarr;
+                            </Link>
+                        </div>
+                        <div>
+                            <h4 class="font-bold text-sm text-gray-900 dark:text-white">Gate Scan Receptionist</h4>
+                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Pemeriksaan tamu pendamping, verifikasi kehadiran, dan pembagian snack.</p>
+                        </div>
+                    </div>
+
+                    <!-- Gate 3: TV Display Kiosk -->
+                    <div class="bg-gradient-to-br from-emerald-900/10 via-emerald-900/5 to-transparent border border-emerald-500/20 dark:border-emerald-500/30 rounded-2xl p-5 space-y-3">
+                        <div class="flex items-center justify-between">
+                            <span class="text-2xl">🖥️</span>
+                            <a :href="route('kiosk.display')" target="_blank" class="px-3 py-1 bg-emerald-600 text-white font-bold text-xs rounded-lg hover:bg-emerald-500 transition flex items-center gap-1">
+                                <span>Layar TV ↗</span>
+                            </a>
+                        </div>
+                        <div>
+                            <h4 class="font-bold text-sm text-gray-900 dark:text-white">Self-Service TV Kiosk</h4>
+                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Layar TV Display ballroom terhubung USB scanner laptop untuk scan mandiri.</p>
+                        </div>
+                    </div>
+
+                    <!-- Gate 4: SIMPEG Duty Assignments -->
+                    <div class="bg-gradient-to-br from-sky-900/10 via-sky-900/5 to-transparent border border-sky-500/20 dark:border-sky-500/30 rounded-2xl p-5 space-y-3">
+                        <div class="flex items-center justify-between">
+                            <span class="text-2xl">👮‍♂️</span>
+                            <Link :href="route('admin.duty-assignments.index')" class="px-3 py-1 bg-sky-600 text-white font-bold text-xs rounded-lg hover:bg-sky-500 transition">
+                                Kelola Tugas &rarr;
+                            </Link>
+                        </div>
+                        <div>
+                            <h4 class="font-bold text-sm text-gray-900 dark:text-white">Penugasan Staff SIMPEG</h4>
+                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Pilih pegawai dari SIMPEG untuk ditugaskan scan presensi gate.</p>
                         </div>
                     </div>
 

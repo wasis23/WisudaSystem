@@ -55,4 +55,14 @@ class User extends Authenticatable
     {
         return $this->role === 'wisudawan';
     }
+
+    public function isSecurity(): bool
+    {
+        return $this->role === 'security';
+    }
+
+    public function isReceptionist(): bool
+    {
+        return $this->role === 'receptionist';
+    }
 }

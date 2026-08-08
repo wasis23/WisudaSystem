@@ -62,6 +62,58 @@ return [
             ]) : [],
         ],
 
+        'simpeg' => [
+            'driver' => 'mysql',
+            'host' => env('DB_SIMPEG_HOST', '127.0.0.1'),
+            'port' => env('DB_SIMPEG_PORT', '3306'),
+            'database' => env('DB_SIMPEG_DATABASE', 'hestiapanel_sistem_simpeg'),
+            'username' => env('DB_SIMPEG_USERNAME', 'root'),
+            'password' => env('DB_SIMPEG_PASSWORD', ''),
+            'charset' => 'utf8mb4',
+            'collation' => 'utf8mb4_unicode_ci',
+            'prefix' => '',
+            'strict' => false,
+        ],
+
+        'siakad' => [
+            'driver' => 'mysql',
+            'host' => env('DB_SIAKAD_HOST', '116.206.197.228'),
+            'port' => env('DB_SIAKAD_PORT', '3306'),
+            'database' => env('DB_SIAKAD_DATABASE', 'siakaddb'),
+            'username' => env('DB_SIAKAD_USERNAME', 'uti-check'),
+            'password' => env('DB_SIAKAD_PASSWORD', 'haamA0iYA6^7aj8e*#'),
+            'charset' => 'utf8mb4',
+            'collation' => 'utf8mb4_unicode_ci',
+            'prefix' => '',
+            'strict' => false,
+        ],
+
+        'simanta' => [
+            'driver' => 'mysql',
+            'host' => env('DB_SIMANTA_HOST', '116.206.197.228'),
+            'port' => env('DB_SIMANTA_PORT', '3306'),
+            'database' => env('DB_SIMANTA_DATABASE', 'simantadb'),
+            'username' => env('DB_SIMANTA_USERNAME', 'root'),
+            'password' => env('DB_SIMANTA_PASSWORD', ''),
+            'charset' => 'utf8mb4',
+            'collation' => 'utf8mb4_unicode_ci',
+            'prefix' => '',
+            'strict' => false,
+        ],
+
+        'sikeu' => [
+            'driver' => 'mysql',
+            'host' => env('DB_SIKEU_HOST', '116.206.197.228'),
+            'port' => env('DB_SIKEU_PORT', '3306'),
+            'database' => env('DB_SIKEU_DATABASE', 'sikeudb'),
+            'username' => env('DB_SIKEU_USERNAME', 'ukeukeu'),
+            'password' => env('DB_SIKEU_PASSWORD', '^Rtr251Gtf_hGt'),
+            'charset' => 'utf8mb4',
+            'collation' => 'utf8mb4_unicode_ci',
+            'prefix' => '',
+            'strict' => false,
+        ],
+
         'mariadb' => [
             'driver' => 'mariadb',
             'url' => env('DB_URL'),

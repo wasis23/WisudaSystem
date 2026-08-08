@@ -15,6 +15,8 @@ const roleLabel = computed(() => {
     switch (user.value?.role) {
         case 'admin_utama': return 'Admin Utama';
         case 'panitia_presensi': return 'Panitia Presensi';
+        case 'security': return 'Security Officer';
+        case 'receptionist': return 'Receptionist';
         case 'wisudawan': return 'Wisudawan';
         default: return 'Pengguna';
     }
@@ -24,6 +26,8 @@ const roleBadgeClass = computed(() => {
     switch (user.value?.role) {
         case 'admin_utama': return 'bg-purple-100 text-purple-800 dark:bg-purple-900/60 dark:text-purple-300 border-purple-200 dark:border-purple-700';
         case 'panitia_presensi': return 'bg-amber-100 text-amber-800 dark:bg-amber-900/60 dark:text-amber-300 border-amber-200 dark:border-amber-700';
+        case 'security': return 'bg-amber-500/20 text-amber-600 dark:text-amber-400 border-amber-300 dark:border-amber-700';
+        case 'receptionist': return 'bg-purple-500/20 text-purple-600 dark:text-purple-400 border-purple-300 dark:border-purple-700';
         default: return 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900/60 dark:text-indigo-300 border-indigo-200 dark:border-indigo-700';
     }
 });
@@ -61,6 +65,12 @@ const roleBadgeClass = computed(() => {
                                 </NavLink>
 
                                 <template v-if="user?.role === 'admin_utama'">
+                                    <NavLink :href="route('admin.monitoring-presensi', { status: 'belum_hadir' })" :active="route().current('admin.monitoring-presensi*')">
+                                        ⏳ Peserta Belum Hadir
+                                    </NavLink>
+                                    <NavLink :href="route('admin.duty-assignments.index')" :active="route().current('admin.duty-assignments.*')">
+                                        Tugas Scan SIMPEG
+                                    </NavLink>
                                     <NavLink :href="route('admin.periode.index')" :active="route().current('admin.periode.*')">
                                         Periode Wisuda
                                     </NavLink>
@@ -73,8 +83,20 @@ const roleBadgeClass = computed(() => {
                                     <NavLink :href="route('admin.buku-kenangan.index')" :active="route().current('admin.buku-kenangan.*')">
                                         Buku Kenangan
                                     </NavLink>
-                                    <NavLink :href="route('panitia.stage-control')" :active="route().current('panitia.stage-control')">
-                                        Stage Console
+                                    <NavLink :href="route('kiosk.display')" target="_blank">
+                                        🖥️ Kiosk TV
+                                    </NavLink>
+                                </template>
+
+                                <template v-if="user?.role === 'security'">
+                                    <NavLink :href="route('security.scan')" :active="route().current('security.scan')">
+                                        👮 Scan Gate Security
+                                    </NavLink>
+                                </template>
+
+                                <template v-if="user?.role === 'receptionist'">
+                                    <NavLink :href="route('receptionist.scan')" :active="route().current('receptionist.scan')">
+                                        👩‍💼 Scan Reception & Snack
                                     </NavLink>
                                 </template>
 
@@ -88,6 +110,9 @@ const roleBadgeClass = computed(() => {
                                 </template>
 
                                 <template v-if="user?.role === 'wisudawan'">
+                                    <NavLink :href="route('wisudawan.tamu.form')" :active="route().current('wisudawan.tamu.*')">
+                                        👨‍👩‍👧‍👦 Tamu & Snack
+                                    </NavLink>
                                     <NavLink :href="route('wisudawan.tracer.form')" :active="route().current('wisudawan.tracer.*')">
                                         Data Tracer Study
                                     </NavLink>

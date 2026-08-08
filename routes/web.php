@@ -1,12 +1,15 @@
 <?php
 
 use App\Http\Controllers\Admin\BukuKenanganController;
+use App\Http\Controllers\Admin\DutyAssignmentController;
 use App\Http\Controllers\Admin\PeriodeWisudaController;
 use App\Http\Controllers\Admin\ProgramStudiController;
 use App\Http\Controllers\Admin\StageLayoutConfigController;
+use App\Http\Controllers\KioskScanController;
 use App\Http\Controllers\Panitia\PresensiWisudawanController;
 use App\Http\Controllers\Panitia\StageDisplayController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\Wisudawan\ExtraGuestController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -31,6 +34,10 @@ Route::get('/dashboard', function () {
 
     if ($user->role === 'wisudawan') {
         return redirect()->route('wisudawan.dashboard');
+    } elseif ($user->role === 'security') {
+        return redirect()->route('security.scan');
+    } elseif ($user->role === 'receptionist') {
+        return redirect()->route('receptionist.scan');
     }
 
     $activePeriode = \App\Models\PeriodeWisuda::getActive() ?? \App\Models\PeriodeWisuda::latest()->first();
@@ -38,6 +45,9 @@ Route::get('/dashboard', function () {
     $stats = [
         'totalWisudawan' => \App\Models\Wisudawan::where('periode_wisuda_id', $activePeriode?->id)->count(),
         'tracerCompleted' => \App\Models\Wisudawan::where('periode_wisuda_id', $activePeriode?->id)->where('is_tracer_study_filled', true)->count(),
+        'hadirCount' => \App\Models\Wisudawan::where('periode_wisuda_id', $activePeriode?->id)->where('is_hadir', true)->count(),
+        'belumHadirCount' => \App\Models\Wisudawan::where('periode_wisuda_id', $activePeriode?->id)->where('is_hadir', false)->count(),
+        'auditoriumCount' => \App\Models\Wisudawan::where('periode_wisuda_id', $activePeriode?->id)->where('is_in_auditorium', true)->count(),
         'activePeriode' => $activePeriode,
         'totalProdi' => \App\Models\ProgramStudi::count(),
     ];
@@ -61,6 +71,10 @@ Route::middleware('auth')->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
 
+// Self-Service Kiosk Scan (TV Display + Laptop + USB Scanner)
+Route::get('/kiosk-scan', [KioskScanController::class, 'index'])->name('kiosk.display');
+Route::post('/api/kiosk-scan', [KioskScanController::class, 'scan'])->name('api.kiosk.scan');
+
 // 1. Admin Master Routes
 Route::middleware(['auth', 'role:admin_utama'])->prefix('admin')->name('admin.')->group(function () {
     // Periode Wisuda Management
@@ -80,9 +94,31 @@ Route::middleware(['auth', 'role:admin_utama'])->prefix('admin')->name('admin.')
     // Buku Kenangan PDF & Data Wisudawan
     Route::get('/buku-kenangan', [BukuKenanganController::class, 'index'])->name('buku-kenangan.index');
     Route::get('/buku-kenangan/export', [BukuKenanganController::class, 'exportPdf'])->name('buku-kenangan.export');
+
+    // SIMPEG Scan Duty Assignment (Security & Receptionist)
+    Route::get('/duty-assignments', [DutyAssignmentController::class, 'index'])->name('duty-assignments.index');
+    Route::post('/duty-assignments', [DutyAssignmentController::class, 'store'])->name('duty-assignments.store');
+    Route::patch('/duty-assignments/{dutyAssignment}/toggle', [DutyAssignmentController::class, 'toggle'])->name('duty-assignments.toggle');
+    Route::delete('/duty-assignments/{dutyAssignment}', [DutyAssignmentController::class, 'destroy'])->name('duty-assignments.destroy');
+
+    // Monitoring Presensi & Peserta Belum Hadir
+    Route::get('/monitoring-presensi', [PresensiWisudawanController::class, 'listWisudawan'])->name('monitoring-presensi');
 });
 
-// 2. Panitia Presensi & Stage Routes
+// 2. Security Scan Gate Route
+Route::middleware(['auth', 'role:security,admin_utama,panitia_presensi'])->prefix('security')->name('security.')->group(function () {
+    Route::get('/scan', [PresensiWisudawanController::class, 'mobileSecurityScan'])->name('scan');
+    Route::post('/scan', [PresensiWisudawanController::class, 'scan'])->name('scan.process');
+});
+
+// 3. Receptionist Scan Gate Route
+Route::middleware(['auth', 'role:receptionist,admin_utama,panitia_presensi'])->prefix('receptionist')->name('receptionist.')->group(function () {
+    Route::get('/scan', [PresensiWisudawanController::class, 'mobileReceptionistScan'])->name('scan');
+    Route::post('/scan', [PresensiWisudawanController::class, 'scan'])->name('scan.process');
+    Route::post('/guest-presensi/{id}', [PresensiWisudawanController::class, 'processGuestAttendance'])->name('guest.toggle');
+});
+
+// 4. Panitia Presensi & Stage Routes
 Route::middleware(['auth', 'role:panitia_presensi,admin_utama'])->prefix('panitia')->name('panitia.')->group(function () {
     // Presensi Gate (Barcode / Kamera Scan)
     Route::get('/presensi', [PresensiWisudawanController::class, 'index'])->name('presensi');
@@ -101,16 +137,20 @@ Route::middleware(['auth', 'role:panitia_presensi,admin_utama'])->prefix('paniti
     Route::post('/stage-control/active-wisudawan', [StageDisplayController::class, 'setActiveWisudawan'])->name('stage-control.set-active');
 });
 
-// 3. Wisudawan Routes
+// 5. Wisudawan Routes
 Route::middleware(['auth', 'role:wisudawan,admin_utama'])->prefix('wisudawan')->name('wisudawan.')->group(function () {
     Route::get('/dashboard', function () {
         $user = auth()->user();
-        $wisudawan = $user->wisudawan ? $user->wisudawan->load('programStudi') : null;
+        $wisudawan = $user->wisudawan ? $user->wisudawan->load(['programStudi', 'tamuTambahan']) : null;
         return Inertia::render('Wisudawan/Dashboard', [
             'wisudawan' => $wisudawan,
             'stageConfig' => \App\Models\StageLayoutConfig::getDefaultConfig(),
         ]);
     })->name('dashboard');
+
+    // Extra Guest Form & Snack Calculation
+    Route::get('/tamu-tambahan', [ExtraGuestController::class, 'index'])->name('tamu.form');
+    Route::post('/tamu-tambahan', [ExtraGuestController::class, 'store'])->name('tamu.store');
 
     // Tracer Study Routes
     Route::get('/tracer-study', function () {

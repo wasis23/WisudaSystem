@@ -6,11 +6,29 @@ use App\Http\Controllers\Controller;
 use App\Models\PeriodeWisuda;
 use App\Models\ProgramStudi;
 use App\Models\Wisudawan;
+use App\Models\WisudawanTamuTambahan;
+use App\Services\SiakadIntegrationService;
+use App\Services\SimantaIntegrationService;
+use App\Services\SikeuIntegrationService;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
 class PresensiWisudawanController extends Controller
 {
+    protected SiakadIntegrationService $siakadService;
+    protected SimantaIntegrationService $simantaService;
+    protected SikeuIntegrationService $sikeuService;
+
+    public function __construct(
+        SiakadIntegrationService $siakadService,
+        SimantaIntegrationService $simantaService,
+        SikeuIntegrationService $sikeuService
+    ) {
+        $this->siakadService = $siakadService;
+        $this->simantaService = $simantaService;
+        $this->sikeuService = $sikeuService;
+    }
+
     /**
      * Halaman 1: Presensi Gate (Scanner Barcode / Kamera)
      */
@@ -18,7 +36,7 @@ class PresensiWisudawanController extends Controller
     {
         $activePeriode = PeriodeWisuda::getActive() ?? PeriodeWisuda::latest()->first();
 
-        $query = Wisudawan::with(['programStudi'])
+        $query = Wisudawan::with(['programStudi', 'tamuTambahan'])
             ->where('periode_wisuda_id', $activePeriode?->id)
             ->where('status_verifikasi', 'verified');
 
@@ -42,6 +60,41 @@ class PresensiWisudawanController extends Controller
     }
 
     /**
+     * Mobile Security Scanner View
+     */
+    public function mobileSecurityScan()
+    {
+        $activePeriode = PeriodeWisuda::getActive() ?? PeriodeWisuda::latest()->first();
+
+        $stats = [
+            'total_security_scanned' => Wisudawan::where('periode_wisuda_id', $activePeriode?->id)->where('is_hadir', true)->count(),
+        ];
+
+        return Inertia::render('Scan/MobileSecurityScanner', [
+            'activePeriode' => $activePeriode,
+            'stats' => $stats,
+        ]);
+    }
+
+    /**
+     * Mobile Receptionist Scanner View
+     */
+    public function mobileReceptionistScan()
+    {
+        $activePeriode = PeriodeWisuda::getActive() ?? PeriodeWisuda::latest()->first();
+
+        $stats = [
+            'total_reception_scanned' => Wisudawan::where('periode_wisuda_id', $activePeriode?->id)->where('is_hadir', true)->count(),
+            'total_snack_issued' => WisudawanTamuTambahan::where('snack_diambil', true)->count(),
+        ];
+
+        return Inertia::render('Scan/MobileReceptionistScanner', [
+            'activePeriode' => $activePeriode,
+            'stats' => $stats,
+        ]);
+    }
+
+    /**
      * Halaman 2: Presensi Wisudawan (Daftar & Status Kehadiran / Auditorium)
      */
     public function listWisudawan(Request $request)
@@ -51,7 +104,7 @@ class PresensiWisudawanController extends Controller
         $selectedPeriodeId = $request->periode_id ?? $activePeriode?->id;
         $programStudis = ProgramStudi::all();
 
-        $query = Wisudawan::with(['programStudi'])
+        $query = Wisudawan::with(['programStudi', 'tamuTambahan'])
             ->where('periode_wisuda_id', $selectedPeriodeId)
             ->where('status_verifikasi', 'verified');
 
@@ -98,7 +151,7 @@ class PresensiWisudawanController extends Controller
     }
 
     /**
-     * Action Scan QR Code Token
+     * Action Scan QR Code Token (Web & Mobile API scan)
      */
     public function scan(Request $request)
     {
@@ -108,8 +161,9 @@ class PresensiWisudawanController extends Controller
 
         $token = trim($request->qr_code_token);
 
-        $wisudawan = Wisudawan::with(['programStudi'])
+        $wisudawan = Wisudawan::with(['programStudi', 'tamuTambahan'])
             ->where('qr_code_token', $token)
+            ->orWhere('nim', $token)
             ->first();
 
         if (!$wisudawan) {
@@ -120,17 +174,49 @@ class PresensiWisudawanController extends Controller
             return redirect()->back()->with('error', "AKSES DITOLAK: Wisudawan {$wisudawan->nama_lengkap} (NIM: {$wisudawan->nim}) belum lolos verifikasi!");
         }
 
-        if ($wisudawan->is_hadir) {
-            return redirect()->back()->with('warning', "RE-SCAN NOTICE: {$wisudawan->nama_lengkap} sudah tercatat presensi pada " . $wisudawan->waktu_presensi);
-        }
+        // Retrieve extra guest allowance from SIKEU & graduation status from SIMANTA
+        $simantaInfo = $this->simantaService->getGraduationStatus($wisudawan->nim);
+        $sikeuQuota = $this->sikeuService->getExtraWisudaQuota($wisudawan->nim);
+        $siakadInfo = $this->siakadService->getStudentByNim($wisudawan->nim);
 
         $wisudawan->update([
             'is_hadir' => true,
             'is_in_auditorium' => true,
+            'waktu_presensi' => $wisudawan->waktu_presensi ?? now(),
+            'status_kelulusan_simanta' => $simantaInfo['status_lulus'],
+            'jumlah_tamu_tambahan' => $sikeuQuota['total_allowed_guests'],
+        ]);
+
+        $message = "PRESENSI BERHASIL! Selamat Datang, {$wisudawan->nama_lengkap} (NIM: {$wisudawan->nim}). Kuota Tamu & Snack: {$sikeuQuota['snack_quota']} Porsi. SIMANTA: {$simantaInfo['status_lulus']}.";
+
+        if ($request->wantsJson()) {
+            return response()->json([
+                'status' => 'success',
+                'message' => $message,
+                'wisudawan' => $wisudawan,
+                'siakad' => $siakadInfo,
+                'simanta' => $simantaInfo,
+                'sikeu' => $sikeuQuota,
+            ]);
+        }
+
+        return redirect()->back()->with('success', $message);
+    }
+
+    /**
+     * Process Guest Attendance & Snack Issuance
+     */
+    public function processGuestAttendance(Request $request, $id)
+    {
+        $guest = WisudawanTamuTambahan::findOrFail($id);
+
+        $guest->update([
+            'is_hadir' => $request->has('is_hadir') ? $request->boolean('is_hadir') : !$guest->is_hadir,
+            'snack_diambil' => $request->has('snack_diambil') ? $request->boolean('snack_diambil') : !$guest->snack_diambil,
             'waktu_presensi' => now(),
         ]);
 
-        return redirect()->back()->with('success', "PRESENSI BERHASIL! Selamat Datang, {$wisudawan->nama_lengkap} (NIM: {$wisudawan->nim}). Telah masuk Auditorium.");
+        return redirect()->back()->with('success', "Data kehadiran tamu {$guest->nama_tamu} berhasil diperbarui.");
     }
 
     /**

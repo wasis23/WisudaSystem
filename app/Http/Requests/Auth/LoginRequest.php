@@ -2,10 +2,14 @@
 
 namespace App\Http\Requests\Auth;
 
+use App\Models\DutyAssignment;
+use App\Models\User;
+use App\Services\SimpegIntegrationService;
 use Illuminate\Auth\Events\Lockout;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -28,7 +32,7 @@ class LoginRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'email' => ['required', 'string', 'email'],
+            'email' => ['required', 'string'],
             'password' => ['required', 'string'],
         ];
     }
@@ -42,15 +46,57 @@ class LoginRequest extends FormRequest
     {
         $this->ensureIsNotRateLimited();
 
-        if (! Auth::attempt($this->only('email', 'password'), $this->boolean('remember'))) {
-            RateLimiter::hit($this->throttleKey());
+        $loginInput = trim($this->input('email'));
+        $password = $this->input('password');
 
-            throw ValidationException::withMessages([
-                'email' => trans('auth.failed'),
-            ]);
+        // 1. First try standard local Laravel authentication
+        $isEmail = filter_var($loginInput, FILTER_VALIDATE_EMAIL);
+        $credentials = [
+            $isEmail ? 'email' : 'email' => $isEmail ? $loginInput : $loginInput . '@poltekindonusa.ac.id',
+            'password' => $password,
+        ];
+
+        if (Auth::attempt($credentials, $this->boolean('remember'))) {
+            RateLimiter::clear($this->throttleKey());
+            return;
         }
 
-        RateLimiter::clear($this->throttleKey());
+        // 2. Try SIMPEG integration lookup for Security & Receptionist Duty Officers
+        $usernameClean = str_replace('@poltekindonusa.ac.id', '', $loginInput);
+        $duty = DutyAssignment::where('is_active', true)
+            ->where(function ($q) use ($usernameClean) {
+                $q->where('simpeg_username', $usernameClean)
+                  ->orWhere('simpeg_nip', $usernameClean);
+            })
+            ->first();
+
+        if ($duty) {
+            $simpegService = app(SimpegIntegrationService::class);
+            $simpegUser = $simpegService->verifyCredentials($usernameClean, $password);
+
+            if ($simpegUser) {
+                $email = $duty->simpeg_username . '@poltekindonusa.ac.id';
+
+                $user = User::updateOrCreate(
+                    ['email' => $email],
+                    [
+                        'name' => $simpegUser['nama'] ?? $duty->nama_pegawai,
+                        'password' => Hash::make($password),
+                        'role' => $duty->duty_role,
+                    ]
+                );
+
+                Auth::login($user, $this->boolean('remember'));
+                RateLimiter::clear($this->throttleKey());
+                return;
+            }
+        }
+
+        RateLimiter::hit($this->throttleKey());
+
+        throw ValidationException::withMessages([
+            'email' => trans('auth.failed'),
+        ]);
     }
 
     /**

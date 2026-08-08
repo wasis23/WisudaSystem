@@ -43,12 +43,17 @@ class Wisudawan extends Model
         'tracer_jabatan',
         'tracer_pendapatan',
         'tracer_kesesuaian_prodi',
+        'jumlah_tamu_tambahan',
+        'tamu_tambahan_scanned',
+        'status_kelulusan_simanta',
     ];
 
     protected $casts = [
         'is_tracer_study_filled' => 'boolean',
         'is_hadir' => 'boolean',
         'is_in_auditorium' => 'boolean',
+        'jumlah_tamu_tambahan' => 'integer',
+        'tamu_tambahan_scanned' => 'integer',
     ];
 
     public function user()
@@ -64,5 +69,10 @@ class Wisudawan extends Model
     public function programStudi()
     {
         return $this->belongsTo(ProgramStudi::class, 'program_studi_id');
+    }
+
+    public function tamuTambahan()
+    {
+        return $this->hasMany(WisudawanTamuTambahan::class, 'wisudawan_id');
     }
 }
