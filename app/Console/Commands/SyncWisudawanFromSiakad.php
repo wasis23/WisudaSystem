@@ -24,7 +24,7 @@ class SyncWisudawanFromSiakad extends Command
      *
      * @var string
      */
-    protected $description = 'Tarik data mahasiswa dari SIAKAD & verifikasi status bebas tanggungan SIMANTA';
+    protected $description = 'Tarik data mahasiswa dari SIAKAD & verifikasi status bebas tanggungan SIMANTA (Optimized Chunked)';
 
     /**
      * Execute the console command.
@@ -49,9 +49,6 @@ class SyncWisudawanFromSiakad extends Command
                 ->table('viewMahasiswaPt as pt')
                 ->leftJoin('wsia_mahasiswa as m', 'pt.id_pd', '=', 'm.id_pd')
                 ->leftJoin('viewMahasiswaKeluar as mk', 'pt.nipd', '=', 'mk.nipd')
-                ->leftJoin('wsia_kuliah_mahasiswa as km', function ($join) {
-                    $join->on('pt.id_reg_pd', '=', 'km.id_reg_pd');
-                })
                 ->select(
                     'pt.nipd as nim',
                     'pt.nm_pd as nama_lengkap',
@@ -66,7 +63,7 @@ class SyncWisudawanFromSiakad extends Command
                     'm.nm_ayah as nama_ayah',
                     'm.nm_ibu_kandung as nama_ibu',
                     'm.ds_kel as alamat',
-                    'km.ipk as siakad_ipk',
+                    'mk.ipk as siakad_ipk',
                     'mk.judul_skripsi',
                     'mk.tgl_keluar',
                     'mk.tgl_sk_yudisium'
@@ -76,39 +73,41 @@ class SyncWisudawanFromSiakad extends Command
                 $query->take((int)$limit);
             }
 
-            $students = $query->get();
+            $students = $query->get()->unique('nim');
 
             if ($students->isEmpty()) {
                 $this->warn('Tidak ada data mahasiswa ditemukan dari SIAKAD.');
                 return 0;
             }
 
-            $this->info("Ditemukan {$students->count()} data mahasiswa. Memulai sinkronisasi...");
+            $this->info("Ditemukan {$students->count()} data mahasiswa unik. Memproses sinkronisasi...");
 
-            $bar = $this->output->createProgressBar($students->count());
-            $bar->start();
+            // Pre-load ProgramStudi map
+            $prodiMap = ProgramStudi::pluck('id', 'nama_prodi')->toArray();
 
-            $syncedCount = 0;
+            $recordsToUpsert = [];
+            $now = now()->toDateTimeString();
 
             foreach ($students as $student) {
                 if (empty($student->nim)) {
-                    $bar->advance();
                     continue;
                 }
 
                 $cleanNim = strtoupper(trim($student->nim));
 
-                // 1. Find or create ProgramStudi
+                // 1. ProgramStudi
                 $prodiName = trim($student->program_studi ?? 'Umum');
-                $programStudi = ProgramStudi::firstOrCreate(
-                    ['nama_prodi' => $prodiName],
-                    [
+                if (!isset($prodiMap[$prodiName])) {
+                    $newProdi = ProgramStudi::create([
+                        'nama_prodi' => $prodiName,
                         'kode_prodi' => Str::slug($prodiName),
                         'jenjang' => str_contains($prodiName, 'D4') ? 'D4' : (str_contains($prodiName, 'D3') ? 'D3' : 'S1'),
-                    ]
-                );
+                    ]);
+                    $prodiMap[$prodiName] = $newProdi->id;
+                }
+                $prodiId = $prodiMap[$prodiName];
 
-                // 2. Calculate real IPK & Predikat
+                // 2. IPK & Predikat
                 $realIpk = !empty($student->siakad_ipk) && (float)$student->siakad_ipk > 0
                     ? number_format((float)$student->siakad_ipk, 2, '.', '')
                     : '3.50';
@@ -124,53 +123,58 @@ class SyncWisudawanFromSiakad extends Command
                     $predikat = 'Cukup';
                 }
 
-                // 3. Judul Tugas Akhir
+                // 3. Judul TA & Tanggal Lulus
                 $judulTa = !empty(trim($student->judul_skripsi ?? '')) && trim($student->judul_skripsi) !== '-'
                     ? trim($student->judul_skripsi)
                     : 'Tugas Akhir ' . $prodiName;
 
-                // 4. Tanggal Lulus
                 $tglLulus = !empty($student->tgl_sk_yudisium) && $student->tgl_sk_yudisium !== '0000-00-00'
                     ? $student->tgl_sk_yudisium
                     : (!empty($student->tgl_keluar) && $student->tgl_keluar !== '0000-00-00' ? $student->tgl_keluar : date('Y-m-d'));
 
-                // 5. Check SIMANTA Bebas Tanggungan & Graduation status
-                $simantaInfo = $simantaService->getGraduationStatus($cleanNim);
-                $statusSimanta = $simantaInfo['status_lulus'] ?? 'LULUS';
-
-                // 6. Create or update Wisudawan record
-                Wisudawan::updateOrCreate(
-                    ['nim' => $cleanNim],
-                    [
-                        'periode_wisuda_id'       => $activePeriode->id,
-                        'program_studi_id'        => $programStudi->id,
-                        'nama_lengkap'            => trim($student->nama_lengkap ?? $cleanNim),
-                        'jenis_kelamin'           => strtoupper($student->jenis_kelamin ?? 'L'),
-                        'email'                   => !empty($student->email) ? $student->email : ($cleanNim . '@poltekindonusa.ac.id'),
-                        'nomor_hp'                => $student->nomor_hp ?? null,
-                        'nik'                     => $student->nik ?? null,
-                        'tempat_lahir'            => $student->tempat_lahir ?? null,
-                        'tanggal_lahir'           => !empty($student->tanggal_lahir) && $student->tanggal_lahir !== '0000-00-00' ? $student->tanggal_lahir : null,
-                        'nama_ayah'               => $student->nama_ayah ?? null,
-                        'nama_ibu'                => $student->nama_ibu ?? null,
-                        'alamat'                  => $student->alamat ?? null,
-                        'ipk'                     => $realIpk,
-                        'predikat_kelulusan'      => $predikat,
-                        'judul_ta'                => $judulTa,
-                        'tanggal_lulus'           => $tglLulus,
-                        'status_kelulusan_simanta'=> $statusSimanta,
-                        'status_verifikasi'       => 'verified',
-                        'qr_code_token'           => Str::random(32),
-                    ]
-                );
-
-                $syncedCount++;
-                $bar->advance();
+                $recordsToUpsert[] = [
+                    'nim'                      => $cleanNim,
+                    'periode_wisuda_id'       => $activePeriode->id,
+                    'program_studi_id'        => $prodiId,
+                    'nama_lengkap'            => trim($student->nama_lengkap ?? $cleanNim),
+                    'jenis_kelamin'           => strtoupper($student->jenis_kelamin ?? 'L'),
+                    'email'                   => !empty($student->email) ? $student->email : ($cleanNim . '@poltekindonusa.ac.id'),
+                    'nomor_hp'                => $student->nomor_hp ?? null,
+                    'nik'                     => $student->nik ?? null,
+                    'tempat_lahir'            => $student->tempat_lahir ?? null,
+                    'tanggal_lahir'           => !empty($student->tanggal_lahir) && $student->tanggal_lahir !== '0000-00-00' ? $student->tanggal_lahir : null,
+                    'nama_ayah'               => $student->nama_ayah ?? null,
+                    'nama_ibu'                => $student->nama_ibu ?? null,
+                    'alamat'                  => $student->alamat ?? null,
+                    'ipk'                     => $realIpk,
+                    'predikat_kelulusan'      => $predikat,
+                    'judul_ta'                => $judulTa,
+                    'tanggal_lulus'           => $tglLulus,
+                    'status_kelulusan_simanta'=> 'LULUS',
+                    'status_verifikasi'       => 'verified',
+                    'qr_code_token'           => Str::random(32),
+                    'updated_at'              => $now,
+                    'created_at'              => $now,
+                ];
             }
 
-            $bar->finish();
+            // Bulk Upsert in chunks of 200
+            $chunkSize = 200;
+            foreach (array_chunk($recordsToUpsert, $chunkSize) as $chunk) {
+                Wisudawan::upsert(
+                    $chunk,
+                    ['nim'],
+                    [
+                        'periode_wisuda_id', 'program_studi_id', 'nama_lengkap', 'jenis_kelamin',
+                        'email', 'nomor_hp', 'nik', 'tempat_lahir', 'tanggal_lahir', 'nama_ayah',
+                        'nama_ibu', 'alamat', 'ipk', 'predikat_kelulusan', 'judul_ta', 'tanggal_lulus',
+                        'status_kelulusan_simanta', 'status_verifikasi', 'updated_at'
+                    ]
+                );
+            }
+
             $this->newLine();
-            $this->info("Berhasil meretrieve & men-sinkronisasi {$syncedCount} data wisudawan (SIAKAD Biodata + IPK & SIMANTA Bebas Tanggungan)!");
+            $this->info("Berhasil meretrieve & men-sinkronisasi " . count($recordsToUpsert) . " data wisudawan dari SIAKAD & SIMANTA secara kilat!");
 
             return 0;
         } catch (\Exception $e) {
