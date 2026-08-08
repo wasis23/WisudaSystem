@@ -109,9 +109,12 @@ Route::middleware(['auth', 'role:admin_utama'])->prefix('admin')->name('admin.')
     Route::get('/sync-simpeg/search',   [SimpegSyncController::class, 'search'])->name('sync-simpeg.search');
 
     // ── SIMANTA Sync (cache mahasiswa lulus dari SIMANTA) ───────────────────
-    Route::get('/sync-simanta',         [SimantaSyncController::class, 'index'])->name('sync-simanta.index');
-    Route::post('/sync-simanta',        [SimantaSyncController::class, 'sync'])->name('sync-simanta.sync');
-    Route::get('/sync-simanta/data',    [SimantaSyncController::class, 'data'])->name('sync-simanta.data');
+    Route::get('/sync-simanta',             [SimantaSyncController::class, 'index'])->name('sync-simanta.index');
+    Route::post('/sync-simanta',            [SimantaSyncController::class, 'sync'])->name('sync-simanta.sync');
+    Route::get('/sync-simanta/data',        [SimantaSyncController::class, 'data'])->name('sync-simanta.data');
+    // Import: dari cache SIMANTA → tabel wisudawan (inilah langkah ke-2)
+    Route::get('/sync-simanta/import',      [SimantaSyncController::class, 'importPreview'])->name('sync-simanta.import.preview');
+    Route::post('/sync-simanta/import',     [SimantaSyncController::class, 'importWisudawan'])->name('sync-simanta.import');
 });
 
 // 2. Security Scan Gate Route

@@ -76,6 +76,21 @@ const menuAdministrasi = [
     },
 ];
 
+const menuIntegrasi = [
+    {
+        label: 'Sync SIMPEG (Pegawai)',
+        route: 'admin.sync-simpeg.index',
+        activePattern: 'admin.sync-simpeg.*',
+        iconSvg: `<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>`,
+    },
+    {
+        label: 'Sync SIMANTA (Lulusan)',
+        route: 'admin.sync-simanta.index',
+        activePattern: 'admin.sync-simanta.*',
+        iconSvg: `<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l9-5-9-5-9 5 9 5z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0112 20.055a11.952 11.952 0 01-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z"/></svg>`,
+    },
+];
+
 const menuScanPreview = [
     {
         label: 'Tugas Scan SIMPEG',
@@ -279,6 +294,28 @@ const shouldHideSidebar = computed(() => props.hideSidebar);
                             <nav class="space-y-1">
                                 <Link
                                     v-for="item in menuAdministrasi"
+                                    :key="item.route"
+                                    :href="route(item.route)"
+                                    :class="[
+                                        'w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all',
+                                        isActive(item.activePattern)
+                                            ? 'bg-indigo-50 text-indigo-600 dark:bg-indigo-950/40 dark:text-indigo-400 shadow-sm font-semibold'
+                                            : 'text-gray-600 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-700/50'
+                                    ]"
+                                >
+                                    <span v-html="item.iconSvg"></span>
+                                    <span>{{ item.label }}</span>
+                                </Link>
+                            </nav>
+
+                            <!-- INTEGRASI & SYNC -->
+                            <div class="border-t border-gray-100 dark:border-gray-700 my-4"></div>
+                            <p class="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider px-3 mb-3">
+                                Integrasi & Sync
+                            </p>
+                            <nav class="space-y-1">
+                                <Link
+                                    v-for="item in menuIntegrasi"
                                     :key="item.route"
                                     :href="route(item.route)"
                                     :class="[
