@@ -83,9 +83,9 @@ const initCropper = () => {
         cropperInstance = new Cropper(imgEl, {
             aspectRatio: 3 / 4,
             initialAspectRatio: 3 / 4,
-            viewMode: 3,               // MENGISI TERANGKANVAS CONTAINER (BESAR/FULL HIGH & TIDAK BISA KELUAR FOTO!)
-            dragMode: 'move',          // Geser & zoom foto di belakang bingkai
-            autoCropArea: 0.85,
+            viewMode: 1,               // Mencegah kotak crop keluar dari batas gambar
+            dragMode: 'move',          // Geser & zoom foto di belakang bingkai 3:4
+            autoCropArea: 1.0,         // Ukuran crop maksimal (100% tinggi gambar)
             movable: true,
             zoomable: true,
             rotatable: true,
@@ -93,7 +93,7 @@ const initCropper = () => {
             guides: true,
             highlight: false,
             cropBoxMovable: false,     // Terkunci di tengah
-            cropBoxResizable: false,   // Tidak bisa di-resize
+            cropBoxResizable: false,   // Tidak bisa di-resize (TETAP 3:4 PORTRAIT)
             toggleDragModeOnDblclick: false,
             background: false,
             responsive: true,
@@ -482,13 +482,13 @@ const submitForm = () => {
                     <button @click="closeCropModal" type="button" class="text-gray-400 hover:text-gray-700 dark:hover:text-white text-2xl leading-none">&times;</button>
                 </div>
 
-                <!-- Cropper Area: Fixed height 480px (Full High) dengan foto mengisi penuh container -->
-                <div class="relative w-full h-[480px] bg-slate-950 flex items-center justify-center overflow-hidden">
+                <!-- Cropper Area: Fixed height 520px dengan foto besar di tengah -->
+                <div class="relative w-full h-[520px] bg-slate-950 flex items-center justify-center overflow-hidden p-2">
                     <img
                         ref="cropperImgRef"
                         src=""
                         alt="Crop Preview"
-                        class="block w-full"
+                        class="max-h-[500px] max-w-full block mx-auto"
                     />
                 </div>
 
