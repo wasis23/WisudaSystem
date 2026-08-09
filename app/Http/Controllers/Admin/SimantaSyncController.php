@@ -27,15 +27,25 @@ class SimantaSyncController extends Controller
 
         $tglDari   = $request->input('tgl_dari',   $defaultDari);
         $tglSampai = $request->input('tgl_sampai', $defaultSampai);
+        $search    = trim($request->input('search', $request->input('q', '')));
 
         $query = SimantaMahasiswaLulusCache::query()
             ->lulus()
             ->orderBy('tanggal_pendadaran', 'desc')
             ->orderBy('nama');
 
-        // Filter rentang jika diberikan
-        if ($tglDari && $tglSampai) {
+        // Filter rentang jika diberikan (atau dilewati jika user mencari NIM/Nama tertentu)
+        if ($tglDari && $tglSampai && empty($search)) {
             $query->whereBetween('tanggal_pendadaran', [$tglDari, $tglSampai]);
+        }
+
+        // Filter pencarian NIM / Nama / Judul TA
+        if (!empty($search)) {
+            $query->where(function ($q) use ($search) {
+                $q->where('nim', 'like', "%{$search}%")
+                  ->orWhere('nama', 'like', "%{$search}%")
+                  ->orWhere('judul_ta', 'like', "%{$search}%");
+            });
         }
 
         $stats = [
@@ -56,7 +66,7 @@ class SimantaSyncController extends Controller
             'stats'      => $stats,
             'recentLogs' => $recentLogs,
             'mahasiswa'  => $query->paginate(50)->withQueryString(),
-            'filter'     => ['tgl_dari' => $tglDari, 'tgl_sampai' => $tglSampai],
+            'filter'     => ['tgl_dari' => $tglDari, 'tgl_sampai' => $tglSampai, 'search' => $search],
             'default_range' => ['dari' => $defaultDari, 'sampai' => $defaultSampai],
         ]);
     }
@@ -65,19 +75,21 @@ class SimantaSyncController extends Controller
      * Trigger sync: pull data mahasiswa lulus dari SIMANTA API.
      *
      * POST params:
-     *   tgl_dari   : default = Oktober tahun lalu
-     *   tgl_sampai : default = Oktober tahun ini
+     *   tgl_dari    : default = Oktober tahun lalu
+     *   tgl_sampai  : default = Oktober tahun ini
      *   status_lulus: default = 1 (hanya yang lulus)
      *   prodi       : kosong = semua
+     *   search      : pencarian NIM / nama spesifik
      */
     public function sync(Request $request)
     {
         [$defaultDari, $defaultSampai] = SimantaMahasiswaLulusCache::tahunAkademiksaat();
 
-        $tglDari   = $request->input('tgl_dari',    $defaultDari);
-        $tglSampai = $request->input('tgl_sampai',  $defaultSampai);
+        $tglDari     = $request->input('tgl_dari',    $defaultDari);
+        $tglSampai   = $request->input('tgl_sampai',  $defaultSampai);
         $statusLulus = $request->input('status_lulus', '1');
-        $prodi     = $request->input('prodi', '');
+        $prodi       = $request->input('prodi', '');
+        $search      = trim($request->input('search', $request->input('q', '')));
 
         $apiUrl = rtrim(env('SIMANTA_API_URL', ''), '/');
         $apiKey = env('SIMANTA_API_KEY', '');
@@ -92,7 +104,7 @@ class SimantaSyncController extends Controller
             'notes'            => null,
             'filter_params'    => json_encode([
                 'tgl_dari' => $tglDari, 'tgl_sampai' => $tglSampai,
-                'status_lulus' => $statusLulus, 'prodi' => $prodi,
+                'status_lulus' => $statusLulus, 'prodi' => $prodi, 'search' => $search,
             ]),
             'triggered_by' => auth()->id(),
             'created_at'   => now(),
@@ -110,7 +122,8 @@ class SimantaSyncController extends Controller
                 'tgl_sampai'   => $tglSampai,
                 'status_lulus' => $statusLulus,
             ];
-            if (!empty($prodi)) $params['prodi'] = $prodi;
+            if (!empty($prodi))  $params['prodi']    = $prodi;
+            if (!empty($search)) $params['nim_nama'] = $search;
 
             $response = Http::timeout(90)
                 ->withHeaders([

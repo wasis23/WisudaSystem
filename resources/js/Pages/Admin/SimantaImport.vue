@@ -10,12 +10,24 @@ const props = defineProps({
     filter: Object,
 });
 
+const filterSearch = ref('');
 const selectedNims = ref(props.candidates ? props.candidates.map(c => c.nim) : []);
 const selectAll = ref(true);
 
+const filteredCandidates = computed(() => {
+    if (!props.candidates) return [];
+    if (!filterSearch.value.trim()) return props.candidates;
+    const q = filterSearch.value.toLowerCase().trim();
+    return props.candidates.filter(c => 
+        (c.nim && c.nim.toLowerCase().includes(q)) ||
+        (c.nama && c.nama.toLowerCase().includes(q)) ||
+        (c.judul_ta && c.judul_ta.toLowerCase().includes(q))
+    );
+});
+
 const toggleSelectAll = () => {
     if (selectAll.value) {
-        selectedNims.value = props.candidates ? props.candidates.map(c => c.nim) : [];
+        selectedNims.value = filteredCandidates.value.map(c => c.nim);
     } else {
         selectedNims.value = [];
     }
@@ -123,12 +135,18 @@ const formatDate = (dt) => {
 
         <!-- Table Candidates -->
         <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
-            <div class="px-5 py-4 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between">
+            <div class="px-5 py-4 border-b border-gray-100 dark:border-gray-700 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <h2 class="font-bold text-gray-800 dark:text-white text-sm flex items-center gap-2">
-                    📋 Mahasiswa Siap Import ({{ candidates?.length ?? 0 }})
+                    📋 Mahasiswa Siap Import ({{ filteredCandidates?.length ?? 0 }} / {{ candidates?.length ?? 0 }})
                 </h2>
-                <div class="flex items-center gap-2">
-                    <label class="text-xs text-gray-600 dark:text-gray-400 flex items-center gap-1.5 cursor-pointer">
+                <div class="flex items-center gap-3">
+                    <input
+                        v-model="filterSearch"
+                        type="text"
+                        placeholder="🔍 Filter NIM / Nama..."
+                        class="text-xs border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-xl px-3 py-1.5 focus:ring-2 focus:ring-indigo-500 outline-none w-48 sm:w-64"
+                    />
+                    <label class="text-xs text-gray-600 dark:text-gray-400 flex items-center gap-1.5 cursor-pointer shrink-0">
                         <input type="checkbox" v-model="selectAll" @change="toggleSelectAll" class="rounded border-gray-300 text-indigo-600" />
                         Pilih Semua
                     </label>
@@ -147,12 +165,12 @@ const formatDate = (dt) => {
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-gray-50 dark:divide-gray-700">
-                        <tr v-if="!candidates?.length">
+                        <tr v-if="!filteredCandidates?.length">
                             <td colspan="6" class="px-4 py-10 text-center text-gray-400">
-                                Tidak ada mahasiswa yang siap di-import. Semua data lulusan mungkin sudah terdaftar di sistem wisuda.
+                                {{ filterSearch ? 'Mahasiswa tidak ditemukan dengan kata kunci "' + filterSearch + '"' : 'Tidak ada mahasiswa yang siap di-import.' }}
                             </td>
                         </tr>
-                        <tr v-for="c in candidates" :key="c.nim" class="hover:bg-gray-50 dark:hover:bg-gray-750 transition-colors">
+                        <tr v-for="c in filteredCandidates" :key="c.nim" class="hover:bg-gray-50 dark:hover:bg-gray-750 transition-colors">
                             <td class="px-4 py-3 text-center">
                                 <input type="checkbox" :value="c.nim" v-model="selectedNims" class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" />
                             </td>

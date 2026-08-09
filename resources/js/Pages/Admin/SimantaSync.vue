@@ -15,11 +15,13 @@ const syncing = ref(false);
 const tglDari = ref(props.filter?.tgl_dari || props.default_range?.dari || '');
 const tglSampai = ref(props.filter?.tgl_sampai || props.default_range?.sampai || '');
 const prodi = ref('');
+const searchQuery = ref(props.filter?.search || '');
 
 const syncForm = useForm({
     tgl_dari: '',
     tgl_sampai: '',
     prodi: '',
+    search: '',
 });
 
 const doSync = () => {
@@ -27,6 +29,7 @@ const doSync = () => {
     syncForm.tgl_dari = tglDari.value;
     syncForm.tgl_sampai = tglSampai.value;
     syncForm.prodi = prodi.value;
+    syncForm.search = searchQuery.value;
     
     syncForm.post(route('admin.sync-simanta.sync'), {
         onFinish: () => { syncing.value = false; },
@@ -37,6 +40,7 @@ const applyFilter = () => {
     router.get(route('admin.sync-simanta.index'), {
         tgl_dari: tglDari.value,
         tgl_sampai: tglSampai.value,
+        search: searchQuery.value,
     }, { preserveState: true });
 };
 
@@ -202,11 +206,32 @@ const statusColor = (status) => {
 
             <!-- Daftar Mahasiswa Lulus Cache -->
             <div class="lg:col-span-2 bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
-                <div class="px-5 py-4 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between">
-                    <h2 class="font-bold text-gray-800 dark:text-white text-sm flex items-center gap-2">
-                        📜 Data Lulusan Sidang / Pendadaran (Cache)
+                <div class="px-5 py-4 border-b border-gray-100 dark:border-gray-700 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <h2 class="font-bold text-gray-800 dark:text-white text-sm flex items-center gap-2 shrink-0">
+                        📜 Data Lulusan Sidang / Pendadaran
                     </h2>
-                    <span class="text-xs text-gray-400">Total: {{ mahasiswa?.total ?? 0 }}</span>
+                    <div class="flex items-center gap-2 w-full sm:w-auto">
+                        <div class="relative flex-1 sm:w-64">
+                            <input
+                                v-model="searchQuery"
+                                @keydown.enter="applyFilter"
+                                type="text"
+                                placeholder="🔍 Cari NIM / Nama / Judul..."
+                                class="w-full text-xs border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-xl pl-3 pr-8 py-1.5 focus:ring-2 focus:ring-indigo-500 outline-none"
+                            />
+                            <button
+                                v-if="searchQuery"
+                                @click="searchQuery = ''; applyFilter();"
+                                class="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 text-xs"
+                            >✕</button>
+                        </div>
+                        <button
+                            @click="applyFilter"
+                            class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold rounded-xl shadow transition shrink-0"
+                        >
+                            Cari
+                        </button>
+                    </div>
                 </div>
                 <div class="overflow-x-auto">
                     <table class="w-full text-sm">
