@@ -75,16 +75,21 @@ class SimpegSyncController extends Controller
             if (!empty($statusFil)) $params['status'] = $statusFil;
 
             $response = Http::timeout(60)
-                ->withHeaders(['X-API-KEY' => $apiKey])
+                ->withHeaders([
+                    'X-API-KEY'  => $apiKey,
+                    'User-Agent' => 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                ])
                 ->get($apiUrl, $params);
 
             if (!$response->successful()) {
-                throw new \Exception("SIMPEG API error: HTTP {$response->status()} — {$response->body()}");
+                $bodySnippet = Str::limit(trim(strip_tags($response->body())), 250);
+                throw new \Exception("SIMPEG API error: HTTP {$response->status()}" . ($bodySnippet ? " — {$bodySnippet}" : ''));
             }
 
             $json = $response->json();
-            if (($json['status'] ?? '') !== 'success') {
-                throw new \Exception("SIMPEG API returned error: " . ($json['message'] ?? 'Unknown'));
+            if (!is_array($json) || ($json['status'] ?? '') !== 'success') {
+                $errMsg = $json['message'] ?? Str::limit(trim(strip_tags($response->body())), 250);
+                throw new \Exception("SIMPEG API error: " . ($errMsg ?: 'Unknown'));
             }
 
             $employees = $json['data'] ?? [];

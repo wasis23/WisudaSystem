@@ -113,16 +113,29 @@ class SimantaSyncController extends Controller
             if (!empty($prodi)) $params['prodi'] = $prodi;
 
             $response = Http::timeout(90)
-                ->withHeaders(['X-API-KEY' => $apiKey])
+                ->withHeaders([
+                    'X-API-KEY'  => $apiKey,
+                    'User-Agent' => 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                ])
                 ->get($apiUrl, $params);
 
             if (!$response->successful()) {
-                throw new \Exception("SIMANTA API error: HTTP {$response->status()} — {$response->body()}");
+                $bodySnippet = Str::limit(trim(strip_tags($response->body())), 250);
+                throw new \Exception("SIMANTA API error: HTTP {$response->status()}" . ($bodySnippet ? " — {$bodySnippet}" : ''));
             }
 
             $json = $response->json();
+            if (!is_array($json)) {
+                $rawBody = Str::limit(trim(strip_tags($response->body())), 250);
+                throw new \Exception("SIMANTA API error: Respons server bukan JSON valid" . ($rawBody ? " ({$rawBody})" : ''));
+            }
+
             if (($json['status'] ?? '') !== 'success') {
-                throw new \Exception("SIMANTA API error: " . ($json['message'] ?? 'Unknown'));
+                $errMsg = $json['message'] ?? (is_string($json) ? $json : null);
+                if (empty($errMsg)) {
+                    $errMsg = Str::limit(trim(strip_tags($response->body())), 250) ?: 'Status bukan success';
+                }
+                throw new \Exception("SIMANTA API error: {$errMsg}");
             }
 
             $dataList = $json['data'] ?? [];
