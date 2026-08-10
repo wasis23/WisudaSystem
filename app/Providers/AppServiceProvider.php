@@ -23,7 +23,8 @@ class AppServiceProvider extends ServiceProvider
     {
         Vite::prefetch(concurrency: 3);
 
-        if (str_starts_with(config('app.url'), 'https') || request()->header('x-forwarded-proto') === 'https' || app()->environment('production')) {
+        // Force HTTPS for non-local domain hosts (e.g. wisuda.poltekindonusa.ac.id)
+        if (!in_array(request()->getHost(), ['localhost', '127.0.0.1'])) {
             URL::forceScheme('https');
         }
     }
