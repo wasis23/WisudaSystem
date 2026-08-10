@@ -7,6 +7,7 @@ const props = defineProps({
     stats: Object,
     recentLogs: Array,
     employees: Object, // paginated
+    filters: Object,
 });
 
 const syncing = ref(false);
@@ -35,8 +36,8 @@ const statusColor = (status) => {
     return 'bg-red-100 text-red-800';
 };
 
-const searchQ = ref('');
-const searchStatus = ref('');
+const searchQ = ref(props.filters?.q || '');
+const searchStatus = ref(props.filters?.status || '');
 const searching = ref(false);
 
 const doSearch = () => {
@@ -46,8 +47,15 @@ const doSearch = () => {
         status: searchStatus.value,
     }, {
         preserveState: true,
+        replace: true,
         onFinish: () => { searching.value = false; },
     });
+};
+
+const resetSearch = () => {
+    searchQ.value = '';
+    searchStatus.value = '';
+    doSearch();
 };
 </script>
 
@@ -151,7 +159,7 @@ const doSearch = () => {
                     <h2 class="font-bold text-gray-800 dark:text-white text-sm flex items-center gap-2 shrink-0">
                         👥 Data Pegawai (Cache Lokal)
                     </h2>
-                    <div class="flex gap-2 ml-auto w-full sm:w-auto">
+                    <div class="flex items-center gap-2 ml-auto w-full sm:w-auto">
                         <input
                             v-model="searchQ"
                             @keydown.enter="doSearch"
@@ -168,6 +176,21 @@ const doSearch = () => {
                             <option value="dosen">Dosen</option>
                             <option value="tendik">Tendik</option>
                         </select>
+                        <button
+                            @click="doSearch"
+                            :disabled="searching"
+                            class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-medium rounded-lg transition"
+                        >
+                            Cari
+                        </button>
+                        <button
+                            v-if="searchQ || searchStatus"
+                            @click="resetSearch"
+                            title="Reset Pencarian"
+                            class="px-2 py-1.5 bg-gray-200 dark:bg-gray-600 hover:bg-gray-300 text-gray-700 dark:text-white text-xs font-medium rounded-lg transition"
+                        >
+                            ✕
+                        </button>
                     </div>
                 </div>
                 <div class="overflow-x-auto">

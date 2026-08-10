@@ -1,4 +1,5 @@
 <script setup>
+import AdminLayout from '@/Layouts/AdminLayout.vue';
 import PanitiaLayout from '@/Layouts/PanitiaLayout.vue';
 import { Head, Link, router, usePage } from '@inertiajs/vue3';
 import { ref, computed } from 'vue';
@@ -7,22 +8,31 @@ const props = defineProps({
     periodes: Array,
     selectedPeriodeId: Number,
     programStudis: Array,
-    wisudawans: Array,
+    wisudawans: [Object, Array],
     counts: Object,
     filters: Object,
+    isAdmin: {
+        type: Boolean,
+        default: false,
+    },
 });
 
 const page = usePage();
 const flashSuccess = computed(() => page.props.flash?.success);
 const flashError = computed(() => page.props.flash?.error);
 
-const searchInput = ref(props.filters.search || '');
-const selectedProdi = ref(props.filters.program_studi_id || '');
-const currentStatus = ref(props.filters.status || '');
+const searchInput = ref(props.filters?.search || '');
+const selectedProdi = ref(props.filters?.program_studi_id || '');
+const currentStatus = ref(props.filters?.status || '');
+
+const wisudawanList = computed(() => {
+    return Array.isArray(props.wisudawans) ? props.wisudawans : (props.wisudawans?.data || []);
+});
 
 const filterWisudawan = () => {
+    const routeName = props.isAdmin ? 'admin.monitoring-presensi' : 'panitia.presensi.wisudawan';
     router.get(
-        route('panitia.presensi.wisudawan'),
+        route(routeName),
         {
             periode_id: props.selectedPeriodeId,
             program_studi_id: selectedProdi.value,
@@ -42,7 +52,7 @@ const setStatusTab = (status) => {
 <template>
     <Head title="Data Presensi Wisudawan" />
 
-    <PanitiaLayout>
+    <component :is="isAdmin ? AdminLayout : PanitiaLayout">
         <div class="space-y-6">
             
             <!-- Page Header Card & Sub-Navigation Tabs -->
@@ -59,8 +69,8 @@ const setStatusTab = (status) => {
                     </p>
                 </div>
 
-                <!-- Sub-Navigation Switcher Tabs -->
-                <div class="flex items-center bg-gray-100 dark:bg-gray-700/60 p-1 rounded-xl shrink-0">
+                <!-- Sub-Navigation Switcher Tabs (Panitia View Only) -->
+                <div v-if="!isAdmin" class="flex items-center bg-gray-100 dark:bg-gray-700/60 p-1 rounded-xl shrink-0">
                     <Link
                         :href="route('panitia.presensi')"
                         class="px-4 py-2 text-xs font-bold rounded-lg transition text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white flex items-center gap-1.5"
@@ -199,7 +209,7 @@ const setStatusTab = (status) => {
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-gray-100 dark:divide-gray-700/60 font-medium">
-                            <tr v-for="w in wisudawans" :key="w.id" class="hover:bg-gray-50/80 dark:hover:bg-gray-700/40 transition">
+                            <tr v-for="w in wisudawanList" :key="w.id" class="hover:bg-gray-50/80 dark:hover:bg-gray-700/40 transition">
                                 
                                 <!-- Wisudawan Info -->
                                 <td class="py-3.5 px-4">
@@ -255,7 +265,7 @@ const setStatusTab = (status) => {
 
                             </tr>
 
-                            <tr v-if="!wisudawans || wisudawans.length === 0">
+                            <tr v-if="!wisudawanList || wisudawanList.length === 0">
                                 <td colspan="4" class="py-12 text-center text-gray-400 text-xs">
                                     Tidak ada data wisudawan dengan kriteria filter ini.
                                 </td>
@@ -263,8 +273,33 @@ const setStatusTab = (status) => {
                         </tbody>
                     </table>
                 </div>
+
+                <!-- Pagination Footer -->
+                <div v-if="wisudawans?.last_page > 1" class="px-5 py-4 border-t border-gray-100 dark:border-gray-700 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-gray-500 dark:text-gray-400">
+                    <div>
+                        Menampilkan <strong>{{ wisudawans.from || 0 }}</strong> - <strong>{{ wisudawans.to || 0 }}</strong> dari <strong>{{ wisudawans.total || 0 }}</strong> wisudawan (50 per halaman)
+                    </div>
+                    <div class="flex items-center gap-1 flex-wrap">
+                        <Link
+                            v-for="(link, idx) in wisudawans.links"
+                            :key="idx"
+                            :href="link.url || '#'"
+                            v-html="link.label"
+                            :class="[
+                                'px-3 py-1.5 rounded-lg text-xs font-semibold transition',
+                                link.active
+                                    ? 'bg-indigo-600 text-white shadow-sm'
+                                    : link.url
+                                        ? 'bg-gray-50 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-600'
+                                        : 'text-gray-400 dark:text-gray-600 cursor-not-allowed opacity-50'
+                            ]"
+                            :preserve-state="true"
+                            :preserve-scroll="true"
+                        />
+                    </div>
+                </div>
             </div>
 
         </div>
-    </PanitiaLayout>
+    </component>
 </template>

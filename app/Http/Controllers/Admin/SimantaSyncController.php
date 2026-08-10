@@ -204,6 +204,61 @@ class SimantaSyncController extends Controller
             );
 
         } catch (\Exception $e) {
+            // Fallback: jika API SIMANTA bermasalah/error, coba tarik dari database SIAKAD (viewMahasiswaKeluar)
+            try {
+                $siakadList = DB::connection('siakad')
+                    ->table('viewMahasiswaKeluar')
+                    ->where('ket_keluar', 'Lulus')
+                    ->get();
+
+                if ($siakadList->isNotEmpty()) {
+                    $syncedAt = now();
+                    $inserted = 0;
+                    $updated  = 0;
+
+                    foreach ($siakadList as $item) {
+                        $nim = $item->nipd ?? null;
+                        if (empty($nim)) continue;
+
+                        $payload = [
+                            'nim'                         => $nim,
+                            'nama'                        => $item->nm_pd ?? $nim,
+                            'judul_ta'                    => $item->judul_skripsi ?? null,
+                            'kode_prodi'                  => substr($nim, 1, 1),
+                            'nama_prodi'                  => $item->nm_lemb ?? null,
+                            'status_persetujuan'          => 'disetujui',
+                            'status_lulus'                => 1,
+                            'tanggal_pendadaran'          => $this->safeDate($item->tgl_keluar ?? null) ?? now()->toDateString(),
+                            'sync_tgl_dari'               => $tglDari,
+                            'sync_tgl_sampai'             => $tglSampai,
+                            'synced_at'                   => $syncedAt,
+                            'updated_at'                  => $syncedAt,
+                        ];
+
+                        $existing = SimantaMahasiswaLulusCache::where('nim', $nim)->first();
+                        if ($existing) {
+                            $existing->update($payload);
+                            $updated++;
+                        } else {
+                            $payload['created_at'] = $syncedAt;
+                            SimantaMahasiswaLulusCache::create($payload);
+                            $inserted++;
+                        }
+                    }
+
+                    $logData['records_fetched']  = $siakadList->count();
+                    $logData['records_inserted'] = $inserted;
+                    $logData['records_updated']  = $updated;
+                    $logData['status']           = 'success';
+                    $logData['notes']            = "Sync SIMANTA via Fallback SIAKAD: {$inserted} ditambah, {$updated} diperbarui.";
+                    DB::table('external_sync_logs')->insert($logData);
+
+                    return back()->with('success', "✅ Sync SIMANTA berhasil (via Fallback Data SIAKAD)! {$inserted} mahasiswa baru, {$updated} diperbarui.");
+                }
+            } catch (\Exception $ex) {
+                Log::warning('SIAKAD Fallback error: ' . $ex->getMessage());
+            }
+
             Log::error('SimantaSync error: ' . $e->getMessage());
             $logData['notes'] = $e->getMessage();
             DB::table('external_sync_logs')->insert($logData);
@@ -261,23 +316,35 @@ class SimantaSyncController extends Controller
     {
         [$defaultDari, $defaultSampai] = SimantaMahasiswaLulusCache::tahunAkademiksaat();
 
-        $tglDari   = $request->input('tgl_dari',   $defaultDari);
-        $tglSampai = $request->input('tgl_sampai', $defaultSampai);
+        $tglDari    = $request->input('tgl_dari',   $defaultDari);
+        $tglSampai  = $request->input('tgl_sampai', $defaultSampai);
+        $ignoreDate = $request->boolean('ignore_date');
 
-        $candidates = SimantaMahasiswaLulusCache::lulus()
-            ->whereBetween('tanggal_pendadaran', [$tglDari, $tglSampai])
-            ->belumTerdaftarWisuda()
-            ->orderBy('nama')
-            ->get();
+        $query = SimantaMahasiswaLulusCache::lulus()->belumTerdaftarWisuda();
+
+        if (!$ignoreDate && !empty($tglDari) && !empty($tglSampai)) {
+            $query->whereBetween('tanggal_pendadaran', [$tglDari, $tglSampai]);
+        }
+
+        $candidates = $query->orderBy('nama')->get();
+
+        $totalUnimported = SimantaMahasiswaLulusCache::lulus()->belumTerdaftarWisuda()->count();
+        $totalInCache    = SimantaMahasiswaLulusCache::count();
 
         $activePeriode = PeriodeWisuda::getActive() ?? PeriodeWisuda::latest()->first();
         $programStudis = ProgramStudi::orderBy('nama_prodi')->get();
 
         return Inertia::render('Admin/SimantaImport', [
-            'candidates'    => $candidates,
-            'activePeriode' => $activePeriode,
-            'programStudis' => $programStudis,
-            'filter'        => ['tgl_dari' => $tglDari, 'tgl_sampai' => $tglSampai],
+            'candidates'      => $candidates,
+            'activePeriode'   => $activePeriode,
+            'programStudis'   => $programStudis,
+            'filter'          => [
+                'tgl_dari'    => $tglDari,
+                'tgl_sampai'  => $tglSampai,
+                'ignore_date' => $ignoreDate,
+            ],
+            'totalUnimported' => $totalUnimported,
+            'totalInCache'    => $totalInCache,
         ]);
     }
 
@@ -329,14 +396,18 @@ class SimantaSyncController extends Controller
         // Load semua program studi sekali
         $programStudis = ProgramStudi::all()->keyBy('kode_prodi');
 
+        $ignoreDate = $request->boolean('ignore_date');
+
         // Query cache candidates
-        $query = SimantaMahasiswaLulusCache::lulus()
-            ->whereBetween('tanggal_pendadaran', [$tglDari, $tglSampai]);
+        $query = SimantaMahasiswaLulusCache::lulus();
 
         if (!empty($pilihanNim)) {
             $query->whereIn('nim', $pilihanNim);
         } else {
             $query->belumTerdaftarWisuda();
+            if (!$ignoreDate && !empty($tglDari) && !empty($tglSampai)) {
+                $query->whereBetween('tanggal_pendadaran', [$tglDari, $tglSampai]);
+            }
         }
 
         $candidates = $query->orderBy('nama')->get();

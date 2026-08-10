@@ -104,7 +104,7 @@ class PresensiWisudawanController extends Controller
         $selectedPeriodeId = $request->periode_id ?? $activePeriode?->id;
         $programStudis = ProgramStudi::all();
 
-        $query = Wisudawan::with(['programStudi', 'tamuTambahan'])
+        $query = Wisudawan::with('programStudi')
             ->where('periode_wisuda_id', $selectedPeriodeId)
             ->where('status_verifikasi', 'verified');
 
@@ -130,7 +130,7 @@ class PresensiWisudawanController extends Controller
             }
         }
 
-        $wisudawans = $query->orderBy('program_studi_id')->orderBy('nama_lengkap')->get();
+        $wisudawans = $query->orderBy('program_studi_id')->orderBy('nama_lengkap')->paginate(50)->withQueryString();
 
         $baseQuery = Wisudawan::where('periode_wisuda_id', $selectedPeriodeId)->where('status_verifikasi', 'verified');
         $counts = [
@@ -147,6 +147,7 @@ class PresensiWisudawanController extends Controller
             'wisudawans' => $wisudawans,
             'counts' => $counts,
             'filters' => $request->only(['periode_id', 'program_studi_id', 'status', 'search']),
+            'isAdmin' => $request->routeIs('admin.*') || str_starts_with($request->path(), 'admin'),
         ]);
     }
 

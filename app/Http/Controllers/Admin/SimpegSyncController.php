@@ -16,8 +16,11 @@ class SimpegSyncController extends Controller
     /**
      * Halaman status sync SIMPEG.
      */
-    public function index()
+    public function index(Request $request)
     {
+        $q      = trim($request->input('q', ''));
+        $status = $request->input('status', '');
+
         $lastSync = SimpegEmployeeCache::max('synced_at');
         $total    = SimpegEmployeeCache::count();
         $dosen    = SimpegEmployeeCache::dosen()->count();
@@ -29,6 +32,18 @@ class SimpegSyncController extends Controller
             ->limit(10)
             ->get();
 
+        $query = SimpegEmployeeCache::query();
+
+        if (!empty($q)) {
+            $query->search($q);
+        }
+
+        if ($status === 'dosen') {
+            $query->dosen();
+        } elseif (in_array($status, ['tendik', 'pegawai'])) {
+            $query->tendik();
+        }
+
         return Inertia::render('Admin/SimpegSync', [
             'stats' => [
                 'last_sync'    => $lastSync,
@@ -37,7 +52,11 @@ class SimpegSyncController extends Controller
                 'tendik'       => $tendik,
             ],
             'recentLogs' => $recentLogs,
-            'employees'  => SimpegEmployeeCache::orderBy('nama')->paginate(50),
+            'employees'  => $query->orderBy('nama')->paginate(50)->withQueryString(),
+            'filters'    => [
+                'q'      => $q,
+                'status' => $status,
+            ],
         ]);
     }
 

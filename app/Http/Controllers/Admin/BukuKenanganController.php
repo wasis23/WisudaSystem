@@ -21,18 +21,23 @@ class BukuKenanganController extends Controller
         $query = Wisudawan::with(['programStudi'])
             ->where('periode_wisuda_id', $selectedPeriodeId);
 
-        if ($request->filled('program_studi_id')) {
-            $query->where('program_studi_id', $request->program_studi_id);
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('nama_lengkap', 'like', "%{$search}%")
+                  ->orWhere('nim', 'like', "%{$search}%")
+                  ->orWhere('judul_ta', 'like', "%{$search}%");
+            });
         }
 
-        $wisudawans = $query->orderBy('program_studi_id')->orderBy('ipk', 'desc')->get();
+        $wisudawans = $query->orderBy('program_studi_id')->orderBy('ipk', 'desc')->paginate(50)->withQueryString();
 
         return Inertia::render('Admin/BukuKenangan/Index', [
             'periodes' => $periodes,
             'selectedPeriodeId' => (int) $selectedPeriodeId,
             'programStudis' => $programStudis,
             'wisudawans' => $wisudawans,
-            'filters' => $request->only(['periode_id', 'program_studi_id']),
+            'filters' => $request->only(['periode_id', 'program_studi_id', 'search']),
         ]);
     }
 

@@ -1,23 +1,29 @@
 <script setup>
-import AuthenticatedLayout from '@/Layouts/AdminLayout.vue';
-import { Head, router } from '@inertiajs/vue3';
-import { ref } from 'vue';
+import AdminLayout from '@/Layouts/AdminLayout.vue';
+import { Head, Link, router } from '@inertiajs/vue3';
+import { ref, computed } from 'vue';
 
 const props = defineProps({
     periodes: Array,
     selectedPeriodeId: Number,
     programStudis: Array,
-    wisudawans: Array,
+    wisudawans: [Object, Array],
     filters: Object,
 });
 
 const selectedPeriode = ref(props.selectedPeriodeId || '');
-const selectedProdi = ref(props.filters.program_studi_id || '');
+const selectedProdi = ref(props.filters?.program_studi_id || '');
+const searchInput = ref(props.filters?.search || '');
+
+const wisudawanList = computed(() => {
+    return Array.isArray(props.wisudawans) ? props.wisudawans : (props.wisudawans?.data || []);
+});
 
 const filterYearbook = () => {
     router.get(route('admin.buku-kenangan.index'), {
         periode_id: selectedPeriode.value,
         program_studi_id: selectedProdi.value,
+        search: searchInput.value,
     }, { preserveState: true, replace: true });
 };
 
@@ -33,7 +39,7 @@ const downloadPdf = () => {
 <template>
     <Head title="Penyusunan Buku Kenangan Wisuda" />
 
-    <AuthenticatedLayout>
+    <AdminLayout>
         <div class="space-y-6">
             
             <!-- Header Card -->
@@ -52,7 +58,7 @@ const downloadPdf = () => {
 
                 <button
                     @click="downloadPdf"
-                    class="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl transition shadow-sm flex items-center gap-2"
+                    class="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl transition shadow-sm flex items-center gap-2 shrink-0"
                 >
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -62,27 +68,43 @@ const downloadPdf = () => {
             </div>
 
             <!-- Filters Bar -->
-            <div class="bg-white dark:bg-gray-800 p-5 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm flex flex-col md:flex-row gap-4 items-center justify-between">
-                <div class="flex flex-col sm:flex-row items-center gap-4 w-full md:w-auto">
-                    <div>
+            <div class="bg-white dark:bg-gray-800 p-5 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm flex flex-col lg:flex-row gap-4 items-center justify-between">
+                <div class="flex flex-col sm:flex-row items-center gap-3 w-full lg:w-auto">
+                    <div class="w-full sm:w-auto">
                         <label class="text-[11px] font-bold text-gray-400 dark:text-gray-400 uppercase block mb-1">Periode Wisuda:</label>
-                        <select v-model="selectedPeriode" @change="filterYearbook" class="rounded-xl border-gray-200 dark:border-gray-700 dark:bg-gray-900 text-xs font-medium">
+                        <select v-model="selectedPeriode" @change="filterYearbook" class="w-full sm:w-auto rounded-xl border-gray-200 dark:border-gray-700 dark:bg-gray-900 text-xs font-medium text-gray-700 dark:text-gray-300">
                             <option v-for="p in periodes" :key="p.id" :value="p.id">{{ p.nama_periode }}</option>
                         </select>
                     </div>
 
-                    <div>
+                    <div class="w-full sm:w-auto">
                         <label class="text-[11px] font-bold text-gray-400 dark:text-gray-400 uppercase block mb-1">Program Studi:</label>
-                        <select v-model="selectedProdi" @change="filterYearbook" class="rounded-xl border-gray-200 dark:border-gray-700 dark:bg-gray-900 text-xs font-medium">
+                        <select v-model="selectedProdi" @change="filterYearbook" class="w-full sm:w-auto rounded-xl border-gray-200 dark:border-gray-700 dark:bg-gray-900 text-xs font-medium text-gray-700 dark:text-gray-300">
                             <option value="">Semua Program Studi</option>
                             <option v-for="ps in programStudis" :key="ps.id" :value="ps.id">{{ ps.nama_prodi }} ({{ ps.jenjang }})</option>
                         </select>
                     </div>
+
+                    <div class="w-full sm:w-64">
+                        <label class="text-[11px] font-bold text-gray-400 dark:text-gray-400 uppercase block mb-1">Pencarian:</label>
+                        <div class="relative">
+                            <input
+                                v-model="searchInput"
+                                @keyup.enter="filterYearbook"
+                                type="text"
+                                placeholder="Cari Nama / NIM / Judul..."
+                                class="w-full rounded-xl border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 pl-8 pr-3 py-1.5 text-xs text-gray-900 dark:text-white focus:border-indigo-500 focus:ring-indigo-500"
+                            />
+                            <svg class="w-3.5 h-3.5 text-gray-400 absolute left-2.5 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                            </svg>
+                        </div>
+                    </div>
                 </div>
 
-                <div>
-                    <span class="text-xs font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/50 px-3 py-1.5 rounded-xl border border-indigo-200 dark:border-indigo-800 inline-block">
-                        Total: {{ wisudawans ? wisudawans.length : 0 }} Wisudawan Terverifikasi
+                <div class="shrink-0 w-full lg:w-auto text-right">
+                    <span class="text-xs font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/50 px-3 py-2 rounded-xl border border-indigo-200 dark:border-indigo-800 inline-block">
+                        Total: {{ wisudawans?.total ?? wisudawanList.length }} Wisudawan
                     </span>
                 </div>
             </div>
@@ -90,7 +112,7 @@ const downloadPdf = () => {
             <!-- Preview Grid Cards -->
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 <div
-                    v-for="w in wisudawans"
+                    v-for="w in wisudawanList"
                     :key="w.id"
                     class="bg-white dark:bg-gray-800 rounded-2xl p-5 border border-gray-100 dark:border-gray-700 shadow-sm space-y-3 hover:border-indigo-200 dark:hover:border-indigo-800 transition"
                 >
@@ -102,7 +124,7 @@ const downloadPdf = () => {
                         <div class="space-y-1 min-w-0 flex-1">
                             <span class="font-mono text-xs font-bold text-indigo-600 dark:text-indigo-400">{{ w.nim }}</span>
                             <h4 class="font-bold text-gray-900 dark:text-white text-sm leading-snug truncate">{{ w.nama_lengkap }}{{ w.gelar ? `, ${w.gelar}` : '' }}</h4>
-                            <p class="text-xs text-gray-500 dark:text-gray-400 font-medium">
+                            <p class="text-xs text-gray-500 dark:text-gray-400 font-medium truncate">
                                 {{ w.program_studi?.nama_prodi }}
                             </p>
                             <div class="flex items-center gap-2 pt-0.5">
@@ -119,10 +141,35 @@ const downloadPdf = () => {
                 </div>
             </div>
 
-            <div v-if="!wisudawans || wisudawans.length === 0" class="bg-white dark:bg-gray-800 rounded-2xl p-12 text-center text-gray-400 text-xs border border-gray-100 dark:border-gray-700">
-                Belum ada wisudawan terverifikasi untuk periode ini.
+            <div v-if="!wisudawanList || wisudawanList.length === 0" class="bg-white dark:bg-gray-800 rounded-2xl p-12 text-center text-gray-400 text-xs border border-gray-100 dark:border-gray-700">
+                Belum ada wisudawan terverifikasi untuk periode atau filter ini.
+            </div>
+
+            <!-- Pagination Footer -->
+            <div v-if="wisudawans?.last_page > 1" class="bg-white dark:bg-gray-800 rounded-2xl p-4 border border-gray-100 dark:border-gray-700 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-gray-500 dark:text-gray-400">
+                <div>
+                    Menampilkan <strong>{{ wisudawans.from || 0 }}</strong> - <strong>{{ wisudawans.to || 0 }}</strong> dari <strong>{{ wisudawans.total || 0 }}</strong> wisudawan (50 per halaman)
+                </div>
+                <div class="flex items-center gap-1 flex-wrap">
+                    <Link
+                        v-for="(link, idx) in wisudawans.links"
+                        :key="idx"
+                        :href="link.url || '#'"
+                        v-html="link.label"
+                        :class="[
+                            'px-3 py-1.5 rounded-lg text-xs font-semibold transition',
+                            link.active
+                                ? 'bg-indigo-600 text-white shadow-sm'
+                                : link.url
+                                    ? 'bg-gray-50 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-600'
+                                    : 'text-gray-400 dark:text-gray-600 cursor-not-allowed opacity-50'
+                        ]"
+                        :preserve-state="true"
+                        :preserve-scroll="true"
+                    />
+                </div>
             </div>
 
         </div>
-    </AuthenticatedLayout>
+    </AdminLayout>
 </template>
