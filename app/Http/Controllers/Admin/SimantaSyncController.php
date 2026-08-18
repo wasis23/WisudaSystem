@@ -560,19 +560,27 @@ class SimantaSyncController extends Controller
                 ]);
 
                 // Auto-generate default 2 tamu pendamping
-                \App\Models\WisudawanTamuTambahan::create([
-                    'wisudawan_id'   => $wisudawan->id,
-                    'nama_tamu'      => 'Pendamping 1 (Orang Tua / Wali)',
-                    'hubungan'       => 'Orang Tua / Wali',
-                    'qr_guest_token' => 'GST-1-' . $nim,
-                ]);
+                \App\Models\WisudawanTamuTambahan::firstOrCreate(
+                    [
+                        'wisudawan_id'   => $wisudawan->id,
+                        'nama_tamu'      => 'Pendamping 1 (Orang Tua / Wali)',
+                    ],
+                    [
+                        'hubungan'       => 'Orang Tua / Wali',
+                        'qr_guest_token' => 'GST-1-' . $nim,
+                    ]
+                );
 
-                \App\Models\WisudawanTamuTambahan::create([
-                    'wisudawan_id'   => $wisudawan->id,
-                    'nama_tamu'      => 'Pendamping 2 (Orang Tua / Wali)',
-                    'hubungan'       => 'Orang Tua / Wali',
-                    'qr_guest_token' => 'GST-2-' . $nim,
-                ]);
+                \App\Models\WisudawanTamuTambahan::firstOrCreate(
+                    [
+                        'wisudawan_id'   => $wisudawan->id,
+                        'nama_tamu'      => 'Pendamping 2 (Orang Tua / Wali)',
+                    ],
+                    [
+                        'hubungan'       => 'Orang Tua / Wali',
+                        'qr_guest_token' => 'GST-2-' . $nim,
+                    ]
+                );
 
                 // ── 4. Update link di cache jika model Eloquent ────────────────
                 if ($item instanceof SimantaMahasiswaLulusCache) {
