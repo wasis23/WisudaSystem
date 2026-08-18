@@ -159,7 +159,7 @@ class LoginRequest extends FormRequest
         }
 
         // ─────────────────────────────────────────────────────────────
-        // STRATEGY B: NIDN (semua angka) → Dosen/Staf via SIMPEG
+        // STRATEGY B: NIDN (semua angka) → Dosen/Staf via SIMPEG / SIAKAD
         // ─────────────────────────────────────────────────────────────
         elseif (preg_match('/^[0-9]+$/', $loginInput)) {
             $nidn = $loginInput;
@@ -179,13 +179,11 @@ class LoginRequest extends FormRequest
                     })
                     ->first();
 
-                if (!$duty) {
-                    throw ValidationException::withMessages([
-                        'email' => 'Akun pegawai Anda (' . ($simpegUser['nama'] ?? $nidn) . ') belum ditugaskan sebagai Security atau Receptionist oleh Admin Utama.',
-                    ]);
-                }
+                $existingUser = User::where('email', $email)
+                    ->orWhere('email', $simpegUser['email'] ?? '')
+                    ->first();
 
-                $role = $duty->duty_role;
+                $role = $duty?->duty_role ?? $existingUser?->role ?? 'security';
 
                 $user = User::updateOrCreate(
                     ['email' => $email],
@@ -218,7 +216,7 @@ class LoginRequest extends FormRequest
 
         // ─────────────────────────────────────────────────────────────
         // STRATEGY D: Username non-angka non-huruf (pegawai manual)
-        //             → SIMPEG API juga (username simpeg seperti "andi.susanto")
+        //             → SIMPEG / SIAKAD API juga
         // ─────────────────────────────────────────────────────────────
         if (!$isEmail) {
             $usernameClean = str_replace('@poltekindonusa.ac.id', '', $loginInput);
@@ -238,13 +236,11 @@ class LoginRequest extends FormRequest
                     })
                     ->first();
 
-                if (!$duty) {
-                    throw ValidationException::withMessages([
-                        'email' => 'Akun pegawai Anda (' . ($simpegUser['nama'] ?? $nidn) . ') belum ditugaskan sebagai Security atau Receptionist oleh Admin Utama.',
-                    ]);
-                }
+                $existingUser = User::where('email', $email)
+                    ->orWhere('email', $simpegUser['email'] ?? '')
+                    ->first();
 
-                $role = $duty->duty_role;
+                $role = $duty?->duty_role ?? $existingUser?->role ?? 'security';
 
                 $user = User::updateOrCreate(
                     ['email' => $email],

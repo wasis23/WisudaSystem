@@ -66,6 +66,7 @@ class SimpegIntegrationService
                             'username' => $emp->username ?? $emp->NIDN ?? $emp->email ?? 'pegawai_' . ($emp->id_sdm ?? rand(100, 999)),
                             'nama' => $emp->nama ?? 'Pegawai Indonusa',
                             'status' => $emp->status ?? 'Tendik',
+                            'jenis' => strtolower($emp->status ?? 'tendik'),
                             'email' => $emp->email ?? null,
                         ];
                     })->toArray();
@@ -73,6 +74,31 @@ class SimpegIntegrationService
             } catch (\Exception $e) {
                 Log::warning('SIMPEG DB Integration error: ' . $e->getMessage());
             }
+        }
+
+        // 3. Always merge / augment with SIAKAD DB wsia_dosen so all 290+ dosens are available
+        try {
+            $existingUsernames = collect($employees)->pluck('username')->filter()->toArray();
+            $dosens = DB::connection('siakad')->table('wsia_dosen')->whereNotNull('nm_ptk')->orderBy('nm_ptk', 'asc')->get();
+            
+            foreach ($dosens as $d) {
+                $uName = $d->nidn ?: ($d->nik ?: null);
+                if ($uName && !in_array($uName, $existingUsernames)) {
+                    $employees[] = [
+                        'id_sdm' => $d->id_ptk ?? null,
+                        'nidn' => $d->nidn ?? null,
+                        'nip' => $d->nip ?? $d->nik ?? null,
+                        'username' => $uName,
+                        'nama' => $d->nm_ptk ?? 'Dosen Indonusa',
+                        'status' => 'Dosen',
+                        'jenis' => 'dosen',
+                        'email' => $d->email_poltek ?: ($d->email ?: null),
+                    ];
+                    $existingUsernames[] = $uName;
+                }
+            }
+        } catch (\Exception $e) {
+            Log::warning('SIAKAD wsia_dosen Integration error: ' . $e->getMessage());
         }
 
         // Filter results locally in-memory if search parameter is provided
@@ -180,6 +206,45 @@ class SimpegIntegrationService
             }
         } catch (\Exception $e) {
             Log::warning('SIMPEG DB fallback check error: ' . $e->getMessage());
+        }
+
+        // 3. Try SIAKAD DB fallback (wsia_dosen)
+        try {
+            $dosen = DB::connection('siakad')->table('wsia_dosen')
+                ->where('nidn', $cleanUsername)
+                ->orWhere('nip', $cleanUsername)
+                ->orWhere('nik', $cleanUsername)
+                ->orWhere('email', $cleanUsername)
+                ->orWhere('email_poltek', $cleanUsername)
+                ->first();
+
+            if ($dosen) {
+                $hash = trim((string)($dosen->pass ?? ''));
+                $passwordValid = false;
+
+                if ($hash && password_verify($password, $hash)) {
+                    $passwordValid = true;
+                } elseif ($hash && md5($password) === strtolower($hash)) {
+                    $passwordValid = true;
+                } elseif ($hash && sha1($password) === strtolower($hash)) {
+                    $passwordValid = true;
+                } elseif ($hash && $password === $hash) {
+                    $passwordValid = true;
+                }
+
+                if ($passwordValid) {
+                    return [
+                        'id_sdm'   => $dosen->id_ptk ?? null,
+                        'nidn'     => $dosen->nidn ?? null,
+                        'nip'      => $dosen->nip ?? $dosen->nik ?? null,
+                        'username' => $dosen->nidn ?? $cleanUsername,
+                        'nama'     => $dosen->nm_ptk ?? $cleanUsername,
+                        'email'    => $dosen->email_poltek ?: ($dosen->email ?: ($cleanUsername . '@poltekindonusa.ac.id')),
+                    ];
+                }
+            }
+        } catch (\Exception $e) {
+            Log::warning('SIAKAD Dosen Auth error: ' . $e->getMessage());
         }
 
         return null;

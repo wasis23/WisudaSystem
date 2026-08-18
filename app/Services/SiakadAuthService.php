@@ -60,11 +60,17 @@ class SiakadAuthService
             $student = \Illuminate\Support\Facades\DB::connection('siakad')
                 ->table('viewMahasiswaPt')
                 ->where('nipd', $cleanNim)
-                ->orWhere('nim', $cleanNim)
                 ->first();
 
+            if (!$student) {
+                $student = \Illuminate\Support\Facades\DB::connection('siakad')
+                    ->table('viewMahasiswaKeluar')
+                    ->where('nipd', $cleanNim)
+                    ->first();
+            }
+
             if ($student) {
-                $hash = trim((string)($student->password ?? $student->pass ?? ''));
+                $hash = trim((string)($student->pass ?? $student->password ?? ''));
                 $passwordValid = false;
 
                 if ($hash && password_verify($password, $hash)) {
@@ -73,15 +79,17 @@ class SiakadAuthService
                     $passwordValid = true;
                 } elseif ($hash && sha1($password) === strtolower($hash)) {
                     $passwordValid = true;
+                } elseif ($hash && $password === $hash) {
+                    $passwordValid = true;
                 }
 
                 if ($passwordValid) {
                     return [
-                        'nim'   => $student->nipd ?? $student->nim ?? $cleanNim,
-                        'nama'  => $student->nama ?? $student->nama_mahasiswa ?? $cleanNim,
-                        'email' => $cleanNim . '@poltekindonusa.ac.id',
-                        'prodi' => $student->prodi ?? $student->nama_prodi ?? null,
-                        'no_hp' => $student->telepon ?? $student->no_hp ?? null,
+                        'nim'   => $student->nipd ?? $cleanNim,
+                        'nama'  => $student->nm_pd ?? $student->nama ?? $cleanNim,
+                        'email' => strtolower($cleanNim) . '@students.poltekindonusa.ac.id',
+                        'prodi' => $student->nm_lemb ?? $student->nm_prodi ?? null,
+                        'no_hp' => $student->telepon_seluler ?? $student->telepon ?? null,
                     ];
                 }
             }
