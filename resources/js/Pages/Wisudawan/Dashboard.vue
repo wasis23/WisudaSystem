@@ -149,7 +149,7 @@ const printTickets = () => {
                             </h4>
                             
                             <p class="text-xs text-slate-500 dark:text-slate-400 mt-2 leading-relaxed">
-                                Lengkapi NIM, IPK, Judul TA, Nama Orang Tua, Pas Foto & Lihat Live Preview Layar Wisuda Anda.
+                                Lengkapi NIM, Judul TA, Dosen Pembimbing & Penguji, Nama Orang Tua, Pas Foto & Lihat Live Preview Layar Wisuda Anda.
                             </p>
                         </div>
 

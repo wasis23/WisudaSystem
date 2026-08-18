@@ -53,10 +53,47 @@ class LoginRequest extends FormRequest
         $password   = $this->input('password');
 
         // ─────────────────────────────────────────────────────────────
-        // STRATEGY A: NIM (diawali huruf) → Mahasiswa via SIAKAD
+        // STRATEGY A: NIM (diawali huruf) → Mahasiswa via SIAKAD & Whitelist Wisuda
         // ─────────────────────────────────────────────────────────────
         if (preg_match('/^[a-zA-Z]/', $loginInput)) {
             $nim = strtoupper($loginInput);
+
+            // 1. Cek apakah NIM terdaftar di daftar wisudawan pada Periode Aktif
+            $activePeriode = \App\Models\PeriodeWisuda::getActive() ?? \App\Models\PeriodeWisuda::latest()->first();
+            
+            if ($activePeriode) {
+                $wisudawan = Wisudawan::where('nim', $nim)
+                    ->where('periode_wisuda_id', $activePeriode->id)
+                    ->first();
+
+                if (!$wisudawan) {
+                    // Cek apakah mahasiswa terdaftar di periode lain/sebelumnya
+                    $wisudawanLain = Wisudawan::with('periodeWisuda')
+                        ->where('nim', $nim)
+                        ->latest()
+                        ->first();
+
+                    if ($wisudawanLain) {
+                        $namaPeriodeLain = $wisudawanLain->periodeWisuda?->nama_periode ?? 'periode sebelumnya';
+                        throw ValidationException::withMessages([
+                            'email' => "Akses Ditolak: NIM {$nim} tercatat pada {$namaPeriodeLain} (Bukan periode aktif: {$activePeriode->nama_periode}). Silakan hubungi Panitia Wisuda / BAAK jika Anda seharusnya diwisuda pada periode ini.",
+                        ]);
+                    } else {
+                        throw ValidationException::withMessages([
+                            'email' => "Akses Ditolak: NIM {$nim} belum terdaftar/di-import dalam daftar wisudawan periode aktif ({$activePeriode->nama_periode}). Silakan hubungi Panitia Wisuda / BAAK untuk konfirmasi kepesertaan.",
+                        ]);
+                    }
+                }
+            } else {
+                $wisudawan = Wisudawan::where('nim', $nim)->latest()->first();
+                if (!$wisudawan) {
+                    throw ValidationException::withMessages([
+                        'email' => "Belum ada periode wisuda aktif dan NIM {$nim} belum terdaftar di sistem wisuda.",
+                    ]);
+                }
+            }
+
+            // 2. Verifikasi Password via SIAKAD
             $siakadAuth = app(SiakadAuthService::class);
             $mahasiswaData = $siakadAuth->verifyMahasiswa($nim, $password);
 
@@ -67,32 +104,58 @@ class LoginRequest extends FormRequest
                 $user = User::updateOrCreate(
                     ['email' => $email],
                     [
-                        'name'     => $mahasiswaData['nama'],
-                        'password' => Hash::make($password),
-                        'role'     => 'wisudawan',
+                        'name'             => $mahasiswaData['nama'] ?? $wisudawan->nama_lengkap,
+                        'password'         => Hash::make($password),
+                        'role'             => 'wisudawan',
+                        'program_studi_id' => $wisudawan->program_studi_id,
                     ]
                 );
 
-                // Auto-create or link Wisudawan profile if not exists
-                if (!$user->wisudawan) {
-                    Wisudawan::firstOrCreate(
-                        ['nim' => $nim],
-                        [
-                            'user_id'    => $user->id,
-                            'nama_lengkap' => $mahasiswaData['nama'],
-                        ]
-                    );
-                } else {
-                    // Ensure user_id linkage is correct
-                    $user->wisudawan()->update(['user_id' => $user->id]);
-                }
+                // Pastikan wisudawan periode aktif terhubung dengan user_id ini
+                $wisudawan->update([
+                    'user_id' => $user->id,
+                    'email'   => $email,
+                ]);
 
                 Auth::login($user, $this->boolean('remember'));
                 RateLimiter::clear($this->throttleKey());
                 return;
             }
 
-            // NIM format tapi SIAKAD gagal → lanjut ke fallback lokal
+            // 3. Fallback: Autentikasi lokal jika user sudah punya akun lokal (misal password default NIM atau ganti password)
+            $localEmailStudents = strtolower($nim) . '@students.poltekindonusa.ac.id';
+            $localEmailIndonusa = strtolower($nim) . '@poltekindonusa.ac.id';
+            $localUser = User::whereIn('email', [$localEmailStudents, $localEmailIndonusa])->first();
+
+            if ($localUser && Hash::check($password, $localUser->password)) {
+                $wisudawan->update(['user_id' => $localUser->id]);
+                Auth::login($localUser, $this->boolean('remember'));
+                RateLimiter::clear($this->throttleKey());
+                return;
+            }
+
+            // Jika password default adalah NIM
+            if ($password === $nim || $password === strtolower($nim)) {
+                $user = User::firstOrCreate(
+                    ['email' => $localEmailStudents],
+                    [
+                        'name'             => $wisudawan->nama_lengkap,
+                        'password'         => Hash::make($password),
+                        'role'             => 'wisudawan',
+                        'program_studi_id' => $wisudawan->program_studi_id,
+                    ]
+                );
+                $wisudawan->update(['user_id' => $user->id]);
+                Auth::login($user, $this->boolean('remember'));
+                RateLimiter::clear($this->throttleKey());
+                return;
+            }
+
+            // Kredensial salah
+            RateLimiter::hit($this->throttleKey());
+            throw ValidationException::withMessages([
+                'email' => 'Password akun mahasiswa (SIAKAD) salah. Silakan coba kembali.',
+            ]);
         }
 
         // ─────────────────────────────────────────────────────────────

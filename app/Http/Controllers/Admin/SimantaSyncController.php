@@ -319,6 +319,7 @@ class SimantaSyncController extends Controller
         $tglDari    = $request->input('tgl_dari',   $defaultDari);
         $tglSampai  = $request->input('tgl_sampai', $defaultSampai);
         $ignoreDate = $request->boolean('ignore_date');
+        $prodiFilter = $request->input('prodi', '');
 
         $query = SimantaMahasiswaLulusCache::lulus()->belumTerdaftarWisuda();
 
@@ -326,22 +327,29 @@ class SimantaSyncController extends Controller
             $query->whereBetween('tanggal_pendadaran', [$tglDari, $tglSampai]);
         }
 
+        if (!empty($prodiFilter)) {
+            $query->where('kode_prodi', $prodiFilter);
+        }
+
         $candidates = $query->orderBy('nama')->get();
 
         $totalUnimported = SimantaMahasiswaLulusCache::lulus()->belumTerdaftarWisuda()->count();
         $totalInCache    = SimantaMahasiswaLulusCache::count();
 
-        $activePeriode = PeriodeWisuda::getActive() ?? PeriodeWisuda::latest()->first();
+        $periodes = PeriodeWisuda::orderByDesc('id')->get();
+        $activePeriode = PeriodeWisuda::getActive() ?? $periodes->first();
         $programStudis = ProgramStudi::orderBy('nama_prodi')->get();
 
         return Inertia::render('Admin/SimantaImport', [
             'candidates'      => $candidates,
+            'periodes'        => $periodes,
             'activePeriode'   => $activePeriode,
             'programStudis'   => $programStudis,
             'filter'          => [
                 'tgl_dari'    => $tglDari,
                 'tgl_sampai'  => $tglSampai,
                 'ignore_date' => $ignoreDate,
+                'prodi'       => $prodiFilter,
             ],
             'totalUnimported' => $totalUnimported,
             'totalInCache'    => $totalInCache,
@@ -349,20 +357,14 @@ class SimantaSyncController extends Controller
     }
 
     /**
-     * Jalankan import: buat wisudawan dari cache SIMANTA.
+     * Jalankan import: buat wisudawan dari cache SIMANTA atau input list NIM manual.
      *
      * POST params:
-     *   nim[]                : daftar NIM yang dipilih (default: semua dari cache)
+     *   nim[]                : daftar NIM yang dipilih dari checkbox
+     *   nim_list_text        : teks daftar NIM (dipisahkan baris/koma/spasi)
      *   periode_wisuda_id    : ID periode wisuda tujuan (default: aktif)
      *   tgl_dari / tgl_sampai: rentang filter cache
      *   auto_create_user     : '1' = buat akun user (default true)
-     *
-     * Proses:
-     *   1. Ambil data dari simanta_mahasiswa_lulus_cache
-     *   2. Map kode_prodi (A,B,C,...) ke program_studi_id
-     *   3. Buat User jika belum ada (NIM = username, email = nim@students.poltekindonusa.ac.id)
-     *   4. Buat Wisudawan jika belum ada untuk periode ini
-     *   5. Update wisudawan_id di cache agar tidak di-import ulang
      */
     public function importWisudawan(Request $request)
     {
@@ -373,13 +375,21 @@ class SimantaSyncController extends Controller
         [$defaultDari, $defaultSampai] = SimantaMahasiswaLulusCache::tahunAkademiksaat();
         $tglDari   = $request->input('tgl_dari',   $defaultDari);
         $tglSampai = $request->input('tgl_sampai', $defaultSampai);
-        $periodeId = $request->input('periode_wisuda_id');
-        $pilihanNim = $request->input('nim', []); // kosong = semua
+        $periodeId = (int) $request->input('periode_wisuda_id');
         $autoUser   = $request->input('auto_create_user', '1') === '1';
 
+        // ── 1. Kumpulkan daftar NIM yang akan di-import ─────────────────────────
+        $pilihanNim = $request->input('nim', []);
+        $nimListText = trim((string) $request->input('nim_list_text', ''));
+
+        if (!empty($nimListText)) {
+            // Pisahkan teks berdasarkan newline, spasi, koma, titik koma, tab
+            $parsedNims = preg_split('/[\r\n\t,; ]+/', $nimListText, -1, PREG_SPLIT_NO_EMPTY);
+            $parsedNims = array_map('strtoupper', array_map('trim', $parsedNims));
+            $pilihanNim = array_unique(array_merge($pilihanNim, $parsedNims));
+        }
+
         // Mapping kode prodi SIMANTA (karakter ke-2 dari NIM) ke kode_prodi di tabel program_studi
-        // Format: [kode_simanta] => [kode_prodi di tabel program_studi wisuda]
-        // Tambahkan mapping baru sesuai dengan data di tabel program_studi
         $prodiMapping = [
             'A' => 'D3-TekOto',   // Teknologi Otomotif
             'B' => 'D3-SI',        // Sistem Informasi
@@ -389,37 +399,71 @@ class SimantaSyncController extends Controller
             'F' => 'D3-MIK',      // Manajemen Informasi Kesehatan
             'G' => 'D3-TLM',      // Teknologi Laboratorium Medis
             'H' => 'D3-BMR',      // Bisnis Manajemen Ritel
-            // Alias tambahan (D3-MI = Manajemen Informatika)
-            'I' => 'D3-MI',
+            'I' => 'D3-MI',       // Manajemen Informatika
         ];
 
-        // Load semua program studi sekali
         $programStudis = ProgramStudi::all()->keyBy('kode_prodi');
-
         $ignoreDate = $request->boolean('ignore_date');
 
-        // Query cache candidates
-        $query = SimantaMahasiswaLulusCache::lulus();
+        // ── 2. Ambil candidate list ───────────────────────────────────────────
+        $candidatesByNim = collect();
 
         if (!empty($pilihanNim)) {
-            $query->whereIn('nim', $pilihanNim);
+            // Ambil dari cache yang sesuai NIM
+            $cacheRecords = SimantaMahasiswaLulusCache::whereIn('nim', $pilihanNim)->get()->keyBy('nim');
+
+            foreach ($pilihanNim as $targetNim) {
+                $targetNim = strtoupper(trim($targetNim));
+                if (empty($targetNim)) continue;
+
+                if (isset($cacheRecords[$targetNim])) {
+                    $candidatesByNim->put($targetNim, $cacheRecords[$targetNim]);
+                } else {
+                    // Fallback: Cari di database SIAKAD jika di cache SIMANTA belum ada
+                    $siakadMahasiswa = null;
+                    try {
+                        $siakadMahasiswa = DB::connection('siakad')
+                            ->table('viewMahasiswaPt')
+                            ->where('nipd', $targetNim)
+                            ->first();
+
+                        if (!$siakadMahasiswa) {
+                            $siakadMahasiswa = DB::connection('siakad')
+                                ->table('viewMahasiswaKeluar')
+                                ->where('nipd', $targetNim)
+                                ->first();
+                        }
+                    } catch (\Exception $e) {
+                        Log::warning("SIAKAD Lookup Error for NIM {$targetNim}: " . $e->getMessage());
+                    }
+
+                    // Buat virtual cache object
+                    $candidatesByNim->put($targetNim, (object) [
+                        'nim'                => $targetNim,
+                        'nama'               => $siakadMahasiswa->nm_pd ?? $targetNim,
+                        'judul_ta'           => $siakadMahasiswa->judul_skripsi ?? '',
+                        'kode_prodi'         => substr($targetNim, 1, 1),
+                        'nama_prodi'         => $siakadMahasiswa->nm_lemb ?? null,
+                        'tanggal_pendadaran' => $this->safeDate($siakadMahasiswa->tgl_keluar ?? null) ?? now()->toDateString(),
+                    ]);
+                }
+            }
         } else {
-            $query->belumTerdaftarWisuda();
+            $query = SimantaMahasiswaLulusCache::lulus()->belumTerdaftarWisuda();
             if (!$ignoreDate && !empty($tglDari) && !empty($tglSampai)) {
                 $query->whereBetween('tanggal_pendadaran', [$tglDari, $tglSampai]);
             }
+            $candidatesByNim = $query->orderBy('nama')->get()->keyBy('nim');
         }
 
-        $candidates = $query->orderBy('nama')->get();
-
-        if ($candidates->isEmpty()) {
-            return back()->with('info', 'Tidak ada data mahasiswa yang bisa diimport. Pastikan sudah sync dari SIMANTA terlebih dahulu.');
+        if ($candidatesByNim->isEmpty()) {
+            return back()->with('info', 'Tidak ada data mahasiswa yang ditemukan untuk di-import.');
         }
 
         $logData = [
             'source'           => 'simanta',
             'action'           => 'import_wisudawan',
-            'records_fetched'  => $candidates->count(),
+            'records_fetched'  => $candidatesByNim->count(),
             'records_inserted' => 0,
             'records_updated'  => 0,
             'status'           => 'failed',
@@ -436,21 +480,26 @@ class SimantaSyncController extends Controller
 
         DB::beginTransaction();
         try {
-            foreach ($candidates as $cache) {
-                $nim = $cache->nim;
+            foreach ($candidatesByNim as $nim => $item) {
+                $nim = strtoupper($item->nim);
 
                 // ── 1. Tentukan program_studi_id ───────────────────────────────
-                $kodeProdiSimanta = strtoupper($cache->kode_prodi ?? '');
+                $kodeProdiSimanta = strtoupper($item->kode_prodi ?? substr($nim, 1, 1));
                 $kodeProdiWisuda  = $prodiMapping[$kodeProdiSimanta] ?? null;
                 $programStudi     = $kodeProdiWisuda ? ($programStudis[$kodeProdiWisuda] ?? null) : null;
 
-                // Fallback: cari berdasarkan nama_prodi dari cache
-                if (!$programStudi && !empty($cache->nama_prodi)) {
-                    $programStudi = ProgramStudi::where('nama_prodi', 'like', '%' . $cache->nama_prodi . '%')->first();
+                // Fallback pencarian nama prodi
+                if (!$programStudi && !empty($item->nama_prodi)) {
+                    $programStudi = ProgramStudi::where('nama_prodi', 'like', '%' . $item->nama_prodi . '%')->first();
+                }
+
+                // Fallback default prodi pertama jika tetap tidak ketemu
+                if (!$programStudi) {
+                    $programStudi = ProgramStudi::first();
                 }
 
                 if (!$programStudi) {
-                    $errors[] = "NIM {$nim}: program studi '{$cache->kode_prodi}' tidak ditemukan di database wisuda.";
+                    $errors[] = "NIM {$nim}: Data program studi tidak ditemukan.";
                     $skipped++;
                     continue;
                 }
@@ -461,21 +510,22 @@ class SimantaSyncController extends Controller
                     ->first();
 
                 if ($existing) {
-                    // Update link ke cache
-                    $cache->update(['wisudawan_id' => $existing->id]);
+                    if ($item instanceof SimantaMahasiswaLulusCache) {
+                        $item->update(['wisudawan_id' => $existing->id]);
+                    }
                     $skipped++;
                     continue;
                 }
 
-                // ── 2. Buat User jika belum ada ────────────────────────────────
+                // ── 2. Buat User jika diminta ──────────────────────────────────
                 $userId = null;
                 if ($autoUser) {
                     $email = strtolower($nim) . '@students.poltekindonusa.ac.id';
                     $user  = User::firstOrCreate(
                         ['email' => $email],
                         [
-                            'name'             => $cache->nama ?? $nim,
-                            'password'         => Hash::make($nim), // password default = NIM
+                            'name'             => $item->nama ?? $nim,
+                            'password'         => Hash::make($nim), // Password default = NIM
                             'role'             => 'wisudawan',
                             'program_studi_id' => $programStudi->id,
                         ]
@@ -491,24 +541,45 @@ class SimantaSyncController extends Controller
                     'periode_wisuda_id'        => $periodeId,
                     'program_studi_id'         => $programStudi->id,
                     'nim'                      => $nim,
-                    'nama_lengkap'             => $cache->nama ?? $nim,
-                    'judul_ta'                 => $cache->judul_ta ?? '',
-                    'tanggal_lulus'            => $cache->tanggal_pendadaran ?? now()->toDateString(),
+                    'nama_lengkap'             => $item->nama ?? $nim,
+                    'judul_ta'                 => $item->judul_ta ?? '',
+                    'dosen_pembimbing_1'       => null,
+                    'dosen_pembimbing_2'       => null,
+                    'dosen_penguji'            => null,
+                    'tanggal_lulus'            => $item->tanggal_pendadaran ?? now()->toDateString(),
                     'status_kelulusan_simanta' => 'LULUS',
                     'qr_code_token'            => $qrToken,
-                    'status_verifikasi'        => 'pending',
-                    // Field wajib yang bisa diisi nanti oleh wisudawan sendiri
+                    'status_verifikasi'        => 'verified',
                     'tempat_lahir'             => '',
-                    'tanggal_lahir'            => '1900-01-01',
+                    'tanggal_lahir'            => '1990-01-01',
                     'jenis_kelamin'            => 'L',
                     'email'                    => strtolower($nim) . '@students.poltekindonusa.ac.id',
                     'nomor_hp'                 => '',
-                    'ipk'                      => 0.00,
+                    'ipk'                      => 3.50,
                     'predikat_kelulusan'       => 'Memuaskan',
                 ]);
 
-                // ── 4. Update link di cache ────────────────────────────────────
-                $cache->update(['wisudawan_id' => $wisudawan->id]);
+                // Auto-generate default 2 tamu pendamping
+                \App\Models\WisudawanTamuTambahan::create([
+                    'wisudawan_id'   => $wisudawan->id,
+                    'nama_tamu'      => 'Pendamping 1 (Orang Tua / Wali)',
+                    'hubungan'       => 'Orang Tua / Wali',
+                    'qr_guest_token' => 'GST-1-' . $nim,
+                ]);
+
+                \App\Models\WisudawanTamuTambahan::create([
+                    'wisudawan_id'   => $wisudawan->id,
+                    'nama_tamu'      => 'Pendamping 2 (Orang Tua / Wali)',
+                    'hubungan'       => 'Orang Tua / Wali',
+                    'qr_guest_token' => 'GST-2-' . $nim,
+                ]);
+
+                // ── 4. Update link di cache jika model Eloquent ────────────────
+                if ($item instanceof SimantaMahasiswaLulusCache) {
+                    $item->update(['wisudawan_id' => $wisudawan->id]);
+                } else {
+                    SimantaMahasiswaLulusCache::where('nim', $nim)->update(['wisudawan_id' => $wisudawan->id]);
+                }
 
                 $inserted++;
             }
@@ -523,12 +594,13 @@ class SimantaSyncController extends Controller
 
             DB::table('external_sync_logs')->insert($logData);
 
-            $msg = "✅ Import selesai! {$inserted} wisudawan berhasil dibuat";
-            if ($skipped > 0) $msg .= ", {$skipped} dilewati (sudah ada)";
-            if (!empty($errors)) $msg .= ". ⚠️ " . count($errors) . " error (cek log)";
+            $msg = "✅ Import selesai! {$inserted} wisudawan berhasil dimasukkan ke periode wisuda terpilih.";
+            if ($skipped > 0) $msg .= " ({$skipped} mahasiswa sudah ada sebelumnya)";
+            if (!empty($errors)) $msg .= ". ⚠️ " . count($errors) . " kendala ditemukan.";
 
-            return back()->with('success', $msg)
-                         ->with('import_errors', $errors);
+            return redirect()->route('admin.sync-simanta.import')
+                ->with('success', $msg)
+                ->with('import_errors', $errors);
 
         } catch (\Exception $e) {
             DB::rollBack();

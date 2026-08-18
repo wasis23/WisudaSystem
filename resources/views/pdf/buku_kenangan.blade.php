@@ -184,6 +184,18 @@
                     <div class="ta-title">
                         <strong>Judul TA:</strong> "{{ $w->judul_ta }}"
                     </div>
+
+                    @if($w->dosen_pembimbing_1 || $w->dosen_pembimbing_2)
+                    <div style="font-size: 9.5px; color: #475569; margin-bottom: 4px;">
+                        <strong>Pembimbing:</strong> {{ $w->dosen_pembimbing_1 }}{{ ($w->dosen_pembimbing_1 && $w->dosen_pembimbing_2) ? ' & ' : '' }}{{ $w->dosen_pembimbing_2 }}
+                    </div>
+                    @endif
+
+                    @if($w->nama_ayah || $w->nama_ibu)
+                    <div style="font-size: 9.5px; color: #64748b;">
+                        <strong>Orang Tua:</strong> {{ $w->nama_ayah }}{{ ($w->nama_ayah && $w->nama_ibu) ? ' & ' : '' }}{{ $w->nama_ibu }}
+                    </div>
+                    @endif
                 </div>
             </div>
         @endforeach

@@ -32,6 +32,9 @@ const form = useForm({
     alamat: props.wisudawan?.alamat || '',
     ipk: props.wisudawan?.ipk || '3.50',
     judul_ta: props.wisudawan?.judul_ta || '',
+    dosen_pembimbing_1: props.wisudawan?.dosen_pembimbing_1 || '',
+    dosen_pembimbing_2: props.wisudawan?.dosen_pembimbing_2 || '',
+    dosen_penguji: props.wisudawan?.dosen_penguji || '',
     tanggal_lulus: props.wisudawan?.tanggal_lulus || '',
     nama_ayah: props.wisudawan?.nama_ayah || '',
     nama_ibu: props.wisudawan?.nama_ibu || '',
@@ -221,6 +224,30 @@ const submitForm = () => {
                                 Judul Tugas Akhir / Skripsi
                             </label>
                             <textarea v-model="form.judul_ta" rows="2" placeholder="Tuliskan judul TA sesuai terdaftar di akademik..." class="w-full rounded-xl border-slate-300 dark:border-slate-700 dark:bg-slate-900 text-sm" required></textarea>
+                        </div>
+
+                        <!-- Dosen Pembimbing 1, 2 & Penguji (Editable) -->
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                            <div>
+                                <label class="block text-xs font-bold uppercase text-slate-700 dark:text-slate-300 mb-1">
+                                    Dosen Pembimbing 1 (Utama)
+                                </label>
+                                <input v-model="form.dosen_pembimbing_1" type="text" placeholder="Nama dosen & gelar..." class="w-full rounded-xl border-slate-300 dark:border-slate-700 dark:bg-slate-900 text-sm" />
+                            </div>
+
+                            <div>
+                                <label class="block text-xs font-bold uppercase text-slate-700 dark:text-slate-300 mb-1">
+                                    Dosen Pembimbing 2 (Pendamping)
+                                </label>
+                                <input v-model="form.dosen_pembimbing_2" type="text" placeholder="Nama dosen & gelar..." class="w-full rounded-xl border-slate-300 dark:border-slate-700 dark:bg-slate-900 text-sm" />
+                            </div>
+
+                            <div>
+                                <label class="block text-xs font-bold uppercase text-slate-700 dark:text-slate-300 mb-1">
+                                    Dosen Penguji
+                                </label>
+                                <input v-model="form.dosen_penguji" type="text" placeholder="Nama dosen & gelar..." class="w-full rounded-xl border-slate-300 dark:border-slate-700 dark:bg-slate-900 text-sm" />
+                            </div>
                         </div>
 
                         <!-- Nama Ayah & Nama Ibu (Editable) -->
