@@ -25,10 +25,11 @@ const form = useForm({
 const inputType = computed(() => {
     const val = form.email.trim();
     if (!val) return null;
-    if (/^[a-zA-Z]/.test(val)) return 'nim';      // Diawali huruf → NIM Mahasiswa
-    if (/^[0-9]+$/.test(val)) return 'nidn';      // Semua angka → NIDN Dosen/Staf
-    if (/@/.test(val)) return 'email';            // Mengandung @ → Email Admin
-    return 'username';                            // Lainnya → Username SIMPEG
+    if (/@/.test(val)) return 'email';                                                      // Mengandung @ → Email Admin/Akun
+    if (['admin', 'security', 'panitia', 'receptionist'].includes(val.toLowerCase())) return 'email'; // Shortcut username admin
+    if (/^[0-9]+$/.test(val)) return 'nidn';                                                // Semua angka → NIDN Dosen/Staf
+    if (/^[a-zA-Z0-9]+$/.test(val)) return 'nim';                                          // Alphanumeric tanpa @ → NIM Mahasiswa
+    return 'username';                                                                      // Lainnya → Username SIMPEG
 });
 
 const showPassword = ref(false);
