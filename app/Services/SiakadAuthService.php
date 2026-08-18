@@ -84,12 +84,35 @@ class SiakadAuthService
                 }
 
                 if ($passwordValid) {
+                    $bio = null;
+                    if (!empty($student->id_pd) || !empty($student->xid_pd)) {
+                        $bio = \Illuminate\Support\Facades\DB::connection('siakad')->table('wsia_mahasiswa')
+                            ->where(function ($q) use ($student) {
+                                if (!empty($student->id_pd)) $q->where('id_pd', $student->id_pd);
+                                if (!empty($student->xid_pd)) $q->orWhere('xid_pd', $student->xid_pd);
+                            })
+                            ->first();
+                    }
+
+                    $alamatParts = array_filter([
+                        $bio->jln ?? null,
+                        $bio->ds_kel ? 'Kel. ' . $bio->ds_kel : null,
+                        $bio->kode_pos ?? null,
+                    ]);
+
                     return [
-                        'nim'   => $student->nipd ?? $cleanNim,
-                        'nama'  => $student->nm_pd ?? $student->nama ?? $cleanNim,
-                        'email' => strtolower($cleanNim) . '@students.poltekindonusa.ac.id',
-                        'prodi' => $student->nm_lemb ?? $student->nm_prodi ?? null,
-                        'no_hp' => $student->telepon_seluler ?? $student->telepon ?? null,
+                        'nim'           => $student->nipd ?? $cleanNim,
+                        'nama'          => $bio->nm_pd ?? $student->nm_pd ?? $cleanNim,
+                        'nama_ayah'     => $bio->nm_ayah ?? null,
+                        'nama_ibu'      => $bio->nm_ibu_kandung ?? null,
+                        'tempat_lahir'  => $bio->tmpt_lahir ?? null,
+                        'tanggal_lahir' => $bio->tgl_lahir ?? null,
+                        'jenis_kelamin' => $bio->jk ?? $student->jk ?? 'L',
+                        'nik'           => $bio->nik ?? null,
+                        'alamat'        => !empty($alamatParts) ? implode(', ', $alamatParts) : null,
+                        'email'         => $bio->email_poltek ?: ($bio->email ?: strtolower($cleanNim) . '@students.poltekindonusa.ac.id'),
+                        'prodi'         => $student->nm_lemb ?? $student->nm_prodi ?? null,
+                        'no_hp'         => $bio->telepon_seluler ?? $bio->telepon_rumah ?? $student->telepon_seluler ?? null,
                     ];
                 }
             }

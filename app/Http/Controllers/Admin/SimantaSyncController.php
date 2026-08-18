@@ -533,7 +533,10 @@ class SimantaSyncController extends Controller
                     $userId = $user->id;
                 }
 
-                // ── 3. Buat Wisudawan ──────────────────────────────────────────
+                // ── 3. Ambil data biodata lengkap dari SIAKAD ─────────────────
+                $siakadStudent = app(\App\Services\SiakadIntegrationService::class)->getStudentByNim($nim);
+
+                // ── 4. Buat Wisudawan ──────────────────────────────────────────
                 $qrToken = 'WSD-' . strtoupper($nim) . '-' . strtoupper(Str::random(4));
 
                 $wisudawan = Wisudawan::create([
@@ -541,20 +544,24 @@ class SimantaSyncController extends Controller
                     'periode_wisuda_id'        => $periodeId,
                     'program_studi_id'         => $programStudi->id,
                     'nim'                      => $nim,
-                    'nama_lengkap'             => $item->nama ?? $nim,
+                    'nama_lengkap'             => $siakadStudent['nama_lengkap'] ?? ($item->nama ?? $nim),
                     'judul_ta'                 => $item->judul_ta ?? '',
                     'dosen_pembimbing_1'       => null,
                     'dosen_pembimbing_2'       => null,
                     'dosen_penguji'            => null,
+                    'nama_ayah'                => $siakadStudent['nama_ayah'] ?? null,
+                    'nama_ibu'                 => $siakadStudent['nama_ibu'] ?? null,
+                    'tempat_lahir'             => $siakadStudent['tempat_lahir'] ?? '',
+                    'tanggal_lahir'            => $siakadStudent['tanggal_lahir'] ?? '1990-01-01',
+                    'jenis_kelamin'            => $siakadStudent['jenis_kelamin'] ?? 'L',
+                    'nik'                      => $siakadStudent['nik'] ?? null,
+                    'alamat'                   => $siakadStudent['alamat'] ?? null,
+                    'nomor_hp'                 => $siakadStudent['nomor_hp'] ?? '',
                     'tanggal_lulus'            => $item->tanggal_pendadaran ?? now()->toDateString(),
                     'status_kelulusan_simanta' => 'LULUS',
                     'qr_code_token'            => $qrToken,
                     'status_verifikasi'        => 'verified',
-                    'tempat_lahir'             => '',
-                    'tanggal_lahir'            => '1990-01-01',
-                    'jenis_kelamin'            => 'L',
                     'email'                    => strtolower($nim) . '@students.poltekindonusa.ac.id',
-                    'nomor_hp'                 => '',
                     'ipk'                      => 3.50,
                     'predikat_kelulusan'       => 'Memuaskan',
                 ]);

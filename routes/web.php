@@ -221,6 +221,25 @@ Route::middleware(['auth', 'role:wisudawan,admin_utama'])->prefix('wisudawan')->
     Route::get('/pendaftaran', function () {
         $user = auth()->user();
         $wisudawan = $user->wisudawan ? $user->wisudawan->load('programStudi') : null;
+
+        if ($wisudawan && (empty($wisudawan->nama_ayah) || empty($wisudawan->nama_ibu) || empty($wisudawan->alamat) || empty($wisudawan->tempat_lahir))) {
+            $siakadData = app(\App\Services\SiakadIntegrationService::class)->getStudentByNim($wisudawan->nim);
+            if ($siakadData) {
+                $autoFill = [];
+                if (empty($wisudawan->nama_ayah) && !empty($siakadData['nama_ayah'])) $autoFill['nama_ayah'] = $siakadData['nama_ayah'];
+                if (empty($wisudawan->nama_ibu) && !empty($siakadData['nama_ibu'])) $autoFill['nama_ibu'] = $siakadData['nama_ibu'];
+                if (empty($wisudawan->tempat_lahir) && !empty($siakadData['tempat_lahir'])) $autoFill['tempat_lahir'] = $siakadData['tempat_lahir'];
+                if ((empty($wisudawan->tanggal_lahir) || $wisudawan->tanggal_lahir === '1990-01-01' || $wisudawan->tanggal_lahir === '1900-01-01') && !empty($siakadData['tanggal_lahir'])) $autoFill['tanggal_lahir'] = $siakadData['tanggal_lahir'];
+                if (empty($wisudawan->nik) && !empty($siakadData['nik'])) $autoFill['nik'] = $siakadData['nik'];
+                if (empty($wisudawan->alamat) && !empty($siakadData['alamat'])) $autoFill['alamat'] = $siakadData['alamat'];
+                if (empty($wisudawan->nomor_hp) && !empty($siakadData['nomor_hp'])) $autoFill['nomor_hp'] = $siakadData['nomor_hp'];
+                if (!empty($autoFill)) {
+                    $wisudawan->update($autoFill);
+                    $wisudawan->refresh();
+                }
+            }
+        }
+
         $activePeriode = \App\Models\PeriodeWisuda::getActive() ?? \App\Models\PeriodeWisuda::latest()->first();
         $programStudis = \App\Models\ProgramStudi::orderBy('nama_prodi')->get();
         return Inertia::render('Wisudawan/Register', [

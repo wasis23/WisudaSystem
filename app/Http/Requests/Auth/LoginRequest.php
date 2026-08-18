@@ -111,11 +111,38 @@ class LoginRequest extends FormRequest
                     ]
                 );
 
-                // Pastikan wisudawan periode aktif terhubung dengan user_id ini
-                $wisudawan->update([
+                // Update Wisudawan dengan data resmi dari SIAKAD jika belum diisi
+                $updateFields = [
                     'user_id' => $user->id,
                     'email'   => $email,
-                ]);
+                ];
+
+                if (empty($wisudawan->nama_ayah) && !empty($mahasiswaData['nama_ayah'])) {
+                    $updateFields['nama_ayah'] = $mahasiswaData['nama_ayah'];
+                }
+                if (empty($wisudawan->nama_ibu) && !empty($mahasiswaData['nama_ibu'])) {
+                    $updateFields['nama_ibu'] = $mahasiswaData['nama_ibu'];
+                }
+                if ((empty($wisudawan->tempat_lahir) || $wisudawan->tempat_lahir === '') && !empty($mahasiswaData['tempat_lahir'])) {
+                    $updateFields['tempat_lahir'] = $mahasiswaData['tempat_lahir'];
+                }
+                if ((empty($wisudawan->tanggal_lahir) || $wisudawan->tanggal_lahir === '1990-01-01' || $wisudawan->tanggal_lahir === '1900-01-01') && !empty($mahasiswaData['tanggal_lahir'])) {
+                    $updateFields['tanggal_lahir'] = $mahasiswaData['tanggal_lahir'];
+                }
+                if (empty($wisudawan->nik) && !empty($mahasiswaData['nik'])) {
+                    $updateFields['nik'] = $mahasiswaData['nik'];
+                }
+                if (empty($wisudawan->alamat) && !empty($mahasiswaData['alamat'])) {
+                    $updateFields['alamat'] = $mahasiswaData['alamat'];
+                }
+                if ((empty($wisudawan->nomor_hp) || $wisudawan->nomor_hp === '') && !empty($mahasiswaData['no_hp'])) {
+                    $updateFields['nomor_hp'] = $mahasiswaData['no_hp'];
+                }
+                if (!empty($mahasiswaData['jenis_kelamin'])) {
+                    $updateFields['jenis_kelamin'] = $mahasiswaData['jenis_kelamin'];
+                }
+
+                $wisudawan->update($updateFields);
 
                 Auth::login($user, $this->boolean('remember'));
                 RateLimiter::clear($this->throttleKey());
