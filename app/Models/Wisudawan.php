@@ -48,6 +48,7 @@ class Wisudawan extends Model
         'tracer_jabatan',
         'tracer_pendapatan',
         'tracer_kesesuaian_prodi',
+        'tracer_study_data',
         'jumlah_tamu_tambahan',
         'tamu_tambahan_scanned',
         'status_kelulusan_simanta',
@@ -55,6 +56,7 @@ class Wisudawan extends Model
 
     protected $casts = [
         'is_tracer_study_filled' => 'boolean',
+        'tracer_study_data' => 'array',
         'is_hadir' => 'boolean',
         'is_in_auditorium' => 'boolean',
         'waktu_presensi' => 'datetime',
@@ -81,5 +83,10 @@ class Wisudawan extends Model
     public function tamuTambahan()
     {
         return $this->hasMany(WisudawanTamuTambahan::class, 'wisudawan_id');
+    }
+
+    public function tracerStudy()
+    {
+        return $this->hasOne(TracerStudy::class, 'wisudawan_id');
     }
 }

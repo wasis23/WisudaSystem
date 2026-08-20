@@ -193,7 +193,7 @@ const displayProdiList = computed(() => {
                                     <div>
                                         <p class="text-xs text-slate-500 font-medium">Tanggal Pelaksanaan Wisuda</p>
                                         <p class="font-bold text-blue-950 text-base">
-                                            {{ activePeriode?.tanggal_pelaksanaan ? formatDate(activePeriode.tanggal_pelaksanaan) : '15 September 2026' }}
+                                            {{ activePeriode?.tanggal_pelaksanaan ? formatDate(activePeriode.tanggal_pelaksanaan) : '03 Oktober 2026' }}
                                         </p>
                                     </div>
                                 </div>
@@ -202,14 +202,14 @@ const displayProdiList = computed(() => {
                                     <div class="flex justify-between items-center py-2 border-b border-slate-100 text-xs">
                                         <span class="text-slate-500">Buka Pendaftaran:</span>
                                         <span class="font-semibold text-slate-800">
-                                            {{ activePeriode?.tanggal_buka_pendaftaran ? formatDate(activePeriode.tanggal_buka_pendaftaran) : '01 Agustus 2026' }}
+                                            {{ activePeriode?.tanggal_buka_pendaftaran ? formatDate(activePeriode.tanggal_buka_pendaftaran) : '18 Agustus 2026' }}
                                         </span>
                                     </div>
 
                                     <div class="flex justify-between items-center py-2 border-b border-slate-100 text-xs">
                                         <span class="text-slate-500">Tutup Pendaftaran:</span>
                                         <span class="font-semibold text-slate-800">
-                                            {{ activePeriode?.tanggal_tutup_pendaftaran ? formatDate(activePeriode.tanggal_tutup_pendaftaran) : '31 Agustus 2026' }}
+                                            {{ activePeriode?.tanggal_tutup_pendaftaran ? formatDate(activePeriode.tanggal_tutup_pendaftaran) : '21 September 2026' }}
                                         </span>
                                     </div>
 

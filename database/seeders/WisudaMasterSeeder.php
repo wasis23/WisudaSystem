@@ -50,10 +50,10 @@ class WisudaMasterSeeder extends Seeder
             [
                 'nama_periode' => 'Wisuda Ke-75 Politeknik Indonusa Surakarta',
                 'tahun_akademik' => '2025/2026',
-                'tanggal_pelaksanaan' => '2026-09-15',
+                'tanggal_pelaksanaan' => '2026-10-03',
                 'kuota_peserta' => 500,
-                'tanggal_buka_pendaftaran' => '2026-08-01 08:00:00',
-                'tanggal_tutup_pendaftaran' => '2026-08-31 23:59:59',
+                'tanggal_buka_pendaftaran' => '2026-08-18 08:00:00',
+                'tanggal_tutup_pendaftaran' => '2026-09-21 23:59:59',
                 'is_active' => true,
             ]
         );

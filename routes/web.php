@@ -191,7 +191,7 @@ Route::middleware(['auth', 'role:wisudawan,admin_utama'])->prefix('wisudawan')->
     // Tracer Study Routes
     Route::get('/tracer-study', function () {
         $user = auth()->user();
-        $wisudawan = $user->wisudawan;
+        $wisudawan = $user->wisudawan ? $user->wisudawan->load('tracerStudy') : null;
         return Inertia::render('Wisudawan/TracerStudy', [
             'wisudawan' => $wisudawan,
         ]);
@@ -200,14 +200,95 @@ Route::middleware(['auth', 'role:wisudawan,admin_utama'])->prefix('wisudawan')->
     Route::post('/tracer-study', function (\Illuminate\Http\Request $request) {
         $user = auth()->user();
         if ($user->wisudawan) {
-            $user->wisudawan->update([
+            $wisudawan = $user->wisudawan;
+
+            $statusStr = is_array($request->status_saat_ini) ? implode(', ', $request->status_saat_ini) : ($request->tracer_status_pekerjaan ?? '');
+            $instansiStr = $request->nama_perusahaan ?: ($request->nama_usaha ?: ($request->tempat_bekerja ?: ($request->tracer_nama_instansi ?? '')));
+            $jabatanStr = is_array($request->posisi_jabatan) ? implode(', ', $request->posisi_jabatan) : ($request->tracer_jabatan ?? '');
+            $gajiStr = is_array($request->gaji_per_bulan) && count($request->gaji_per_bulan) ? implode(', ', $request->gaji_per_bulan) : (is_array($request->gaji_usaha) && count($request->gaji_usaha) ? implode(', ', $request->gaji_usaha) : ($request->tracer_pendapatan ?? ''));
+            $kesesuaianStr = is_array($request->keselarasan_pekerjaan) && count($request->keselarasan_pekerjaan) ? implode(', ', $request->keselarasan_pekerjaan) : (is_array($request->keselarasan_usaha) && count($request->keselarasan_usaha) ? implode(', ', $request->keselarasan_usaha) : ($request->tracer_kesesuaian_prodi ?? ''));
+
+            $wisudawan->update([
                 'is_tracer_study_filled' => true,
-                'tracer_status_pekerjaan' => $request->tracer_status_pekerjaan,
-                'tracer_nama_instansi' => $request->tracer_nama_instansi,
-                'tracer_jabatan' => $request->tracer_jabatan,
-                'tracer_pendapatan' => $request->tracer_pendapatan,
-                'tracer_kesesuaian_prodi' => $request->tracer_kesesuaian_prodi,
+                'tracer_status_pekerjaan' => $statusStr,
+                'tracer_nama_instansi' => $instansiStr,
+                'tracer_jabatan' => $jabatanStr,
+                'tracer_pendapatan' => $gajiStr,
+                'tracer_kesesuaian_prodi' => $kesesuaianStr,
+                'tracer_study_data' => $request->all(),
             ]);
+
+            // Save to normalized tracer_studies table
+            $kompetensiLulus = $request->kompetensi_lulus ?? [];
+            $kompetensiKerja = $request->kompetensi_kerja ?? [];
+            $metodePembelajaran = $request->metode_pembelajaran ?? [];
+
+            \App\Models\TracerStudy::updateOrCreate(
+                ['wisudawan_id' => $wisudawan->id],
+                [
+                    'user_id' => $user->id,
+                    'nim' => $request->nim,
+                    'nama_lengkap' => $request->nama_lengkap,
+                    'email' => $request->email,
+                    'no_whatsapp' => $request->no_whatsapp,
+                    'prodi' => is_array($request->prodi) ? implode(', ', $request->prodi) : $request->prodi,
+                    'prodi_lainnya' => $request->prodi_lainnya,
+                    'jenis_kelas' => $request->jenis_kelas,
+                    'alamat_lengkap' => $request->alamat_lengkap,
+
+                    'status_saat_ini' => is_array($request->status_saat_ini) ? implode(', ', $request->status_saat_ini) : $request->status_saat_ini,
+                    'status_lainnya' => $request->status_lainnya,
+                    'tempat_bekerja' => $request->tempat_bekerja,
+                    'gaji_per_bulan' => is_array($request->gaji_per_bulan) ? implode(', ', $request->gaji_per_bulan) : $request->gaji_per_bulan,
+                    'keselarasan_pekerjaan' => is_array($request->keselarasan_pekerjaan) ? implode(', ', $request->keselarasan_pekerjaan) : $request->keselarasan_pekerjaan,
+                    'kesesuaian_pendidikan' => is_array($request->kesesuaian_pendidikan) ? implode(', ', $request->kesesuaian_pendidikan) : $request->kesesuaian_pendidikan,
+                    'waktu_tunggu' => is_array($request->waktu_tunggu) ? implode(', ', $request->waktu_tunggu) : $request->waktu_tunggu,
+                    'alamat_tempat_kerja' => $request->alamat_tempat_kerja,
+                    'jenis_instansi' => is_array($request->jenis_instansi) ? implode(', ', $request->jenis_instansi) : $request->jenis_instansi,
+                    'jenis_instansi_lainnya' => $request->jenis_instansi_lainnya,
+                    'nama_perusahaan' => $request->nama_perusahaan,
+                    'posisi_jabatan' => is_array($request->posisi_jabatan) ? implode(', ', $request->posisi_jabatan) : $request->posisi_jabatan,
+                    'posisi_lainnya' => $request->posisi_lainnya,
+                    'cakupan_tempat_kerja' => is_array($request->cakupan_tempat_kerja) ? implode(', ', $request->cakupan_tempat_kerja) : $request->cakupan_tempat_kerja,
+                    'tingkat_tempat_kerja_lainnya' => $request->tingkat_tempat_kerja_lainnya,
+
+                    'nama_usaha' => $request->nama_usaha,
+                    'gaji_usaha' => is_array($request->gaji_usaha) ? implode(', ', $request->gaji_usaha) : $request->gaji_usaha,
+                    'keselarasan_usaha' => is_array($request->keselarasan_usaha) ? implode(', ', $request->keselarasan_usaha) : $request->keselarasan_usaha,
+                    'studi_lanjut' => is_array($request->studi_lanjut) ? implode(', ', $request->studi_lanjut) : $request->studi_lanjut,
+                    'kampus_studi_lanjut' => $request->kampus_studi_lanjut,
+                    'alamat_kampus_studi_lanjut' => $request->alamat_kampus_studi_lanjut,
+                    'sumber_dana' => is_array($request->sumber_dana) ? implode(', ', $request->sumber_dana) : $request->sumber_dana,
+                    'sumber_dana_lainnya' => $request->sumber_dana_lainnya,
+
+                    'lulus_etika' => intval($kompetensiLulus['Etika'] ?? 0),
+                    'lulus_keahlian_ilmu' => intval($kompetensiLulus['Keahlian berdasarkan bidang ilmu'] ?? 0),
+                    'lulus_bahasa_inggris' => intval($kompetensiLulus['Bahasa Inggris'] ?? 0),
+                    'lulus_teknologi_informasi' => intval($kompetensiLulus['Penggunaan Teknologi Informasi'] ?? 0),
+                    'lulus_komunikasi' => intval($kompetensiLulus['Komunikasi'] ?? 0),
+                    'lulus_kerjasama_tim' => intval($kompetensiLulus['Kerja sama tim'] ?? 0),
+                    'lulus_pengembangan_diri' => intval($kompetensiLulus['Pengembangan Diri'] ?? 0),
+
+                    'kerja_etika' => intval($kompetensiKerja['Etika'] ?? 0),
+                    'kerja_keahlian_ilmu' => intval($kompetensiKerja['Keahlian berdasarkan bidang ilmu'] ?? 0),
+                    'kerja_bahasa_inggris' => intval($kompetensiKerja['Bahasa Inggris'] ?? 0),
+                    'kerja_teknologi_informasi' => intval($kompetensiKerja['Penggunaan Teknologi Informasi'] ?? 0),
+                    'kerja_komunikasi' => intval($kompetensiKerja['Komunikasi'] ?? 0),
+                    'kerja_kerjasama_tim' => intval($kompetensiKerja['Kerja sama tim'] ?? 0),
+                    'kerja_pengembangan_diri' => intval($kompetensiKerja['Pengembangan Diri'] ?? 0),
+
+                    'metode_perkuliahan' => intval($metodePembelajaran['Perkuliahan'] ?? 0),
+                    'metode_demonstrasi' => intval($metodePembelajaran['Demonstrasi'] ?? 0),
+                    'metode_proyek_riset' => intval($metodePembelajaran['Partisipasi dalam proyek riset'] ?? 0),
+                    'metode_magang' => intval($metodePembelajaran['Magang'] ?? 0),
+                    'metode_praktikum' => intval($metodePembelajaran['Praktikum'] ?? 0),
+                    'metode_kerja_lapangan' => intval($metodePembelajaran['Kerja Lapangan'] ?? 0),
+                    'metode_diskusi' => intval($metodePembelajaran['Diskusi'] ?? 0),
+
+                    'kepuasan_layanan' => is_array($request->kepuasan_layanan) ? implode(', ', $request->kepuasan_layanan) : $request->kepuasan_layanan,
+                    'saran_masukan' => $request->saran_masukan,
+                ]
+            );
         }
         return redirect()->route('wisudawan.dashboard')->with('success', 'Data Tracer Study berhasil disimpan!');
     })->name('tracer.store');
