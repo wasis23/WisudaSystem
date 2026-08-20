@@ -95,17 +95,7 @@ const roleBadgeClass = computed(() => {
                                     </NavLink>
                                 </template>
 
-                                <template v-if="user?.role === 'wisudawan'">
-                                    <NavLink :href="route('wisudawan.tamu.form')" :active="route().current('wisudawan.tamu.*')">
-                                        👨‍👩‍👧‍👦 Tamu & Snack
-                                    </NavLink>
-                                    <NavLink :href="route('wisudawan.tracer.form')" :active="route().current('wisudawan.tracer.*')">
-                                        Data Tracer Study
-                                    </NavLink>
-                                    <NavLink :href="route('wisudawan.pendaftaran.form')" :active="route().current('wisudawan.pendaftaran.*')">
-                                        Biodata & Live Preview
-                                    </NavLink>
-                                </template>
+
                             </div>
                         </div>
 
@@ -214,14 +204,7 @@ const roleBadgeClass = computed(() => {
                                 Stage Console
                             </ResponsiveNavLink>
                         </template>
-                        <template v-if="user?.role === 'wisudawan'">
-                            <ResponsiveNavLink :href="route('wisudawan.tracer.form')" :active="route().current('wisudawan.tracer.*')">
-                                Data Tracer Study
-                            </ResponsiveNavLink>
-                            <ResponsiveNavLink :href="route('wisudawan.pendaftaran.form')" :active="route().current('wisudawan.pendaftaran.*')">
-                                Biodata & Live Preview
-                            </ResponsiveNavLink>
-                        </template>
+
                     </div>
 
                     <div class="border-t border-slate-200 pb-3 pt-4 dark:border-slate-800 px-4">

@@ -10,42 +10,49 @@ const props = defineProps({
 // Existing tracer_study_data, tracer_study relation, or default values
 const savedData = props.wisudawan?.tracer_study_data || props.wisudawan?.tracer_study || {};
 
+const getSingleValue = (val, fallback = '') => {
+    if (Array.isArray(val)) {
+        return val.length > 0 ? val[0] : fallback;
+    }
+    return val || fallback;
+};
+
 const form = useForm({
     // Section 1: Data Diri & Akademik
     nim: savedData.nim || props.wisudawan?.nim || '',
     nama_lengkap: savedData.nama_lengkap || props.wisudawan?.nama_lengkap || '',
     email: savedData.email || props.wisudawan?.email || props.wisudawan?.user?.email || '',
     no_whatsapp: savedData.no_whatsapp || props.wisudawan?.nomor_hp || '',
-    prodi: savedData.prodi || (props.wisudawan?.program_studi?.nama_prodi ? [props.wisudawan.program_studi.nama_prodi] : []),
+    prodi: getSingleValue(savedData.prodi, props.wisudawan?.program_studi?.nama_prodi || ''),
     prodi_lainnya: savedData.prodi_lainnya || '',
     jenis_kelas: savedData.jenis_kelas || 'Reguler',
     alamat_lengkap: savedData.alamat_lengkap || props.wisudawan?.alamat || '',
 
     // Section 2: Status Pekerjaan & Karir
-    status_saat_ini: savedData.status_saat_ini || [],
+    status_saat_ini: getSingleValue(savedData.status_saat_ini, ''),
     status_lainnya: savedData.status_lainnya || '',
     tempat_bekerja: savedData.tempat_bekerja || '',
-    gaji_per_bulan: savedData.gaji_per_bulan || [],
-    keselarasan_pekerjaan: savedData.keselarasan_pekerjaan || [],
-    kesesuaian_pendidikan: savedData.kesesuaian_pendidikan || [],
-    waktu_tunggu: savedData.waktu_tunggu || [],
+    gaji_per_bulan: getSingleValue(savedData.gaji_per_bulan, ''),
+    keselarasan_pekerjaan: getSingleValue(savedData.keselarasan_pekerjaan, ''),
+    kesesuaian_pendidikan: getSingleValue(savedData.kesesuaian_pendidikan, ''),
+    waktu_tunggu: getSingleValue(savedData.waktu_tunggu, ''),
     alamat_tempat_kerja: savedData.alamat_tempat_kerja || '',
-    jenis_instansi: savedData.jenis_instansi || [],
+    jenis_instansi: getSingleValue(savedData.jenis_instansi, ''),
     jenis_instansi_lainnya: savedData.jenis_instansi_lainnya || '',
     nama_perusahaan: savedData.nama_perusahaan || '',
-    posisi_jabatan: savedData.posisi_jabatan || [],
+    posisi_jabatan: getSingleValue(savedData.posisi_jabatan, ''),
     posisi_lainnya: savedData.posisi_lainnya || '',
-    cakupan_tempat_kerja: savedData.cakupan_tempat_kerja || [],
+    cakupan_tempat_kerja: getSingleValue(savedData.cakupan_tempat_kerja, ''),
     tingkat_tempat_kerja_lainnya: savedData.tingkat_tempat_kerja_lainnya || '',
 
     // Section 3: Kewirausahaan & Studi Lanjut
     nama_usaha: savedData.nama_usaha || '',
-    gaji_usaha: savedData.gaji_usaha || [],
-    keselarasan_usaha: savedData.keselarasan_usaha || [],
-    studi_lanjut: savedData.studi_lanjut || [],
+    gaji_usaha: getSingleValue(savedData.gaji_usaha, ''),
+    keselarasan_usaha: getSingleValue(savedData.keselarasan_usaha, ''),
+    studi_lanjut: getSingleValue(savedData.studi_lanjut, ''),
     kampus_studi_lanjut: savedData.kampus_studi_lanjut || '',
     alamat_kampus_studi_lanjut: savedData.alamat_kampus_studi_lanjut || '',
-    sumber_dana: savedData.sumber_dana || [],
+    sumber_dana: getSingleValue(savedData.sumber_dana, ''),
     sumber_dana_lainnya: savedData.sumber_dana_lainnya || '',
 
     // Section 4: Evaluasi Kompetensi & Pembelajaran (Matriks)
@@ -78,28 +85,18 @@ const form = useForm({
     },
 
     // Section 5: Kepuasan & Masukan
-    kepuasan_layanan: savedData.kepuasan_layanan || [],
+    kepuasan_layanan: getSingleValue(savedData.kepuasan_layanan, ''),
     saran_masukan: savedData.saran_masukan || '',
 });
-
-// Helper for multi-select checkboxes
-const toggleCheckbox = (field, value) => {
-    const index = form[field].indexOf(value);
-    if (index > -1) {
-        form[field].splice(index, 1);
-    } else {
-        form[field].push(value);
-    }
-};
 
 const activeTab = ref(1);
 
 const isSection1Valid = computed(() => {
-    return form.nim && form.nama_lengkap && form.email && form.no_whatsapp && form.prodi.length > 0 && form.jenis_kelas && form.alamat_lengkap;
+    return form.nim && form.nama_lengkap && form.email && form.no_whatsapp && Boolean(form.prodi) && form.jenis_kelas && form.alamat_lengkap;
 });
 
 const isSection2Valid = computed(() => {
-    return form.status_saat_ini.length > 0;
+    return Boolean(form.status_saat_ini);
 });
 
 const isSection4Valid = computed(() => {
@@ -114,7 +111,7 @@ const isSection4Valid = computed(() => {
 });
 
 const isSection5Valid = computed(() => {
-    return form.kepuasan_layanan.length > 0 && form.saran_masukan.trim() !== '';
+    return Boolean(form.kepuasan_layanan) && form.saran_masukan.trim() !== '';
 });
 
 const submit = () => {
@@ -397,11 +394,11 @@ const metodePembelajaranList = [
                             </div>
                         </div>
 
-                        <!-- Pertanyaan 5: Program Studi (Checkbox Group) -->
+                        <!-- Pertanyaan 5: Program Studi (Radio) -->
                         <div class="space-y-2 pt-2">
                             <label class="block text-xs font-bold text-slate-700 dark:text-slate-300">
                                 Program Studi <span class="text-rose-500">*</span>
-                                <span class="text-[11px] font-normal text-slate-500 block">Centang semua yang sesuai.</span>
+                                <span class="text-[11px] font-normal text-slate-500 block">Pilih salah satu jawaban.</span>
                             </label>
                             <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
                                 <label
@@ -410,13 +407,14 @@ const metodePembelajaranList = [
                                     class="flex items-center gap-2.5 p-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-900/50 hover:bg-slate-100 transition cursor-pointer text-xs"
                                 >
                                     <input
-                                        type="checkbox"
+                                        type="radio"
+                                        name="prodi"
                                         :value="opt"
-                                        :checked="form.prodi.includes(opt)"
-                                        @change="toggleCheckbox('prodi', opt)"
-                                        class="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                                        v-model="form.prodi"
+                                        class="text-blue-600 focus:ring-blue-500"
+                                        required
                                     />
-                                    <span class="text-slate-800 dark:text-slate-200">{{ opt }}</span>
+                                    <span class="text-slate-800 dark:text-slate-200 font-medium">{{ opt }}</span>
                                 </label>
                             </div>
                             <div class="mt-2 flex items-center gap-2">
@@ -485,11 +483,11 @@ const metodePembelajaranList = [
                             <p class="text-xs text-slate-500 mt-1">Lengkapi informasi pekerjaan, posisi, instansi, dan penghasilan per bulan.</p>
                         </div>
 
-                        <!-- Pertanyaan 8: Status Saat Ini (Checkbox Group) -->
+                        <!-- Pertanyaan 8: Status Saat Ini (Radio) -->
                         <div class="space-y-2">
                             <label class="block text-xs font-bold text-slate-700 dark:text-slate-300">
                                 Jelaskan status Anda saat ini? <span class="text-rose-500">*</span>
-                                <span class="text-[11px] font-normal text-slate-500 block">Centang semua yang sesuai.</span>
+                                <span class="text-[11px] font-normal text-slate-500 block">Pilih salah satu jawaban.</span>
                             </label>
                             <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
                                 <label
@@ -498,13 +496,14 @@ const metodePembelajaranList = [
                                     class="flex items-center gap-2.5 p-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-900/50 hover:bg-slate-100 transition cursor-pointer text-xs"
                                 >
                                     <input
-                                        type="checkbox"
+                                        type="radio"
+                                        name="status_saat_ini"
                                         :value="opt"
-                                        :checked="form.status_saat_ini.includes(opt)"
-                                        @change="toggleCheckbox('status_saat_ini', opt)"
-                                        class="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                                        v-model="form.status_saat_ini"
+                                        class="text-blue-600 focus:ring-blue-500"
+                                        required
                                     />
-                                    <span class="text-slate-800 dark:text-slate-200">{{ opt }}</span>
+                                    <span class="text-slate-800 dark:text-slate-200 font-medium">{{ opt }}</span>
                                 </label>
                             </div>
                             <div class="mt-2 flex items-center gap-2">
@@ -531,10 +530,11 @@ const metodePembelajaranList = [
                             />
                         </div>
 
-                        <!-- Pertanyaan 10: Penghasilan / Gaji per Bulan (Checkbox Group) -->
+                        <!-- Pertanyaan 10: Penghasilan / Gaji per Bulan (Radio) -->
                         <div class="space-y-2">
                             <label class="block text-xs font-bold text-slate-700 dark:text-slate-300">
                                 Jika Anda bekerja, berapa gaji Anda perbulan?
+                                <span class="text-[11px] font-normal text-slate-500 block">Pilih salah satu jawaban.</span>
                             </label>
                             <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
                                 <label
@@ -543,21 +543,22 @@ const metodePembelajaranList = [
                                     class="flex items-center gap-2.5 p-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-900/50 hover:bg-slate-100 transition cursor-pointer text-xs"
                                 >
                                     <input
-                                        type="checkbox"
+                                        type="radio"
+                                        name="gaji_per_bulan"
                                         :value="opt"
-                                        :checked="form.gaji_per_bulan.includes(opt)"
-                                        @change="toggleCheckbox('gaji_per_bulan', opt)"
-                                        class="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                                        v-model="form.gaji_per_bulan"
+                                        class="text-blue-600 focus:ring-blue-500"
                                     />
-                                    <span class="text-slate-800 dark:text-slate-200">{{ opt }}</span>
+                                    <span class="text-slate-800 dark:text-slate-200 font-medium">{{ opt }}</span>
                                 </label>
                             </div>
                         </div>
 
-                        <!-- Pertanyaan 11: Keselarasan Bidang Studi -->
+                        <!-- Pertanyaan 11: Keselarasan Bidang Studi (Radio) -->
                         <div class="space-y-2">
                             <label class="block text-xs font-bold text-slate-700 dark:text-slate-300">
                                 Seberapa erat hubungan antara bidang studi dengan pekerjaan Anda?
+                                <span class="text-[11px] font-normal text-slate-500 block">Pilih salah satu jawaban.</span>
                             </label>
                             <div class="flex flex-wrap gap-2">
                                 <label
@@ -566,21 +567,22 @@ const metodePembelajaranList = [
                                     class="flex items-center gap-2 px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 cursor-pointer text-xs"
                                 >
                                     <input
-                                        type="checkbox"
+                                        type="radio"
+                                        name="keselarasan_pekerjaan"
                                         :value="opt"
-                                        :checked="form.keselarasan_pekerjaan.includes(opt)"
-                                        @change="toggleCheckbox('keselarasan_pekerjaan', opt)"
-                                        class="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                                        v-model="form.keselarasan_pekerjaan"
+                                        class="text-blue-600 focus:ring-blue-500"
                                     />
-                                    <span>{{ opt }}</span>
+                                    <span class="font-medium text-slate-800 dark:text-slate-200">{{ opt }}</span>
                                 </label>
                             </div>
                         </div>
 
-                        <!-- Pertanyaan 12: Kesesuaian Tingkat Pendidikan -->
+                        <!-- Pertanyaan 12: Kesesuaian Tingkat Pendidikan (Radio) -->
                         <div class="space-y-2">
                             <label class="block text-xs font-bold text-slate-700 dark:text-slate-300">
                                 Tingkat pendidikan apa yang paling tepat/sesuai untuk pekerjaan Anda saat ini?
+                                <span class="text-[11px] font-normal text-slate-500 block">Pilih salah satu jawaban.</span>
                             </label>
                             <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
                                 <label
@@ -589,21 +591,22 @@ const metodePembelajaranList = [
                                     class="flex items-center gap-2 p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 cursor-pointer text-xs"
                                 >
                                     <input
-                                        type="checkbox"
+                                        type="radio"
+                                        name="kesesuaian_pendidikan"
                                         :value="opt"
-                                        :checked="form.kesesuaian_pendidikan.includes(opt)"
-                                        @change="toggleCheckbox('kesesuaian_pendidikan', opt)"
-                                        class="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                                        v-model="form.kesesuaian_pendidikan"
+                                        class="text-blue-600 focus:ring-blue-500"
                                     />
-                                    <span>{{ opt }}</span>
+                                    <span class="font-medium text-slate-800 dark:text-slate-200">{{ opt }}</span>
                                 </label>
                             </div>
                         </div>
 
-                        <!-- Pertanyaan 13: Waktu Tunggu -->
+                        <!-- Pertanyaan 13: Waktu Tunggu (Radio) -->
                         <div class="space-y-2">
                             <label class="block text-xs font-bold text-slate-700 dark:text-slate-300">
                                 Waktu Tunggu Lulusan mendapatkan pekerjaan pertama
+                                <span class="text-[11px] font-normal text-slate-500 block">Pilih salah satu jawaban.</span>
                             </label>
                             <div class="flex flex-wrap gap-2">
                                 <label
@@ -612,13 +615,13 @@ const metodePembelajaranList = [
                                     class="flex items-center gap-2 px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 cursor-pointer text-xs"
                                 >
                                     <input
-                                        type="checkbox"
+                                        type="radio"
+                                        name="waktu_tunggu"
                                         :value="opt"
-                                        :checked="form.waktu_tunggu.includes(opt)"
-                                        @change="toggleCheckbox('waktu_tunggu', opt)"
-                                        class="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                                        v-model="form.waktu_tunggu"
+                                        class="text-blue-600 focus:ring-blue-500"
                                     />
-                                    <span>{{ opt }}</span>
+                                    <span class="font-medium text-slate-800 dark:text-slate-200">{{ opt }}</span>
                                 </label>
                             </div>
                         </div>
@@ -636,10 +639,11 @@ const metodePembelajaranList = [
                             ></textarea>
                         </div>
 
-                        <!-- Pertanyaan 15: Jenis Instansi -->
+                        <!-- Pertanyaan 15: Jenis Instansi (Radio) -->
                         <div class="space-y-2">
                             <label class="block text-xs font-bold text-slate-700 dark:text-slate-300">
                                 Apa jenis perusahaan/instansi/institusi tempat anda bekerja sekarang?
+                                <span class="text-[11px] font-normal text-slate-500 block">Pilih salah satu jawaban.</span>
                             </label>
                             <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
                                 <label
@@ -648,13 +652,13 @@ const metodePembelajaranList = [
                                     class="flex items-center gap-2 p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 cursor-pointer text-xs"
                                 >
                                     <input
-                                        type="checkbox"
+                                        type="radio"
+                                        name="jenis_instansi"
                                         :value="opt"
-                                        :checked="form.jenis_instansi.includes(opt)"
-                                        @change="toggleCheckbox('jenis_instansi', opt)"
-                                        class="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                                        v-model="form.jenis_instansi"
+                                        class="text-blue-600 focus:ring-blue-500"
                                     />
-                                    <span>{{ opt }}</span>
+                                    <span class="font-medium text-slate-800 dark:text-slate-200">{{ opt }}</span>
                                 </label>
                             </div>
                             <div class="mt-2 flex items-center gap-2">
@@ -668,7 +672,7 @@ const metodePembelajaranList = [
                             </div>
                         </div>
 
-                        <!-- Pertanyaan 16 & 17: Nama Perusahaan & Posisi -->
+                        <!-- Pertanyaan 16 & 17: Nama Perusahaan & Posisi (Radio) -->
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
                             <div>
                                 <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
@@ -685,17 +689,18 @@ const metodePembelajaranList = [
                             <div>
                                 <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
                                     Apa posisi anda di perusahaan/kantor tempat anda bekerja?
+                                    <span class="text-[11px] font-normal text-slate-500 block">Pilih salah satu jawaban.</span>
                                 </label>
                                 <div class="flex flex-wrap gap-2 mb-2">
-                                    <label v-for="opt in posisiOptions" :key="opt" class="flex items-center gap-1.5 text-xs border border-slate-200 dark:border-slate-700 px-2.5 py-1.5 rounded-lg bg-slate-50 dark:bg-slate-900">
+                                    <label v-for="opt in posisiOptions" :key="opt" class="flex items-center gap-1.5 text-xs border border-slate-200 dark:border-slate-700 px-2.5 py-1.5 rounded-lg bg-slate-50 dark:bg-slate-900 cursor-pointer">
                                         <input
-                                            type="checkbox"
+                                            type="radio"
+                                            name="posisi_jabatan"
                                             :value="opt"
-                                            :checked="form.posisi_jabatan.includes(opt)"
-                                            @change="toggleCheckbox('posisi_jabatan', opt)"
-                                            class="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                                            v-model="form.posisi_jabatan"
+                                            class="text-blue-600 focus:ring-blue-500"
                                         />
-                                        <span>{{ opt }}</span>
+                                        <span class="font-medium text-slate-800 dark:text-slate-200">{{ opt }}</span>
                                     </label>
                                 </div>
                                 <input
@@ -707,10 +712,11 @@ const metodePembelajaranList = [
                             </div>
                         </div>
 
-                        <!-- Pertanyaan 18: Cakupan Tempat Kerja -->
+                        <!-- Pertanyaan 18: Cakupan Tempat Kerja (Radio) -->
                         <div class="space-y-2">
                             <label class="block text-xs font-bold text-slate-700 dark:text-slate-300">
                                 Apa tingkat tempat kerja Anda?
+                                <span class="text-[11px] font-normal text-slate-500 block">Pilih salah satu jawaban.</span>
                             </label>
                             <div class="grid grid-cols-1 gap-2">
                                 <label
@@ -719,13 +725,13 @@ const metodePembelajaranList = [
                                     class="flex items-center gap-2 p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 cursor-pointer text-xs"
                                 >
                                     <input
-                                        type="checkbox"
+                                        type="radio"
+                                        name="cakupan_tempat_kerja"
                                         :value="opt"
-                                        :checked="form.cakupan_tempat_kerja.includes(opt)"
-                                        @change="toggleCheckbox('cakupan_tempat_kerja', opt)"
-                                        class="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                                        v-model="form.cakupan_tempat_kerja"
+                                        class="text-blue-600 focus:ring-blue-500"
                                     />
-                                    <span>{{ opt }}</span>
+                                    <span class="font-medium text-slate-800 dark:text-slate-200">{{ opt }}</span>
                                 </label>
                             </div>
                             <div class="mt-2 flex items-center gap-2">
@@ -780,10 +786,11 @@ const metodePembelajaranList = [
                             />
                         </div>
 
-                        <!-- Pertanyaan 20: Penghasilan Usaha per Bulan -->
+                        <!-- Pertanyaan 20: Penghasilan Usaha per Bulan (Radio) -->
                         <div class="space-y-2">
                             <label class="block text-xs font-bold text-slate-700 dark:text-slate-300">
                                 Jika Anda berwirausaha, berapa penghasilan usaha Anda perbulan?
+                                <span class="text-[11px] font-normal text-slate-500 block">Pilih salah satu jawaban.</span>
                             </label>
                             <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
                                 <label
@@ -792,21 +799,22 @@ const metodePembelajaranList = [
                                     class="flex items-center gap-2.5 p-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-900/50 hover:bg-slate-100 transition cursor-pointer text-xs"
                                 >
                                     <input
-                                        type="checkbox"
+                                        type="radio"
+                                        name="gaji_usaha"
                                         :value="opt"
-                                        :checked="form.gaji_usaha.includes(opt)"
-                                        @change="toggleCheckbox('gaji_usaha', opt)"
-                                        class="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                                        v-model="form.gaji_usaha"
+                                        class="text-blue-600 focus:ring-blue-500"
                                     />
-                                    <span>{{ opt }}</span>
+                                    <span class="text-slate-800 dark:text-slate-200 font-medium">{{ opt }}</span>
                                 </label>
                             </div>
                         </div>
 
-                        <!-- Pertanyaan 21: Keselarasan Usaha -->
+                        <!-- Pertanyaan 21: Keselarasan Usaha (Radio) -->
                         <div class="space-y-2">
                             <label class="block text-xs font-bold text-slate-700 dark:text-slate-300">
                                 Seberapa erat hubungan antara bidang studi dengan usaha Anda?
+                                <span class="text-[11px] font-normal text-slate-500 block">Pilih salah satu jawaban.</span>
                             </label>
                             <div class="flex flex-wrap gap-2">
                                 <label
@@ -815,30 +823,31 @@ const metodePembelajaranList = [
                                     class="flex items-center gap-2 px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 cursor-pointer text-xs"
                                 >
                                     <input
-                                        type="checkbox"
+                                        type="radio"
+                                        name="keselarasan_usaha"
                                         :value="opt"
-                                        :checked="form.keselarasan_usaha.includes(opt)"
-                                        @change="toggleCheckbox('keselarasan_usaha', opt)"
-                                        class="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                                        v-model="form.keselarasan_usaha"
+                                        class="text-blue-600 focus:ring-blue-500"
                                     />
-                                    <span>{{ opt }}</span>
+                                    <span class="font-medium text-slate-800 dark:text-slate-200">{{ opt }}</span>
                                 </label>
                             </div>
                         </div>
 
-                        <!-- Pertanyaan 22: Status Studi Lanjut -->
+                        <!-- Pertanyaan 22: Status Studi Lanjut (Radio) -->
                         <div class="space-y-2 pt-2 border-t border-slate-100 dark:border-slate-700/60">
                             <label class="block text-xs font-bold text-slate-700 dark:text-slate-300">
                                 Apakah Anda studi lanjut?
+                                <span class="text-[11px] font-normal text-slate-500 block">Pilih salah satu jawaban.</span>
                             </label>
                             <div class="flex gap-4">
                                 <label v-for="sl in ['Ya', 'Tidak']" :key="sl" class="flex items-center gap-2 cursor-pointer text-xs">
                                     <input
-                                        type="checkbox"
+                                        type="radio"
+                                        name="studi_lanjut"
                                         :value="sl"
-                                        :checked="form.studi_lanjut.includes(sl)"
-                                        @change="toggleCheckbox('studi_lanjut', sl)"
-                                        class="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                                        v-model="form.studi_lanjut"
+                                        class="text-blue-600 focus:ring-blue-500"
                                     />
                                     <span class="text-slate-800 dark:text-slate-200 font-semibold">{{ sl }}</span>
                                 </label>
@@ -872,11 +881,11 @@ const metodePembelajaranList = [
                             </div>
                         </div>
 
-                        <!-- Pertanyaan 25: Sumber Pembiayaan Kuliah -->
+                        <!-- Pertanyaan 25: Sumber Pembiayaan Kuliah (Radio) -->
                         <div class="space-y-2 pt-2 border-t border-slate-100 dark:border-slate-700/60">
                             <label class="block text-xs font-bold text-slate-700 dark:text-slate-300">
                                 Sebutkan sumber dana dalam pembiayaan kuliah? (Selama kuliah di Politeknik Indonusa Surakarta)
-                                <span class="text-[11px] font-normal text-slate-500 block">Centang semua yang sesuai.</span>
+                                <span class="text-[11px] font-normal text-slate-500 block">Pilih salah satu jawaban.</span>
                             </label>
                             <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
                                 <label
@@ -885,13 +894,13 @@ const metodePembelajaranList = [
                                     class="flex items-center gap-2 p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 cursor-pointer text-xs"
                                 >
                                     <input
-                                        type="checkbox"
+                                        type="radio"
+                                        name="sumber_dana"
                                         :value="opt"
-                                        :checked="form.sumber_dana.includes(opt)"
-                                        @change="toggleCheckbox('sumber_dana', opt)"
-                                        class="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                                        v-model="form.sumber_dana"
+                                        class="text-blue-600 focus:ring-blue-500"
                                     />
-                                    <span>{{ opt }}</span>
+                                    <span class="font-medium text-slate-800 dark:text-slate-200">{{ opt }}</span>
                                 </label>
                             </div>
                             <div class="mt-2 flex items-center gap-2">
@@ -1057,11 +1066,11 @@ const metodePembelajaranList = [
                             <p class="text-xs text-slate-500 mt-1">Berikan masukan konstruktif untuk kemajuan Politeknik Indonusa Surakarta.</p>
                         </div>
 
-                        <!-- Pertanyaan 29: Kepuasan Layanan Kampus -->
+                        <!-- Pertanyaan 29: Kepuasan Layanan Kampus (Radio) -->
                         <div class="space-y-2">
                             <label class="block text-xs font-bold text-slate-700 dark:text-slate-300">
                                 Pertanyaan 29: Bagaimana kepuasan anda terhadap layanan yang diselenggaran oleh Politeknik Indonusa Surakarta selama Anda menempuh pendidikan? <span class="text-rose-500">*</span>
-                                <span class="text-[11px] font-normal text-slate-500 block">Centang pilihan yang paling sesuai.</span>
+                                <span class="text-[11px] font-normal text-slate-500 block">Pilih salah satu jawaban.</span>
                             </label>
                             <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
                                 <label
@@ -1070,11 +1079,12 @@ const metodePembelajaranList = [
                                     class="flex items-center gap-2.5 p-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-900/50 hover:bg-slate-100 transition cursor-pointer text-xs"
                                 >
                                     <input
-                                        type="checkbox"
+                                        type="radio"
+                                        name="kepuasan_layanan"
                                         :value="opt"
-                                        :checked="form.kepuasan_layanan.includes(opt)"
-                                        @change="toggleCheckbox('kepuasan_layanan', opt)"
-                                        class="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                                        v-model="form.kepuasan_layanan"
+                                        class="text-blue-600 focus:ring-blue-500"
+                                        required
                                     />
                                     <span class="font-medium text-slate-800 dark:text-slate-200">{{ opt }}</span>
                                 </label>
