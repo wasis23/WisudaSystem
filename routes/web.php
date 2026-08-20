@@ -153,26 +153,35 @@ Route::middleware(['auth', 'role:wisudawan,admin_utama'])->prefix('wisudawan')->
         $wisudawan = $user->wisudawan;
 
         if ($wisudawan) {
-            // Ensure student has a QR token
-            if (!$wisudawan->qr_code_token) {
-                $wisudawan->update(['qr_code_token' => 'WSD-' . ($wisudawan->nim ?? Str::random(8))]);
+            // Ensure student has a unique QR token
+            if (!$wisudawan->qr_code_token || $wisudawan->qr_code_token === 'WSD-' . $wisudawan->nim) {
+                $wisudawan->update(['qr_code_token' => 'WSD-' . $wisudawan->nim . '-' . strtoupper(\Illuminate\Support\Str::random(4))]);
             }
 
-            // Auto-generate default 2 guests if wisudawan has filled biodata and has 0 guests
+            // Auto-generate default 2 guests if wisudawan has 0 guests
             if ($wisudawan->tamuTambahan()->count() === 0) {
                 \App\Models\WisudawanTamuTambahan::create([
                     'wisudawan_id' => $wisudawan->id,
-                    'nama_tamu' => 'Pendamping 1 (Orang Tua/Wali)',
+                    'nama_tamu' => $wisudawan->nama_ayah ?: 'Pendamping 1 (Orang Tua/Wali)',
                     'hubungan' => 'Orang Tua / Wali',
-                    'qr_guest_token' => 'GST-1-' . ($wisudawan->nim ?? Str::random(8)),
+                    'qr_guest_token' => 'GST1-' . $wisudawan->nim . '-' . strtoupper(\Illuminate\Support\Str::random(6)),
                 ]);
 
                 \App\Models\WisudawanTamuTambahan::create([
                     'wisudawan_id' => $wisudawan->id,
-                    'nama_tamu' => 'Pendamping 2 (Orang Tua/Wali)',
+                    'nama_tamu' => $wisudawan->nama_ibu ?: 'Pendamping 2 (Orang Tua/Wali)',
                     'hubungan' => 'Orang Tua / Wali',
-                    'qr_guest_token' => 'GST-2-' . ($wisudawan->nim ?? Str::random(8)),
+                    'qr_guest_token' => 'GST2-' . $wisudawan->nim . '-' . strtoupper(\Illuminate\Support\Str::random(6)),
                 ]);
+            } else {
+                // Ensure existing guests have unique tokens if they were missing or using old pattern
+                $guests = $wisudawan->tamuTambahan()->orderBy('id')->get();
+                if (isset($guests[0]) && (!$guests[0]->qr_guest_token || str_starts_with($guests[0]->qr_guest_token, 'GST-1-'))) {
+                    $guests[0]->update(['qr_guest_token' => 'GST1-' . $wisudawan->nim . '-' . strtoupper(\Illuminate\Support\Str::random(6))]);
+                }
+                if (isset($guests[1]) && (!$guests[1]->qr_guest_token || str_starts_with($guests[1]->qr_guest_token, 'GST-2-'))) {
+                    $guests[1]->update(['qr_guest_token' => 'GST2-' . $wisudawan->nim . '-' . strtoupper(\Illuminate\Support\Str::random(6))]);
+                }
             }
 
             $wisudawan->load(['programStudi', 'tamuTambahan']);
@@ -355,14 +364,26 @@ Route::middleware(['auth', 'role:wisudawan,admin_utama'])->prefix('wisudawan')->
             $data['pas_foto'] = $path;
         }
 
+        $data['is_biodata_filled'] = true;
+
         if ($user->wisudawan) {
             $user->wisudawan->update($data);
+            $wisudawan = $user->wisudawan;
         } else {
             $activePeriode = \App\Models\PeriodeWisuda::getActive() ?? \App\Models\PeriodeWisuda::latest()->first();
             $data['user_id'] = $user->id;
             $data['periode_wisuda_id'] = $activePeriode?->id;
-            $data['qr_code_token'] = 'WIS-' . strtoupper(\Illuminate\Support\Str::random(8));
-            \App\Models\Wisudawan::create($data);
+            $data['qr_code_token'] = 'WSD-' . ($data['nim'] ?? 'MHS') . '-' . strtoupper(\Illuminate\Support\Str::random(4));
+            $wisudawan = \App\Models\Wisudawan::create($data);
+        }
+
+        // Update guest names if available
+        $guests = $wisudawan->tamuTambahan()->orderBy('id')->get();
+        if (isset($guests[0]) && !empty($request->nama_ayah)) {
+            $guests[0]->update(['nama_tamu' => $request->nama_ayah]);
+        }
+        if (isset($guests[1]) && !empty($request->nama_ibu)) {
+            $guests[1]->update(['nama_tamu' => $request->nama_ibu]);
         }
 
         return redirect()->route('wisudawan.dashboard')->with('success', 'Biodata wisudawan berhasil disimpan!');

@@ -43,6 +43,7 @@ class Wisudawan extends Model
         'waktu_presensi',
         'waktu_presensi_venue',
         'is_tracer_study_filled',
+        'is_biodata_filled',
         'tracer_status_pekerjaan',
         'tracer_nama_instansi',
         'tracer_jabatan',
@@ -56,6 +57,7 @@ class Wisudawan extends Model
 
     protected $casts = [
         'is_tracer_study_filled' => 'boolean',
+        'is_biodata_filled' => 'boolean',
         'tracer_study_data' => 'array',
         'is_hadir' => 'boolean',
         'is_in_auditorium' => 'boolean',

@@ -12,7 +12,7 @@ const page = usePage();
 const user = computed(() => page.props.auth.user);
 const wisudawanData = computed(() => props.wisudawan || user.value?.wisudawan);
 const isTracerStudyFilled = computed(() => Boolean(wisudawanData.value?.is_tracer_study_filled));
-const isBiodataFilled = computed(() => Boolean(wisudawanData.value?.pas_foto || wisudawanData.value?.nim));
+const isBiodataFilled = computed(() => Boolean(wisudawanData.value?.is_biodata_filled));
 
 const guest1 = computed(() => wisudawanData.value?.tamu_tambahan?.[0]);
 const guest2 = computed(() => wisudawanData.value?.tamu_tambahan?.[1]);
@@ -136,7 +136,7 @@ const printTickets = () => {
                                 <span v-if="!isTracerStudyFilled" class="text-xs font-bold px-3 py-1 rounded-full bg-slate-200 text-slate-600 dark:bg-slate-800 dark:text-slate-400 border border-slate-300 flex items-center gap-1">
                                     🔒 Terkunci
                                 </span>
-                                <span v-else-if="wisudawanData?.pas_foto" class="text-xs font-bold px-3 py-1 rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-900/60 dark:text-emerald-300 border border-emerald-300">
+                                <span v-else-if="wisudawanData?.is_biodata_filled" class="text-xs font-bold px-3 py-1 rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-900/60 dark:text-emerald-300 border border-emerald-300">
                                     ✓ Terisi
                                 </span>
                                 <span v-else class="text-xs font-bold px-3 py-1 rounded-full bg-amber-100 text-amber-800 dark:bg-amber-900/60 dark:text-amber-300 border border-amber-300">
@@ -159,7 +159,7 @@ const printTickets = () => {
                                     :href="route('wisudawan.pendaftaran.form')"
                                     class="w-full py-3 px-4 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl transition text-center block shadow-sm"
                                 >
-                                    {{ wisudawanData?.pas_foto ? 'Edit Biodata & Live Preview →' : 'Isi Biodata Sekarang →' }}
+                                    {{ wisudawanData?.is_biodata_filled ? 'Edit Biodata & Live Preview →' : 'Isi Biodata Sekarang →' }}
                                 </Link>
                             </template>
                             <template v-else>
