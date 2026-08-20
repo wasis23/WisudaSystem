@@ -854,8 +854,8 @@ const metodePembelajaranList = [
                             </div>
                         </div>
 
-                        <!-- Pertanyaan 23 & 24: Kampus & Alamat Studi Lanjut -->
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                        <!-- Pertanyaan 23 & 24: Kampus & Alamat Studi Lanjut (Hanya jika Studi Lanjut = Ya) -->
+                        <div v-if="form.studi_lanjut === 'Ya'" class="grid grid-cols-1 md:grid-cols-2 gap-5">
                             <div>
                                 <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
                                     Jika Anda studi lanjut, di mana tempat kampus Anda?
