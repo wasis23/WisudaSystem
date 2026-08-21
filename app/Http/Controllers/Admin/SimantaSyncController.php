@@ -389,17 +389,17 @@ class SimantaSyncController extends Controller
             $pilihanNim = array_unique(array_merge($pilihanNim, $parsedNims));
         }
 
-        // Mapping kode prodi SIMANTA (karakter ke-2 dari NIM) ke kode_prodi di tabel program_studi
+        // Mapping kode prodi SIMANTA (karakter awal dari NIM) ke kode_prodi di tabel program_studi
         $prodiMapping = [
-            'A' => 'D3-TekOto',   // Teknologi Otomotif
-            'B' => 'D3-SI',        // Sistem Informasi
-            'C' => 'D3-KomMas',   // Komunikasi Massa
-            'D' => 'D3-Hotel',    // Perhotelan
-            'E' => 'D3-FAR',      // Farmasi
-            'F' => 'D3-MIK',      // Manajemen Informasi Kesehatan
-            'G' => 'D3-TLM',      // Teknologi Laboratorium Medis
-            'H' => 'D3-BMR',      // Bisnis Manajemen Ritel
-            'I' => 'D3-MI',       // Manajemen Informatika
+            'A' => 'D4-21304',   // D4 Teknologi Rekayasa Otomotif
+            'B' => 'D4-58302',   // D4 Teknologi Rekayasa Perangkat Lunak
+            'C' => 'D4-90347',   // D4 Produksi Media
+            'D' => 'D3-Hotel',   // D3 Perhotelan
+            'E' => 'D3-FAR',     // D3 Farmasi
+            'F' => 'D4-13363',   // D4 Manajemen Informasi Kesehatan
+            'G' => 'D4-13350',   // D4 Teknologi Laboratorium Medis
+            'H' => 'D4-61317',   // D4 Bisnis dan Manajemen Ritel
+            'I' => 'D3-MI',      // D3 Manajemen Informatika
         ];
 
         $programStudis = ProgramStudi::all()->keyBy('kode_prodi');

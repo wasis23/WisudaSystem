@@ -40,20 +40,28 @@ class SiakadIntegrationService
 
             // 2. Lookup detailed biodata in wsia_mahasiswa
             $bio = null;
-            $idPd = $student->id_pd ?? $student->xid_pd ?? null;
-            if (!empty($idPd)) {
+            $idPd = !empty($student->id_pd) ? $student->id_pd : ($student->xid_pd ?? null);
+            $xidPd = !empty($student->xid_pd) ? $student->xid_pd : null;
+
+            if (!empty($idPd) || !empty($xidPd)) {
                 $bio = DB::connection('siakad')->table('wsia_mahasiswa')
-                    ->where(function ($q) use ($idPd) {
-                        $q->where('id_pd', $idPd)
-                          ->orWhere('xid_pd', $idPd);
+                    ->where(function ($q) use ($idPd, $xidPd) {
+                        if (!empty($idPd)) {
+                            $q->where('id_pd', $idPd)->orWhere('xid_pd', $idPd);
+                        }
+                        if (!empty($xidPd)) {
+                            $q->orWhere('xid_pd', $xidPd)->orWhere('id_pd', $xidPd);
+                        }
                     })
                     ->first();
             }
 
-            // 3. Lookup program studi in wsia_sms jika ada id_sms
-            $prodiName = $student->nm_lemb ?? $student->nm_prodi ?? null;
+            // 3. Lookup program studi in wsia_sms & resolve authentic D4 / D3 name
+            $rawProdi = $student->nm_lemb ?? $student->nm_prodi ?? null;
+            $idJenjang = $student->id_jenj_didik ?? null;
             $idSms = $student->id_sms ?? $student->xid_sms ?? null;
-            if (!$prodiName && !empty($idSms)) {
+
+            if (!empty($idSms)) {
                 $sms = DB::connection('siakad')->table('wsia_sms')
                     ->where(function ($q) use ($idSms) {
                         $q->where('id_sms', $idSms)
@@ -61,8 +69,15 @@ class SiakadIntegrationService
                     })
                     ->first();
                 if ($sms) {
-                    $prodiName = $sms->nm_lemb ?? $sms->nm_prodi ?? null;
+                    $rawProdi = $sms->nm_lemb ?? $rawProdi;
+                    $idJenjang = $sms->id_jenj_didik ?? $idJenjang;
                 }
+            }
+
+            $jenjangPrefix = ($idJenjang == '23') ? 'D4' : (($idJenjang == '22') ? 'D3' : 'S1');
+            $prodiName = $rawProdi;
+            if ($rawProdi && !str_starts_with($rawProdi, 'D4') && !str_starts_with($rawProdi, 'D3')) {
+                $prodiName = $jenjangPrefix . ' ' . $rawProdi;
             }
 
             $alamatParts = array_filter([
