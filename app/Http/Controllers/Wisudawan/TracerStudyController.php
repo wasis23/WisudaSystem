@@ -26,8 +26,19 @@ class TracerStudyController extends Controller
             $wisudawan->update(['user_id' => $user->id]);
         }
 
-        if ($wisudawan && !$wisudawan->programStudi && $user->programStudi) {
-            $wisudawan->setRelation('programStudi', $user->programStudi);
+        if (!$wisudawan) {
+            $prodi = $user->programStudi ?? \App\Models\ProgramStudi::find($user->program_studi_id ?? 1) ?? \App\Models\ProgramStudi::first();
+            $wisudawan = new Wisudawan([
+                'user_id' => $user->id,
+                'program_studi_id' => $prodi?->id,
+                'nim' => $nimFromEmail,
+                'nama_lengkap' => $user->name,
+                'email' => $user->email,
+            ]);
+            $wisudawan->setRelation('programStudi', $prodi);
+        } else if (!$wisudawan->programStudi) {
+            $prodi = $user->programStudi ?? \App\Models\ProgramStudi::find($wisudawan->program_studi_id ?? 1) ?? \App\Models\ProgramStudi::first();
+            $wisudawan->setRelation('programStudi', $prodi);
         }
 
         return Inertia::render('Wisudawan/TracerStudy', [
