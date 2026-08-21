@@ -155,17 +155,20 @@ class SyncWisudawanFromSiakad extends Command
                     ? $item->tgl_sk_yudisium
                     : (!empty($item->tgl_keluar) && $item->tgl_keluar !== '0000-00-00' ? $item->tgl_keluar : date('Y-m-d'));
 
-                // 5. Biodata Fields
-                $namaLengkap = trim($item->nm_pd ?? ($ptData->nama_lengkap ?? $cleanNim));
-                $jenisKelamin = strtoupper($ptData->jenis_kelamin ?? 'L');
-                $email = !empty($ptData->email) ? $ptData->email : ($cleanNim . '@poltekindonusa.ac.id');
-                $nomorHp = $ptData->nomor_hp ?? null;
-                $nik = $ptData->nik ?? null;
-                $tempatLahir = $ptData->tempat_lahir ?? null;
-                $tanggalLahir = !empty($ptData->tanggal_lahir) && $ptData->tanggal_lahir !== '0000-00-00' ? $ptData->tanggal_lahir : null;
-                $namaAyah = $ptData->nama_ayah ?? null;
-                $namaIbu = $ptData->nama_ibu ?? null;
-                $alamat = $ptData->alamat ?? null;
+                // 5. Biodata Fields (Safe Non-Null Fallbacks)
+                $namaLengkap = trim($item->nm_pd ?? ($ptData?->nama_lengkap ?? $cleanNim));
+                $jenisKelamin = strtoupper($ptData?->jenis_kelamin ?? 'L');
+                if (!in_array($jenisKelamin, ['L', 'P'])) {
+                    $jenisKelamin = 'L';
+                }
+                $email = !empty($ptData?->email) ? $ptData->email : ($cleanNim . '@poltekindonusa.ac.id');
+                $nomorHp = !empty($ptData?->nomor_hp) ? $ptData->nomor_hp : '-';
+                $nik = !empty($ptData?->nik) ? $ptData->nik : null;
+                $tempatLahir = !empty($ptData?->tempat_lahir) ? $ptData->tempat_lahir : '-';
+                $tanggalLahir = !empty($ptData?->tanggal_lahir) && $ptData->tanggal_lahir !== '0000-00-00' ? $ptData->tanggal_lahir : '2000-01-01';
+                $namaAyah = !empty($ptData?->nama_ayah) ? $ptData->nama_ayah : null;
+                $namaIbu = !empty($ptData?->nama_ibu) ? $ptData->nama_ibu : null;
+                $alamat = !empty($ptData?->alamat) ? $ptData->alamat : null;
 
                 $recordsToUpsert[] = [
                     'nim'                      => $cleanNim,
@@ -187,7 +190,7 @@ class SyncWisudawanFromSiakad extends Command
                     'tanggal_lulus'           => $tglLulus,
                     'status_kelulusan_simanta'=> 'LULUS',
                     'status_verifikasi'       => 'verified',
-                    'qr_code_token'           => Str::random(32),
+                    'qr_code_token'           => 'WSD-' . $cleanNim . '-' . strtoupper(Str::random(4)),
                     'updated_at'              => $now,
                     'created_at'              => $now,
                 ];
