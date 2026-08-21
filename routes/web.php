@@ -116,6 +116,7 @@ Route::middleware(['auth', 'role:admin_utama'])->prefix('admin')->name('admin.')
     // Import: dari cache SIMANTA → tabel wisudawan (inilah langkah ke-2)
     Route::get('/sync-simanta/import',      [SimantaSyncController::class, 'importPreview'])->name('sync-simanta.import.preview');
     Route::post('/sync-simanta/import',     [SimantaSyncController::class, 'importWisudawan'])->name('sync-simanta.import');
+    Route::post('/sync-simanta/reset-wisudawan', [SimantaSyncController::class, 'resetPeriodeWisudawan'])->name('sync-simanta.reset-wisudawan');
 
     // ── Tracer Study Monitoring & Report Export ────────────────────────────────
     Route::get('/tracer-study', [TracerStudyAdminController::class, 'index'])->name('tracer-study.index');

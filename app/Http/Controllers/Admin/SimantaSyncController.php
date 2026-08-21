@@ -634,4 +634,47 @@ class SimantaSyncController extends Controller
             return back()->with('error', '❌ Import gagal: ' . $e->getMessage());
         }
     }
+
+    /**
+     * Kembalikan semua wisudawan pada periode tertentu ke status 'Data Tersimpan (Belum Di-import)',
+     * tanpa menghapus cache data mahasiswa di SIMANTA.
+     */
+    public function resetPeriodeWisudawan(Request $request)
+    {
+        $periodeId = $request->input('periode_wisuda_id');
+        $targetNims = $request->input('nims', []);
+
+        DB::beginTransaction();
+        try {
+            $query = Wisudawan::query();
+            if (!empty($periodeId)) {
+                $query->where('periode_wisuda_id', $periodeId);
+            }
+            if (!empty($targetNims) && is_array($targetNims)) {
+                $query->whereIn('nim', $targetNims);
+            }
+
+            $wisudawans = $query->get();
+            $count = $wisudawans->count();
+
+            // Lepaskan link wisudawan_id di cache SIMANTA
+            $nims = $wisudawans->pluck('nim')->toArray();
+            SimantaMahasiswaLulusCache::whereIn('nim', $nims)->update(['wisudawan_id' => null]);
+
+            // Hapus wisudawan dari periode aktif (data cache SIMANTA tetap tersimpan aman)
+            foreach ($wisudawans as $w) {
+                // Hapus tamu tambahan jika ada
+                \App\Models\WisudawanTamuTambahan::where('wisudawan_id', $w->id)->delete();
+                $w->delete();
+            }
+
+            DB::commit();
+
+            return redirect()->back()->with('success', "✅ Berhasil mereset {$count} data wisudawan kembali ke 'Data Tersimpan (Belum Di-import)'. Data mahasiswa di SIMANTA tetap aman dan dapat dipilih ulang kapan saja.");
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('ResetPeriodeWisudawan error: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'Gagal mereset wisudawan: ' . $e->getMessage());
+        }
+    }
 }

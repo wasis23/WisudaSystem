@@ -34,6 +34,21 @@ const downloadPdf = () => {
     });
     window.open(url, '_blank');
 };
+
+const resetAllWisudawan = () => {
+    if (!selectedPeriode.value) {
+        alert('Pilih periode wisuda terlebih dahulu!');
+        return;
+    }
+
+    if (confirm('Apakah Anda yakin ingin mengembalikan seluruh wisudawan pada periode ini ke status "Belum Di-import"?\n\nData mahasiswa di cache SIMANTA tetap tersimpan aman dan bisa Anda pilih/import ulang sewaktu-waktu.')) {
+        router.post(route('admin.sync-simanta.reset-wisudawan'), {
+            periode_wisuda_id: selectedPeriode.value,
+        }, {
+            preserveScroll: true,
+        });
+    }
+};
 </script>
 
 <template>
@@ -56,15 +71,33 @@ const downloadPdf = () => {
                     </p>
                 </div>
 
-                <button
-                    @click="downloadPdf"
-                    class="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl transition shadow-sm flex items-center gap-2 shrink-0"
-                >
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                    </svg>
-                    <span>Export PDF Buku Kenangan</span>
-                </button>
+                <div class="flex items-center gap-2.5 shrink-0 flex-wrap">
+                    <Link
+                        :href="route('admin.sync-simanta.import.preview')"
+                        class="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl transition shadow-sm flex items-center gap-2"
+                    >
+                        <span>📥</span>
+                        <span>Pilih & Import Wisudawan</span>
+                    </Link>
+
+                    <button
+                        @click="resetAllWisudawan"
+                        class="px-4 py-2.5 bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/40 dark:hover:bg-rose-900/60 border border-rose-200 dark:border-rose-800 text-rose-700 dark:text-rose-300 font-bold text-xs rounded-xl transition flex items-center gap-1.5"
+                    >
+                        <span>🔄</span>
+                        <span>Kembalikan ke Belum Di-import</span>
+                    </button>
+
+                    <button
+                        @click="downloadPdf"
+                        class="px-4 py-2.5 bg-slate-800 hover:bg-slate-900 dark:bg-slate-700 dark:hover:bg-slate-600 text-white font-bold text-xs rounded-xl transition shadow-sm flex items-center gap-2"
+                    >
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                        <span>Export PDF</span>
+                    </button>
+                </div>
             </div>
 
             <!-- Filters Bar -->
