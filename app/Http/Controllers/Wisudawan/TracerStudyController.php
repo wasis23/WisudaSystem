@@ -19,10 +19,15 @@ class TracerStudyController extends Controller
             ->where('user_id', $user->id)
             ->orWhere('nim', $nimFromEmail)
             ->orWhere('email', $user->email)
+            ->orWhere('nama_lengkap', 'LIKE', '%' . $user->name . '%')
             ->first();
 
         if ($wisudawan && !$wisudawan->user_id) {
             $wisudawan->update(['user_id' => $user->id]);
+        }
+
+        if ($wisudawan && !$wisudawan->programStudi && $user->programStudi) {
+            $wisudawan->setRelation('programStudi', $user->programStudi);
         }
 
         return Inertia::render('Wisudawan/TracerStudy', [
@@ -47,6 +52,7 @@ class TracerStudyController extends Controller
         $wisudawan = Wisudawan::where('user_id', $user->id)
             ->orWhere('nim', $nimFromEmail)
             ->orWhere('email', $user->email)
+            ->orWhere('nama_lengkap', 'LIKE', '%' . $user->name . '%')
             ->first();
 
         if ($wisudawan && !$wisudawan->user_id) {
