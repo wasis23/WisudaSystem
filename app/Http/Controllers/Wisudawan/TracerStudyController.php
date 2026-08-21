@@ -12,7 +12,18 @@ class TracerStudyController extends Controller
     public function showForm()
     {
         $user = auth()->user();
-        $wisudawan = $user->wisudawan ? $user->wisudawan->load('programStudi') : null;
+
+        $nimFromEmail = strtoupper(explode('@', $user->email)[0]);
+
+        $wisudawan = Wisudawan::with('programStudi')
+            ->where('user_id', $user->id)
+            ->orWhere('nim', $nimFromEmail)
+            ->orWhere('email', $user->email)
+            ->first();
+
+        if ($wisudawan && !$wisudawan->user_id) {
+            $wisudawan->update(['user_id' => $user->id]);
+        }
 
         return Inertia::render('Wisudawan/TracerStudy', [
             'wisudawan' => $wisudawan,
@@ -31,7 +42,16 @@ class TracerStudyController extends Controller
             'tracer_kesesuaian_prodi' => 'required|string|max:255',
         ]);
 
-        $wisudawan = $user->wisudawan;
+        $nimFromEmail = strtoupper(explode('@', $user->email)[0]);
+
+        $wisudawan = Wisudawan::where('user_id', $user->id)
+            ->orWhere('nim', $nimFromEmail)
+            ->orWhere('email', $user->email)
+            ->first();
+
+        if ($wisudawan && !$wisudawan->user_id) {
+            $wisudawan->update(['user_id' => $user->id]);
+        }
 
         if (!$wisudawan) {
             // Create initial placeholder wisudawan if not existing
@@ -42,7 +62,7 @@ class TracerStudyController extends Controller
                 'user_id' => $user->id,
                 'periode_wisuda_id' => $periodeActive ? $periodeActive->id : 1,
                 'program_studi_id' => $user->program_studi_id ?? ($prodiDefault ? $prodiDefault->id : 1),
-                'nim' => $user->email,
+                'nim' => $nimFromEmail,
                 'nama_lengkap' => $user->name,
                 'tempat_lahir' => '-',
                 'tanggal_lahir' => now()->subYears(20)->toDateString(),
