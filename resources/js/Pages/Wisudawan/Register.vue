@@ -230,14 +230,14 @@ const submitForm = () => {
                         <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
                             <div>
                                 <label class="block text-xs font-bold uppercase text-slate-700 dark:text-slate-300 mb-1">
-                                    Dosen Pembimbing 1 (Utama)
+                                    Dosen Pembimbing 1
                                 </label>
                                 <input v-model="form.dosen_pembimbing_1" type="text" placeholder="Nama dosen & gelar..." class="w-full rounded-xl border-slate-300 dark:border-slate-700 dark:bg-slate-900 text-sm" />
                             </div>
 
                             <div>
                                 <label class="block text-xs font-bold uppercase text-slate-700 dark:text-slate-300 mb-1">
-                                    Dosen Pembimbing 2 (Pendamping)
+                                    Dosen Pembimbing 2
                                 </label>
                                 <input v-model="form.dosen_pembimbing_2" type="text" placeholder="Nama dosen & gelar..." class="w-full rounded-xl border-slate-300 dark:border-slate-700 dark:bg-slate-900 text-sm" />
                             </div>

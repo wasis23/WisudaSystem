@@ -14,35 +14,25 @@ class WisudaMasterSeeder extends Seeder
     public function run(): void
     {
         // 1. Create Study Programs for Politeknik Indonusa Surakarta
-        $tif = ProgramStudi::firstOrCreate(
-            ['kode_prodi' => 'D3-SI'],
-            [
-                'nama_prodi' => 'D3 Sistem Informasi',
-                'jenjang' => 'D3',
-                'kaprodi_nama' => 'Budi Raharjo, M.Kom.',
-                'kaprodi_nip' => '198501012010121003',
-            ]
-        );
+        $prodiList = [
+            ['kode_prodi' => 'D4-TRO', 'nama_prodi' => 'D4 Teknologi Rekayasa Otomotif', 'jenjang' => 'D4'],
+            ['kode_prodi' => 'D4-TRPL', 'nama_prodi' => 'D4 Teknologi Rekayasa Perangkat Lunak', 'jenjang' => 'D4'],
+            ['kode_prodi' => 'D4-PM', 'nama_prodi' => 'D4 Produksi Media', 'jenjang' => 'D4'],
+            ['kode_prodi' => 'D3-HTL', 'nama_prodi' => 'D3 Perhotelan', 'jenjang' => 'D3'],
+            ['kode_prodi' => 'D3-FAR', 'nama_prodi' => 'D3 Farmasi', 'jenjang' => 'D3'],
+            ['kode_prodi' => 'D4-MIK', 'nama_prodi' => 'D4 Manajemen Informasi Kesehatan', 'jenjang' => 'D4'],
+            ['kode_prodi' => 'D4-TLM', 'nama_prodi' => 'D4 Teknologi Laboratorium Medis', 'jenjang' => 'D4'],
+        ];
 
-        $mi = ProgramStudi::firstOrCreate(
-            ['kode_prodi' => 'D3-MI'],
-            [
-                'nama_prodi' => 'D3 Manajemen Informatika',
-                'jenjang' => 'D3',
-                'kaprodi_nama' => 'Eko Prasetyo, M.T.',
-                'kaprodi_nip' => '198702022012011004',
-            ]
-        );
-
-        $far = ProgramStudi::firstOrCreate(
-            ['kode_prodi' => 'D3-FAR'],
-            [
-                'nama_prodi' => 'D3 Farmasi',
-                'jenjang' => 'D3',
-                'kaprodi_nama' => 'apt. Siti Aminah, M.Farm.',
-                'kaprodi_nip' => '198904041998022001',
-            ]
-        );
+        foreach ($prodiList as $p) {
+            ProgramStudi::firstOrCreate(
+                ['nama_prodi' => $p['nama_prodi']],
+                [
+                    'kode_prodi' => $p['kode_prodi'],
+                    'jenjang' => $p['jenjang'],
+                ]
+            );
+        }
 
         // 2. Create Wisuda Periods
         $periode75 = PeriodeWisuda::firstOrCreate(

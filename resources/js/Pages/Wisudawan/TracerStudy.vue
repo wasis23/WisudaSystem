@@ -119,13 +119,13 @@ const submit = () => {
 };
 
 const prodiOptions = [
-    'Teknologi Rekayasa Otomotif',
-    'Teknologi Rekayasa Perangkat Lunak',
-    'Produksi Media',
-    'Perhotelan',
-    'Farmasi',
-    'Manajemen Informasi Kesehatan',
-    'Teknologi Laboratorium Medis',
+    'D4 Teknologi Rekayasa Otomotif',
+    'D4 Teknologi Rekayasa Perangkat Lunak',
+    'D4 Produksi Media',
+    'D3 Perhotelan',
+    'D3 Farmasi',
+    'D4 Manajemen Informasi Kesehatan',
+    'D4 Teknologi Laboratorium Medis',
 ];
 
 const statusOptions = [

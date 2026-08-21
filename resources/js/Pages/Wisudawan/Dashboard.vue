@@ -37,7 +37,7 @@ const printTickets = () => {
                     </p>
                 </div>
 
-                <div v-if="wisudawanData?.qr_code_token" class="flex items-center gap-3">
+                <div v-if="wisudawanData?.qr_code_token && isBiodataFilled" class="flex items-center gap-3">
                     <div class="px-3 py-1.5 bg-indigo-50 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300 rounded-xl font-mono text-xs font-bold border border-indigo-200 dark:border-indigo-700">
                         QR ID: {{ wisudawanData.qr_code_token }}
                     </div>
