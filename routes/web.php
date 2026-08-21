@@ -225,7 +225,7 @@ Route::middleware(['auth', 'role:wisudawan,admin_utama'])->prefix('wisudawan')->
     // Tracer Study Routes
     Route::get('/tracer-study', function () {
         $user = auth()->user();
-        $wisudawan = $user->wisudawan ? $user->wisudawan->load('tracerStudy') : null;
+        $wisudawan = $user->wisudawan ? $user->wisudawan->load(['tracerStudy', 'programStudi']) : null;
         return Inertia::render('Wisudawan/TracerStudy', [
             'wisudawan' => $wisudawan,
         ]);

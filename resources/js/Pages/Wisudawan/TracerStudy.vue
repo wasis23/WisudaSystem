@@ -394,37 +394,29 @@ const metodePembelajaranList = [
                             </div>
                         </div>
 
-                        <!-- Pertanyaan 5: Program Studi (Radio) -->
+                        <!-- Pertanyaan 5: Program Studi (Otomatis dari Akun) -->
                         <div class="space-y-2 pt-2">
                             <label class="block text-xs font-bold text-slate-700 dark:text-slate-300">
                                 Program Studi <span class="text-rose-500">*</span>
-                                <span class="text-[11px] font-normal text-slate-500 block">Pilih salah satu jawaban.</span>
+                                <span class="text-[11px] font-normal text-slate-500 block">Terisi otomatis sesuai data akademik wisudawan di SIAKAD.</span>
                             </label>
-                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                                <label
-                                    v-for="opt in prodiOptions"
-                                    :key="opt"
-                                    class="flex items-center gap-2.5 p-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-900/50 hover:bg-slate-100 transition cursor-pointer text-xs"
-                                >
+                            <div class="flex items-center gap-3 p-3.5 rounded-xl border border-blue-200 dark:border-blue-800 bg-blue-50/70 dark:bg-blue-950/40">
+                                <div class="w-8 h-8 rounded-lg bg-blue-600 text-white flex items-center justify-center font-bold text-xs flex-shrink-0">
+                                    {{ form.prodi.startsWith('D4') ? 'D4' : 'D3' }}
+                                </div>
+                                <div class="flex-1 min-w-0">
                                     <input
-                                        type="radio"
-                                        name="prodi"
-                                        :value="opt"
                                         v-model="form.prodi"
-                                        class="text-blue-600 focus:ring-blue-500"
+                                        type="text"
+                                        readonly
+                                        class="w-full bg-transparent border-0 p-0 text-xs font-bold text-blue-900 dark:text-blue-200 focus:ring-0 cursor-default"
                                         required
                                     />
-                                    <span class="text-slate-800 dark:text-slate-200 font-medium">{{ opt }}</span>
-                                </label>
-                            </div>
-                            <div class="mt-2 flex items-center gap-2">
-                                <span class="text-xs text-slate-500 whitespace-nowrap">Yang lain:</span>
-                                <input
-                                    v-model="form.prodi_lainnya"
-                                    type="text"
-                                    placeholder="Ketik nama prodi lain jika ada..."
-                                    class="w-full text-xs border-slate-300 dark:border-slate-700 rounded-xl dark:bg-slate-900 dark:text-white"
-                                />
+                                    <span class="text-[11px] text-blue-600 dark:text-blue-400">Terverifikasi Otomatis</span>
+                                </div>
+                                <span class="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-bold bg-blue-100 text-blue-800 dark:bg-blue-900/60 dark:text-blue-300 border border-blue-200">
+                                    Terkunci
+                                </span>
                             </div>
                         </div>
 

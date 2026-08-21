@@ -483,14 +483,22 @@ class SimantaSyncController extends Controller
             foreach ($candidatesByNim as $nim => $item) {
                 $nim = strtoupper($item->nim);
 
-                // ── 1. Tentukan program_studi_id ───────────────────────────────
-                $kodeProdiSimanta = strtoupper($item->kode_prodi ?? substr($nim, 1, 1));
-                $kodeProdiWisuda  = $prodiMapping[$kodeProdiSimanta] ?? null;
-                $programStudi     = $kodeProdiWisuda ? ($programStudis[$kodeProdiWisuda] ?? null) : null;
+                // ── 1. Tentukan program_studi_id langsung dari database SIAKAD ─────────────────
+                $siakadStudent = app(\App\Services\SiakadIntegrationService::class)->getStudentByNim($nim);
+                $prodiName = $siakadStudent['program_studi'] ?? ($item->nama_prodi ?? null);
 
-                // Fallback pencarian nama prodi
-                if (!$programStudi && !empty($item->nama_prodi)) {
-                    $programStudi = ProgramStudi::where('nama_prodi', 'like', '%' . $item->nama_prodi . '%')->first();
+                $programStudi = null;
+                if (!empty($prodiName)) {
+                    $programStudi = ProgramStudi::where('nama_prodi', $prodiName)
+                        ->orWhere('nama_prodi', 'like', '%' . $prodiName . '%')
+                        ->first();
+                }
+
+                // Fallback prodi mapping prefix jika belum cocok
+                if (!$programStudi) {
+                    $kodeProdiSimanta = strtoupper($item->kode_prodi ?? substr($nim, 1, 1));
+                    $kodeProdiWisuda  = $prodiMapping[$kodeProdiSimanta] ?? null;
+                    $programStudi     = $kodeProdiWisuda ? ($programStudis[$kodeProdiWisuda] ?? null) : null;
                 }
 
                 // Fallback default prodi pertama jika tetap tidak ketemu
