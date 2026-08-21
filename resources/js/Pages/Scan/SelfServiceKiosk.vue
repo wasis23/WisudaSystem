@@ -176,7 +176,7 @@ onUnmounted(() => {
         <div class="flex items-center justify-between border-b border-slate-800/80 pb-6">
             <div class="flex items-center gap-4">
                 <div class="w-14 h-14 bg-gradient-to-tr from-amber-500 to-amber-300 rounded-2xl flex items-center justify-center text-3xl shadow-lg shadow-amber-500/20">
-                    🎓
+                    
                 </div>
                 <div>
                     <h1 class="text-2xl font-black text-slate-100 tracking-wide">POLITEKNIK INDONUSA SURAKARTA</h1>
@@ -260,7 +260,7 @@ onUnmounted(() => {
                         </div>
 
                         <div class="inline-flex items-center gap-2 px-4 py-1.5 bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 rounded-full text-xs font-bold uppercase tracking-wider">
-                            <span>✅</span> Presensi Masuk Ballroom Berhasil
+                            <span></span> Presensi Masuk Ballroom Berhasil
                         </div>
                     </div>
 
@@ -293,7 +293,7 @@ onUnmounted(() => {
 
                         <div class="p-4 bg-emerald-950/60 border border-emerald-800/80 rounded-2xl flex items-center justify-between">
                             <span class="text-lg font-extrabold text-emerald-300">SELAMAT DATANG DI BALLROOM</span>
-                            <span class="text-2xl">🎉</span>
+                            <span class="text-2xl"></span>
                         </div>
                     </div>
 
@@ -308,7 +308,7 @@ onUnmounted(() => {
 
             <!-- REJECTED DISPLAY -->
             <div v-else-if="errorMessage" class="max-w-3xl mx-auto bg-rose-950/80 border-2 border-rose-600 rounded-3xl p-10 shadow-2xl text-center space-y-6 animate-shake">
-                <div class="text-7xl">🚨</div>
+                <div class="text-7xl"></div>
                 <h2 class="text-3xl font-black text-rose-200">AKSES DITOLAK / DATA INVALID</h2>
                 <p class="text-lg text-rose-300 font-medium">{{ errorMessage }}</p>
                 <div class="text-xs text-rose-400">Layar akan reset dalam {{ countdown }} detik...</div>

@@ -15,6 +15,7 @@ class ProgramStudi extends Model
         'kode_prodi',
         'nama_prodi',
         'jenjang',
+        'gelar',
         'kaprodi_nama',
         'kaprodi_nip',
     ];

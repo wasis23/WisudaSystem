@@ -94,7 +94,7 @@ onUnmounted(() => {
             <div class="flex items-center justify-between border-b border-slate-800 pb-4">
                 <div>
                     <span class="px-2.5 py-1 bg-amber-500/20 text-amber-400 font-extrabold text-xs rounded-full tracking-wider uppercase">
-                        👮 Security Gate Mobile
+                        Security Gate Mobile
                     </span>
                     <h1 class="text-xl font-black mt-1 text-slate-100">Scan Kehadiran Gate</h1>
                 </div>
@@ -109,7 +109,7 @@ onUnmounted(() => {
                 <div id="security-reader" class="w-full h-full"></div>
 
                 <div v-if="!isScanning" class="text-center p-6 space-y-3">
-                    <span class="text-6xl">📷</span>
+                    <span class="text-6xl"></span>
                     <p class="text-sm text-slate-400 font-medium">Kamera tidak aktif</p>
                     <button @click="startCamera" class="px-5 py-2.5 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs rounded-xl shadow-lg transition">
                         Aktifkan Kamera HP
@@ -141,7 +141,7 @@ onUnmounted(() => {
 
             <!-- Status Flash Messages -->
             <div v-if="$page.props.flash?.success" class="p-4 bg-emerald-950 border border-emerald-800 text-emerald-200 text-sm rounded-2xl shadow-xl flex items-center gap-3">
-                <span class="text-2xl">✅</span>
+                <span class="text-2xl"></span>
                 <div>
                     <div class="font-bold">BERHASIL VERIFIKASI</div>
                     <div class="text-xs text-emerald-300 mt-0.5">{{ $page.props.flash.success }}</div>
@@ -154,7 +154,7 @@ onUnmounted(() => {
                 <div class="flex items-center gap-3 border-b border-slate-800 pb-3">
                     <div class="w-14 h-14 rounded-xl bg-slate-800 border border-amber-400/40 overflow-hidden flex items-center justify-center shrink-0">
                         <img v-if="$page.props.flash.scannedWisudawan.pas_foto" :src="$page.props.flash.scannedWisudawan.pas_foto" class="w-full h-full object-cover" />
-                        <span v-else class="text-2xl">🎓</span>
+                        <span v-else class="text-2xl"></span>
                     </div>
                     <div>
                         <span class="text-[10px] font-bold text-amber-400 uppercase tracking-widest">{{ $page.props.flash.scannedWisudawan.prodi }}</span>
@@ -204,7 +204,7 @@ onUnmounted(() => {
             </div>
 
             <div v-if="$page.props.flash?.error || errorMessage" class="p-4 bg-rose-950 border border-rose-800 text-rose-200 text-sm rounded-2xl shadow-xl flex items-center gap-3">
-                <span class="text-2xl">🚨</span>
+                <span class="text-2xl"></span>
                 <div>
                     <div class="font-bold">DITOLAK / INVALID</div>
                     <div class="text-xs text-rose-300 mt-0.5">{{ $page.props.flash?.error || errorMessage }}</div>

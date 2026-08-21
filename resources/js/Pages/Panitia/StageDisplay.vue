@@ -247,7 +247,7 @@ onUnmounted(() => {
                     >
                         <span>IPK: {{ currentWisudawan.ipk }}</span>
                         <span v-if="Number(currentWisudawan.ipk) >= 3.51" class="px-3 py-1 bg-amber-500 text-slate-950 font-black text-xs uppercase tracking-wider rounded-full shadow-lg">
-                            Cumlaude ★
+                            Cumlaude 
                         </span>
                     </div>
 
@@ -296,7 +296,7 @@ onUnmounted(() => {
                         :disabled="currentIndex === 0"
                         class="px-3 py-1.5 bg-white/10 hover:bg-white/20 disabled:opacity-30 rounded-xl font-bold transition"
                     >
-                        ◀ Prev
+                         Prev
                     </button>
 
                     <button
@@ -304,7 +304,7 @@ onUnmounted(() => {
                         :disabled="currentIndex === wisudawans.length - 1"
                         class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-30 text-white rounded-xl font-bold transition"
                     >
-                        Next ▶
+                        Next 
                     </button>
 
                     <button

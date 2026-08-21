@@ -75,20 +75,20 @@ const setStatusTab = (status) => {
                         :href="route('panitia.presensi')"
                         class="px-4 py-2 text-xs font-bold rounded-lg transition text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white flex items-center gap-1.5"
                     >
-                        <span>📷 Gate Scanner</span>
+                        <span>Gate Scanner</span>
                     </Link>
                     <Link
                         :href="route('panitia.presensi.wisudawan')"
                         class="px-4 py-2 text-xs font-bold rounded-lg transition bg-white dark:bg-gray-800 text-indigo-600 dark:text-indigo-400 shadow-sm flex items-center gap-1.5"
                     >
-                        <span>📋 Data Wisudawan</span>
+                        <span>Data Wisudawan</span>
                     </Link>
                 </div>
             </div>
 
             <!-- Flash Message Alerts -->
             <div v-if="flashSuccess" class="p-4 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300 font-bold text-xs flex items-center gap-3">
-                <span class="text-lg">✅</span>
+                <span class="text-lg"></span>
                 <div>{{ flashSuccess }}</div>
             </div>
 
@@ -142,7 +142,7 @@ const setStatusTab = (status) => {
                     class="px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2"
                     :class="currentStatus === 'belum_hadir' ? 'bg-amber-600 text-white shadow-sm' : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 border border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700'"
                 >
-                    <span>⚠️ Belum Hadir</span>
+                    <span>Belum Hadir</span>
                     <span class="px-2 py-0.5 rounded-full text-[10px]" :class="currentStatus === 'belum_hadir' ? 'bg-amber-500 text-white' : 'bg-amber-50 dark:bg-amber-950/50 text-amber-600 dark:text-amber-400'">{{ counts?.belum_hadir || 0 }}</span>
                 </button>
 
@@ -152,7 +152,7 @@ const setStatusTab = (status) => {
                     class="px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2"
                     :class="currentStatus === 'hadir' ? 'bg-indigo-600 text-white shadow-sm' : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 border border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700'"
                 >
-                    <span>🚪 Hadir Gate In</span>
+                    <span>Hadir Gate In</span>
                     <span class="px-2 py-0.5 rounded-full text-[10px]" :class="currentStatus === 'hadir' ? 'bg-indigo-500 text-white' : 'bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400'">{{ counts?.hadir || 0 }}</span>
                 </button>
 
@@ -162,7 +162,7 @@ const setStatusTab = (status) => {
                     class="px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2"
                     :class="currentStatus === 'in_auditorium' ? 'bg-emerald-600 text-white shadow-sm' : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 border border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700'"
                 >
-                    <span>🏛 Masuk Auditorium</span>
+                    <span>Masuk Auditorium</span>
                     <span class="px-2 py-0.5 rounded-full text-[10px]" :class="currentStatus === 'in_auditorium' ? 'bg-emerald-500 text-white' : 'bg-emerald-50 dark:bg-emerald-950/50 text-emerald-600 dark:text-emerald-400'">{{ counts?.in_auditorium || 0 }}</span>
                 </button>
             </div>
@@ -237,7 +237,7 @@ const setStatusTab = (status) => {
                                         v-if="w.is_hadir"
                                         class="px-2.5 py-1 bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-950/50 dark:text-emerald-300 dark:border-emerald-800 text-[10px] font-bold rounded-full inline-flex items-center gap-1"
                                     >
-                                        ✓ Gate In
+                                         Gate In
                                     </span>
                                     <span
                                         v-else
@@ -253,13 +253,13 @@ const setStatusTab = (status) => {
                                         v-if="w.is_in_auditorium"
                                         class="px-2.5 py-1 bg-indigo-50 text-indigo-700 border border-indigo-200 dark:bg-indigo-950/50 dark:text-indigo-300 dark:border-indigo-800 text-[10px] font-bold rounded-full inline-flex items-center gap-1"
                                     >
-                                        🏛 Di Dalam Auditorium
+                                        Di Dalam Auditorium
                                     </span>
                                     <span
                                         v-else
                                         class="px-2.5 py-1 bg-gray-100 text-gray-600 border border-gray-200 dark:bg-gray-700 dark:text-gray-400 dark:border-gray-600 text-[10px] font-bold rounded-full inline-flex items-center gap-1"
                                     >
-                                        🚪 Belum Masuk
+                                        Belum Masuk
                                     </span>
                                 </td>
 

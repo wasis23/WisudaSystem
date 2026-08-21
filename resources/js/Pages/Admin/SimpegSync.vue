@@ -67,7 +67,7 @@ const resetSearch = () => {
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
             <div>
                 <h1 class="text-2xl font-black text-gray-900 dark:text-white flex items-center gap-2">
-                    <span class="text-2xl">🏛️</span> Sinkronisasi Data SIMPEG
+                    <span class="text-2xl"></span> Sinkronisasi Data SIMPEG
                 </h1>
                 <p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
                     Tarik data pegawai dari sistem SIMPEG dan simpan ke cache lokal wisuda.
@@ -96,10 +96,10 @@ const resetSearch = () => {
 
         <!-- Flash messages -->
         <div v-if="$page.props.flash?.success" class="mb-4 p-4 bg-emerald-50 border border-emerald-200 text-emerald-800 text-sm font-medium rounded-xl flex items-center gap-2">
-            ✅ {{ $page.props.flash.success }}
+             {{ $page.props.flash.success }}
         </div>
         <div v-if="$page.props.flash?.error" class="mb-4 p-4 bg-red-50 border border-red-200 text-red-800 text-sm font-medium rounded-xl flex items-center gap-2">
-            ❌ {{ $page.props.flash.error }}
+             {{ $page.props.flash.error }}
         </div>
 
         <!-- Stats Cards -->
@@ -131,7 +131,7 @@ const resetSearch = () => {
             <div class="lg:col-span-1 bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
                 <div class="px-5 py-4 border-b border-gray-100 dark:border-gray-700">
                     <h2 class="font-bold text-gray-800 dark:text-white text-sm flex items-center gap-2">
-                        📋 Riwayat Sinkronisasi
+                         Riwayat Sinkronisasi
                     </h2>
                 </div>
                 <div class="divide-y divide-gray-50 dark:divide-gray-700">
@@ -157,7 +157,7 @@ const resetSearch = () => {
             <div class="lg:col-span-2 bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
                 <div class="px-5 py-4 border-b border-gray-100 dark:border-gray-700 flex flex-col sm:flex-row sm:items-center gap-3">
                     <h2 class="font-bold text-gray-800 dark:text-white text-sm flex items-center gap-2 shrink-0">
-                        👥 Data Pegawai (Cache Lokal)
+                         Data Pegawai (Cache Lokal)
                     </h2>
                     <div class="flex items-center gap-2 ml-auto w-full sm:w-auto">
                         <input
@@ -189,7 +189,7 @@ const resetSearch = () => {
                             title="Reset Pencarian"
                             class="px-2 py-1.5 bg-gray-200 dark:bg-gray-600 hover:bg-gray-300 text-gray-700 dark:text-white text-xs font-medium rounded-lg transition"
                         >
-                            ✕
+                            
                         </button>
                     </div>
                 </div>

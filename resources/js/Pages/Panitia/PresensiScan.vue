@@ -115,13 +115,13 @@ onUnmounted(() => {
                         :href="route('panitia.presensi')"
                         class="px-4 py-2 text-xs font-bold rounded-lg transition bg-white dark:bg-gray-800 text-indigo-600 dark:text-indigo-400 shadow-sm flex items-center gap-1.5"
                     >
-                        <span>📷 Gate Scanner</span>
+                        <span>Gate Scanner</span>
                     </Link>
                     <Link
                         :href="route('panitia.presensi.wisudawan')"
                         class="px-4 py-2 text-xs font-bold rounded-lg transition text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white flex items-center gap-1.5"
                     >
-                        <span>📋 Data Wisudawan</span>
+                        <span>Data Wisudawan</span>
                     </Link>
                 </div>
             </div>
@@ -144,7 +144,7 @@ onUnmounted(() => {
                         class="px-3.5 py-1.5 rounded-xl text-xs font-bold border transition"
                         :class="isCameraActive ? 'bg-rose-500/20 text-rose-300 border-rose-500/40 hover:bg-rose-500/30' : 'bg-indigo-600 text-white border-indigo-500 hover:bg-indigo-700'"
                     >
-                        {{ isCameraActive ? '⏹ Matikan' : '📷 Aktifkan Kamera' }}
+                        {{ isCameraActive ? '⏹ Matikan' : 'Aktifkan Kamera' }}
                     </button>
                 </div>
 
@@ -169,17 +169,17 @@ onUnmounted(() => {
 
                 <!-- Scan Feedback Alerts -->
                 <div v-if="flashSuccess" class="p-4 rounded-xl bg-emerald-500/20 border border-emerald-500/40 text-emerald-200 font-bold text-xs flex items-center justify-center gap-3 text-center animate-bounce">
-                    <span class="text-lg">✅</span>
+                    <span class="text-lg"></span>
                     <div>{{ flashSuccess }}</div>
                 </div>
 
                 <div v-if="flashError" class="p-4 rounded-xl bg-red-500/20 border border-red-500/40 text-red-200 font-bold text-xs flex items-center justify-center gap-3 text-center">
-                    <span class="text-lg">🚫</span>
+                    <span class="text-lg"></span>
                     <div>{{ flashError }}</div>
                 </div>
 
                 <div v-if="flashWarning" class="p-4 rounded-xl bg-amber-500/20 border border-amber-500/40 text-amber-200 font-bold text-xs flex items-center justify-center gap-3 text-center">
-                    <span class="text-lg">⚠️</span>
+                    <span class="text-lg"></span>
                     <div>{{ flashWarning }}</div>
                 </div>
             </div>

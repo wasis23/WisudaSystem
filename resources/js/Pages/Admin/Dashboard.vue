@@ -66,7 +66,7 @@ const tracerPercentage = computed(() => {
                             :href="route('admin.monitoring-presensi', { status: 'belum_hadir' })" 
                             class="inline-flex items-center gap-1 text-xs font-bold text-amber-950 bg-white hover:bg-amber-50 px-3 py-1.5 rounded-lg transition shadow-sm"
                         >
-                            <span>🔍 Cek Daftar Peserta Belum Datang &rarr;</span>
+                            <span> Cek Daftar Peserta Belum Datang &rarr;</span>
                         </Link>
                     </div>
                 </div>
@@ -139,7 +139,7 @@ const tracerPercentage = computed(() => {
                                 </svg>
                             </div>
                             <Link :href="route('admin.stage-layout.edit')" class="text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:underline">
-                                Atur ➔
+                                Atur 
                             </Link>
                         </div>
                         <div>
@@ -159,7 +159,7 @@ const tracerPercentage = computed(() => {
                                 </svg>
                             </div>
                             <Link :href="route('admin.periode.index')" class="text-xs font-semibold text-amber-600 dark:text-amber-400 hover:underline">
-                                Kelola ➔
+                                Kelola 
                             </Link>
                         </div>
                         <div>
@@ -179,7 +179,7 @@ const tracerPercentage = computed(() => {
                                 </svg>
                             </div>
                             <Link :href="route('admin.buku-kenangan.index')" class="text-xs font-semibold text-emerald-600 dark:text-emerald-400 hover:underline">
-                                Kelola ➔
+                                Kelola 
                             </Link>
                         </div>
                         <div>
@@ -195,7 +195,7 @@ const tracerPercentage = computed(() => {
             <!-- SCAN GATES & ACCESS PREVIEW SECTION -->
             <div class="space-y-4">
                 <h3 class="text-sm font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-                    <span class="text-base">📱</span>
+                    <span class="text-base"></span>
                     <span>Akses Modul Gate Scanner & TV Kiosk Display</span>
                 </h3>
 
@@ -204,7 +204,7 @@ const tracerPercentage = computed(() => {
                     <!-- Gate 1: Security Mobile Scanner -->
                     <div class="bg-gradient-to-br from-amber-900/10 via-amber-900/5 to-transparent border border-amber-500/20 dark:border-amber-500/30 rounded-2xl p-5 space-y-3">
                         <div class="flex items-center justify-between">
-                            <span class="text-2xl">👮</span>
+                            <span class="text-2xl"></span>
                             <Link :href="route('security.scan')" class="px-3 py-1 bg-amber-500 text-slate-950 font-bold text-xs rounded-lg hover:bg-amber-400 transition">
                                 Buka Preview &rarr;
                             </Link>
@@ -218,7 +218,7 @@ const tracerPercentage = computed(() => {
                     <!-- Gate 2: Receptionist & Snack Mobile Scanner -->
                     <div class="bg-gradient-to-br from-purple-900/10 via-purple-900/5 to-transparent border border-purple-500/20 dark:border-purple-500/30 rounded-2xl p-5 space-y-3">
                         <div class="flex items-center justify-between">
-                            <span class="text-2xl">👩‍💼</span>
+                            <span class="text-2xl">‍</span>
                             <Link :href="route('receptionist.scan')" class="px-3 py-1 bg-purple-600 text-white font-bold text-xs rounded-lg hover:bg-purple-500 transition">
                                 Buka Preview &rarr;
                             </Link>
@@ -232,7 +232,7 @@ const tracerPercentage = computed(() => {
                     <!-- Gate 3: TV Display Kiosk -->
                     <div class="bg-gradient-to-br from-emerald-900/10 via-emerald-900/5 to-transparent border border-emerald-500/20 dark:border-emerald-500/30 rounded-2xl p-5 space-y-3">
                         <div class="flex items-center justify-between">
-                            <span class="text-2xl">🖥️</span>
+                            <span class="text-2xl"></span>
                             <a :href="route('kiosk.display')" target="_blank" class="px-3 py-1 bg-emerald-600 text-white font-bold text-xs rounded-lg hover:bg-emerald-500 transition flex items-center gap-1">
                                 <span>Layar TV ↗</span>
                             </a>
@@ -246,7 +246,7 @@ const tracerPercentage = computed(() => {
                     <!-- Gate 4: SIMPEG Duty Assignments -->
                     <div class="bg-gradient-to-br from-sky-900/10 via-sky-900/5 to-transparent border border-sky-500/20 dark:border-sky-500/30 rounded-2xl p-5 space-y-3">
                         <div class="flex items-center justify-between">
-                            <span class="text-2xl">👮‍♂️</span>
+                            <span class="text-2xl">‍</span>
                             <Link :href="route('admin.duty-assignments.index')" class="px-3 py-1 bg-sky-600 text-white font-bold text-xs rounded-lg hover:bg-sky-500 transition">
                                 Kelola Tugas &rarr;
                             </Link>
@@ -336,7 +336,7 @@ const tracerPercentage = computed(() => {
                                             :href="route('admin.buku-kenangan.index')"
                                             class="text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:underline"
                                         >
-                                            Detail ➔
+                                            Detail 
                                         </Link>
                                     </td>
                                 </tr>

@@ -4,9 +4,11 @@ use App\Http\Controllers\Admin\BukuKenanganController;
 use App\Http\Controllers\Admin\DutyAssignmentController;
 use App\Http\Controllers\Admin\FakultasProdiController;
 use App\Http\Controllers\Admin\PeriodeWisudaController;
+use App\Http\Controllers\Admin\ProgramStudiAdminController;
 use App\Http\Controllers\Admin\SimantaSyncController;
 use App\Http\Controllers\Admin\SimpegSyncController;
 use App\Http\Controllers\Admin\StageLayoutConfigController;
+use App\Http\Controllers\Admin\TracerStudyAdminController;
 use App\Http\Controllers\KioskScanController;
 use App\Http\Controllers\Panitia\PresensiWisudawanController;
 use App\Http\Controllers\Panitia\StageDisplayController;
@@ -110,6 +112,17 @@ Route::middleware(['auth', 'role:admin_utama'])->prefix('admin')->name('admin.')
     // Import: dari cache SIMANTA → tabel wisudawan (inilah langkah ke-2)
     Route::get('/sync-simanta/import',      [SimantaSyncController::class, 'importPreview'])->name('sync-simanta.import.preview');
     Route::post('/sync-simanta/import',     [SimantaSyncController::class, 'importWisudawan'])->name('sync-simanta.import');
+
+    // ── Tracer Study Monitoring & Report Export ────────────────────────────────
+    Route::get('/tracer-study', [TracerStudyAdminController::class, 'index'])->name('tracer-study.index');
+    Route::get('/tracer-study/export', [TracerStudyAdminController::class, 'export'])->name('tracer-study.export');
+    Route::get('/tracer-study/{id}', [TracerStudyAdminController::class, 'show'])->name('tracer-study.show');
+
+    // ── Pengaturan Program Studi & Gelar Lulusan ───────────────────────────────
+    Route::get('/program-studi', [ProgramStudiAdminController::class, 'index'])->name('program-studi.index');
+    Route::post('/program-studi', [ProgramStudiAdminController::class, 'store'])->name('program-studi.store');
+    Route::put('/program-studi/{id}', [ProgramStudiAdminController::class, 'update'])->name('program-studi.update');
+    Route::delete('/program-studi/{id}', [ProgramStudiAdminController::class, 'destroy'])->name('program-studi.destroy');
 });
 
 // 2. Security Scan Gate Route

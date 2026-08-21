@@ -79,19 +79,19 @@ const roleBadgeClass = computed(() => {
                                         Buku Kenangan
                                     </NavLink>
                                     <NavLink :href="route('kiosk.display')" target="_blank">
-                                        🖥️ Kiosk TV
+                                         Kiosk TV
                                     </NavLink>
                                 </template>
 
                                 <template v-if="user?.role === 'security'">
                                     <NavLink :href="route('security.scan')" :active="route().current('security.scan')">
-                                        👮 Scan Gate Security
+                                         Scan Gate Security
                                     </NavLink>
                                 </template>
 
                                 <template v-if="user?.role === 'receptionist'">
                                     <NavLink :href="route('receptionist.scan')" :active="route().current('receptionist.scan')">
-                                        👩‍💼 Scan Reception & Snack
+                                        ‍ Scan Reception & Snack
                                     </NavLink>
                                 </template>
 

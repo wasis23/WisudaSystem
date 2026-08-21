@@ -141,7 +141,7 @@ const formatDate = (dt) => {
                     </Link>
                 </div>
                 <h1 class="text-2xl font-black text-gray-900 dark:text-white flex items-center gap-2">
-                    <span class="text-2xl">📥</span> Import List Wisudawan Resmi
+                    <span class="text-2xl"></span> Import List Wisudawan Resmi
                 </h1>
                 <p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
                     Tentukan daftar mahasiswa yang berhak mengikuti wisuda pada periode tertentu dan membuka akses login portal mereka.
@@ -150,25 +150,25 @@ const formatDate = (dt) => {
 
             <div class="flex items-center gap-2">
                 <span class="px-3 py-1.5 bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-200 dark:border-indigo-800 text-indigo-700 dark:text-indigo-300 text-xs font-bold rounded-xl flex items-center gap-1.5">
-                    🎯 Periode Aktif: {{ activePeriode?.nama_periode || 'Belum Ditentukan' }}
+                     Periode Aktif: {{ activePeriode?.nama_periode || 'Belum Ditentukan' }}
                 </span>
             </div>
         </div>
 
         <!-- Flash messages -->
         <div v-if="$page.props.flash?.success" class="mb-4 p-4 bg-emerald-50 border border-emerald-200 text-emerald-800 text-sm font-medium rounded-xl">
-            ✅ {{ $page.props.flash.success }}
+             {{ $page.props.flash.success }}
         </div>
         <div v-if="$page.props.flash?.error" class="mb-4 p-4 bg-red-50 border border-red-200 text-red-800 text-sm font-medium rounded-xl">
-            ❌ {{ $page.props.flash.error }}
+             {{ $page.props.flash.error }}
         </div>
         <div v-if="$page.props.flash?.info" class="mb-4 p-4 bg-blue-50 border border-blue-200 text-blue-800 text-sm font-medium rounded-xl">
-            ℹ️ {{ $page.props.flash.info }}
+            ℹ {{ $page.props.flash.info }}
         </div>
 
         <!-- Error summary -->
         <div v-if="$page.props.flash?.import_errors?.length" class="mb-4 p-4 bg-amber-50 border border-amber-200 text-amber-900 text-xs rounded-xl">
-            <p class="font-bold mb-1">⚠️ Catatan Hasil Import:</p>
+            <p class="font-bold mb-1"> Catatan Hasil Import:</p>
             <ul class="list-disc pl-5 space-y-0.5">
                 <li v-for="(err, idx) in $page.props.flash.import_errors" :key="idx">{{ err }}</li>
             </ul>
@@ -177,7 +177,7 @@ const formatDate = (dt) => {
         <!-- Global Setting Card (Target Periode & Akun) -->
         <div class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 p-5 mb-6 shadow-sm">
             <h2 class="text-sm font-bold text-gray-800 dark:text-white mb-3 flex items-center gap-2">
-                <span>⚙️</span> Pengaturan Periode Wisuda Tujuan & Akun Login
+                <span></span> Pengaturan Periode Wisuda Tujuan & Akun Login
             </h2>
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
@@ -188,7 +188,7 @@ const formatDate = (dt) => {
                     >
                         <option value="">-- Pilih Periode Wisuda --</option>
                         <option v-for="p in periodes" :key="p.id" :value="p.id">
-                            {{ p.nama_periode }} ({{ p.tahun_akademik }}) {{ p.is_active ? '[★ AKTIF]' : '' }}
+                            {{ p.nama_periode }} ({{ p.tahun_akademik }}) {{ p.is_active ? '[ AKTIF]' : '' }}
                         </option>
                     </select>
                     <p class="text-[11px] text-gray-400 mt-1">Data wisudawan akan disimpan terkunci pada periode ini.</p>
@@ -214,14 +214,14 @@ const formatDate = (dt) => {
                 :class="activeTab === 'simanta' ? 'bg-indigo-600 text-white font-bold shadow-md shadow-indigo-500/20' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 font-medium'"
                 class="px-4 py-2 text-xs rounded-xl transition flex items-center gap-2"
             >
-                <span>🔍</span> 1. Pilih dari Sinkronisasi SIMANTA ({{ candidates?.length ?? 0 }} Siap)
+                <span></span> 1. Pilih dari Sinkronisasi SIMANTA ({{ candidates?.length ?? 0 }} Siap)
             </button>
             <button
                 @click="activeTab = 'whitelist'"
                 :class="activeTab === 'whitelist' ? 'bg-indigo-600 text-white font-bold shadow-md shadow-indigo-500/20' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 font-medium'"
                 class="px-4 py-2 text-xs rounded-xl transition flex items-center gap-2"
             >
-                <span>📋</span> 2. Tempel Daftar NIM (NIM Whitelist / SK BAAK)
+                <span></span> 2. Tempel Daftar NIM (NIM Whitelist / SK BAAK)
             </button>
         </div>
 
@@ -251,7 +251,7 @@ const formatDate = (dt) => {
                             :disabled="form.processing || selectedNims.length === 0"
                             class="w-full flex items-center justify-center gap-2 px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-60 text-white text-xs font-bold rounded-xl shadow transition"
                         >
-                            <span>🚀</span> Import {{ selectedNims.length }} Mahasiswa Terpilih
+                            <span></span> Import {{ selectedNims.length }} Mahasiswa Terpilih
                         </button>
                     </div>
                 </div>
@@ -263,7 +263,7 @@ const formatDate = (dt) => {
                     </label>
 
                     <button @click="applyFilter" class="px-3 py-1.5 bg-indigo-50 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300 rounded-lg hover:bg-indigo-100 font-semibold transition">
-                        🔍 Terapkan Filter
+                         Terapkan Filter
                     </button>
                 </div>
             </div>
@@ -272,13 +272,13 @@ const formatDate = (dt) => {
             <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
                 <div class="px-5 py-4 border-b border-gray-100 dark:border-gray-700 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                     <h2 class="font-bold text-gray-800 dark:text-white text-sm flex items-center gap-2">
-                        📋 Mahasiswa Siap Import ({{ filteredCandidates?.length ?? 0 }} / {{ candidates?.length ?? 0 }})
+                         Mahasiswa Siap Import ({{ filteredCandidates?.length ?? 0 }} / {{ candidates?.length ?? 0 }})
                     </h2>
                     <div v-if="candidates?.length" class="flex items-center gap-3">
                         <input
                             v-model="filterSearch"
                             type="text"
-                            placeholder="🔍 Filter NIM / Nama..."
+                            placeholder=" Filter NIM / Nama..."
                             class="text-xs border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-xl px-3 py-1.5 focus:ring-2 focus:ring-indigo-500 outline-none w-48 sm:w-64"
                         />
                         <label class="text-xs text-gray-600 dark:text-gray-400 flex items-center gap-1.5 cursor-pointer shrink-0">
@@ -304,14 +304,14 @@ const formatDate = (dt) => {
                             <tr v-if="!candidates?.length">
                                 <td colspan="6" class="px-4 py-12 text-center">
                                     <div class="max-w-md mx-auto space-y-3">
-                                        <div class="text-4xl">📭</div>
+                                        <div class="text-4xl"></div>
                                         <p class="text-gray-800 dark:text-white font-bold text-base">Tidak ada mahasiswa yang siap di-import pada filter ini.</p>
                                         <p v-if="totalUnimported > 0" class="text-xs text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/40 p-3 rounded-xl border border-amber-200">
-                                            💡 Terdapat <strong>{{ totalUnimported }}</strong> mahasiswa lulus yang tersimpan di cache lokal, namun tanggal pendadaran mereka berada di luar rentang.
+                                             Terdapat <strong>{{ totalUnimported }}</strong> mahasiswa lulus yang tersimpan di cache lokal, namun tanggal pendadaran mereka berada di luar rentang.
                                         </p>
                                         <div class="flex items-center justify-center gap-3 pt-2">
                                             <button v-if="totalUnimported > 0 && !filterIgnoreDate" @click="filterIgnoreDate = true; applyFilter()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl shadow transition">
-                                                🔓 Tampilkan Semua {{ totalUnimported }} Mahasiswa Lulus
+                                                 Tampilkan Semua {{ totalUnimported }} Mahasiswa Lulus
                                             </button>
                                             <Link :href="route('admin.sync-simanta.index')" class="px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-white hover:bg-gray-200 text-xs font-semibold rounded-xl transition">
                                                 ↻ Ke Halaman Sync SIMANTA
@@ -355,7 +355,7 @@ const formatDate = (dt) => {
         <div v-else class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 p-6 shadow-sm space-y-5">
             <div class="border-b border-gray-100 dark:border-gray-700 pb-3">
                 <h2 class="font-extrabold text-base text-gray-900 dark:text-white flex items-center gap-2">
-                    <span>📋</span> Tempel Daftar NIM Resmi (Whitelist SK Yudisium BAAK)
+                    <span></span> Tempel Daftar NIM Resmi (Whitelist SK Yudisium BAAK)
                 </h2>
                 <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
                     Cocok jika Anda memiliki daftar NIM mahasiswa dari SK Kelulusan / Excel BAAK. Salin kolom NIM dan tempelkan langsung di bawah ini.
@@ -398,7 +398,7 @@ const formatDate = (dt) => {
                     :disabled="form.processing || parsedPastedNims.length === 0"
                     class="px-6 py-3 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white text-xs font-extrabold rounded-xl shadow-lg transition"
                 >
-                    🚀 Import {{ parsedPastedNims.length }} Mahasiswa ke Periode Ini
+                     Import {{ parsedPastedNims.length }} Mahasiswa ke Periode Ini
                 </button>
             </div>
         </div>

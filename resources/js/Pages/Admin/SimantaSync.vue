@@ -69,7 +69,7 @@ const statusColor = (status) => {
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
             <div>
                 <h1 class="text-2xl font-black text-gray-900 dark:text-white flex items-center gap-2">
-                    <span class="text-2xl">🎓</span> Sinkronisasi Data Lulusan SIMANTA
+                    <span class="text-2xl"></span> Sinkronisasi Data Lulusan SIMANTA
                 </h1>
                 <p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
                     Tarik data mahasiswa lulus (sidang TA/pendadaran) dari SIMANTA berdasarkan rentang waktu.
@@ -80,23 +80,23 @@ const statusColor = (status) => {
                     :href="route('admin.sync-simanta.import.preview', { tgl_dari: tglDari, tgl_sampai: tglSampai })"
                     class="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold rounded-xl shadow transition"
                 >
-                    <span>📥</span> Import ke Wisudawan
+                    <span></span> Import ke Wisudawan
                 </Link>
             </div>
         </div>
 
         <!-- Flash messages -->
         <div v-if="$page.props.flash?.success" class="mb-4 p-4 bg-emerald-50 border border-emerald-200 text-emerald-800 text-sm font-medium rounded-xl flex items-center gap-2">
-            ✅ {{ $page.props.flash.success }}
+             {{ $page.props.flash.success }}
         </div>
         <div v-if="$page.props.flash?.error" class="mb-4 p-4 bg-red-50 border border-red-200 text-red-800 text-sm font-medium rounded-xl flex items-center gap-2">
-            ❌ {{ $page.props.flash.error }}
+             {{ $page.props.flash.error }}
         </div>
 
         <!-- Filter Sync Form Card -->
         <div class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 p-5 mb-6 shadow-sm">
             <h2 class="text-sm font-bold text-gray-800 dark:text-white mb-3 flex items-center gap-2">
-                ⚙️ Parameter Sinkronisasi Rentang Kelulusan (Oktober - Oktober)
+                 Parameter Sinkronisasi Rentang Kelulusan (Oktober - Oktober)
             </h2>
             <div class="grid grid-cols-1 sm:grid-cols-4 gap-4 items-end">
                 <div>
@@ -182,7 +182,7 @@ const statusColor = (status) => {
             <div class="lg:col-span-1 bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
                 <div class="px-5 py-4 border-b border-gray-100 dark:border-gray-700">
                     <h2 class="font-bold text-gray-800 dark:text-white text-sm flex items-center gap-2">
-                        📋 Riwayat Pull SIMANTA
+                         Riwayat Pull SIMANTA
                     </h2>
                 </div>
                 <div class="divide-y divide-gray-50 dark:divide-gray-700">
@@ -208,7 +208,7 @@ const statusColor = (status) => {
             <div class="lg:col-span-2 bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
                 <div class="px-5 py-4 border-b border-gray-100 dark:border-gray-700 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                     <h2 class="font-bold text-gray-800 dark:text-white text-sm flex items-center gap-2 shrink-0">
-                        📜 Data Lulusan Sidang / Pendadaran
+                         Data Lulusan Sidang / Pendadaran
                     </h2>
                     <div class="flex items-center gap-2 w-full sm:w-auto">
                         <div class="relative flex-1 sm:w-64">
@@ -216,14 +216,14 @@ const statusColor = (status) => {
                                 v-model="searchQuery"
                                 @keydown.enter="applyFilter"
                                 type="text"
-                                placeholder="🔍 Cari NIM / Nama / Judul..."
+                                placeholder=" Cari NIM / Nama / Judul..."
                                 class="w-full text-xs border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-xl pl-3 pr-8 py-1.5 focus:ring-2 focus:ring-indigo-500 outline-none"
                             />
                             <button
                                 v-if="searchQuery"
                                 @click="searchQuery = ''; applyFilter();"
                                 class="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 text-xs"
-                            >✕</button>
+                            ></button>
                         </div>
                         <button
                             @click="applyFilter"
@@ -264,7 +264,7 @@ const statusColor = (status) => {
                                 </td>
                                 <td class="px-4 py-3">
                                     <span v-if="mhs.wisudawan_id" class="bg-emerald-100 text-emerald-800 text-xs font-semibold px-2 py-0.5 rounded-full">
-                                        ✓ Terdaftar
+                                         Terdaftar
                                     </span>
                                     <span v-else class="bg-amber-100 text-amber-800 text-xs font-semibold px-2 py-0.5 rounded-full">
                                         Belum Import

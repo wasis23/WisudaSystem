@@ -147,7 +147,7 @@ const submitConfig = () => {
                             
                             <div v-if="bgPreview" class="flex items-center justify-between pt-1">
                                 <span class="text-[11px] text-emerald-600 dark:text-emerald-400 font-semibold flex items-center gap-1">
-                                    ✓ Template Background Aktif
+                                     Template Background Aktif
                                 </span>
                                 <button
                                     @click="removeBgImage"
@@ -339,7 +339,7 @@ const submitConfig = () => {
                                     }"
                                     class="absolute font-mono font-bold text-emerald-400 leading-none drop-shadow"
                                 >
-                                    IPK: 3.85 (Cumlaude ★)
+                                    IPK: 3.85 (Cumlaude )
                                 </div>
 
                                 <!-- Judul TA -->

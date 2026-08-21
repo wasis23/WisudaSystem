@@ -65,7 +65,7 @@ const handleFileUpload = (syarat, event) => {
                 <!-- Status Notice Banner -->
                 <div v-if="wisudawan.status_verifikasi === 'rejected'" class="bg-red-50 dark:bg-red-900/40 border border-red-200 dark:border-red-700 rounded-2xl p-6 text-red-800 dark:text-red-200 space-y-1">
                     <h4 class="font-bold text-base flex items-center gap-2">
-                        <span>❌</span> Catatan Ditolak Dari Verifikator:
+                        <span></span> Catatan Ditolak Dari Verifikator:
                     </h4>
                     <p class="text-xs">{{ wisudawan.catatan_verifikasi || 'Silakan unggah kembali berkas yang belum sesuai.' }}</p>
                 </div>
@@ -101,7 +101,7 @@ const handleFileUpload = (syarat, event) => {
                                         target="_blank"
                                         class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 text-xs font-bold rounded-xl transition flex items-center gap-1"
                                     >
-                                        📄 Lihat File
+                                        Lihat File
                                     </a>
 
                                     <label class="px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-900/40 dark:hover:bg-indigo-900/60 text-indigo-700 dark:text-indigo-300 text-xs font-bold rounded-xl cursor-pointer transition">

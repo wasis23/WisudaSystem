@@ -42,7 +42,7 @@ const submitForm = () => {
         <template #header>
             <div class="flex items-center justify-between">
                 <h2 class="font-bold text-2xl text-slate-800 leading-tight flex items-center gap-2">
-                    <span>👨‍👩‍👧‍👦</span> Pendaftaran Tamu Undangan & Catering Snack
+                    <span></span> Pendaftaran Tamu Undangan & Catering Snack
                 </h2>
                 <span class="px-4 py-1.5 bg-indigo-100 text-indigo-700 font-semibold rounded-full text-sm">
                     Referensi SIKEU: {{ quotaData?.total_allowed_guests }} Undangan
@@ -56,21 +56,21 @@ const submitForm = () => {
                 <!-- Financial Quota & Snack Calculation Card -->
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                     <div class="bg-gradient-to-br from-indigo-600 to-indigo-800 text-white rounded-2xl p-6 shadow-xl relative overflow-hidden">
-                        <div class="absolute -right-4 -bottom-4 opacity-10 text-8xl font-black">🎟️</div>
+                        <div class="absolute -right-4 -bottom-4 opacity-10 text-8xl font-black"></div>
                         <p class="text-indigo-200 text-sm font-semibold uppercase tracking-wider">Total Kuota Pendamping</p>
                         <h3 class="text-4xl font-extrabold mt-2">{{ quotaData?.total_allowed_guests }} Orang</h3>
                         <p class="text-xs text-indigo-100 mt-2">Termasuk 2 Undangan Utama + {{ quotaData?.tambahan_wisuda_paid_quota }} Extra dari SIKEU</p>
                     </div>
 
                     <div class="bg-gradient-to-br from-amber-500 to-amber-700 text-white rounded-2xl p-6 shadow-xl relative overflow-hidden">
-                        <div class="absolute -right-4 -bottom-4 opacity-10 text-8xl font-black">🍱</div>
+                        <div class="absolute -right-4 -bottom-4 opacity-10 text-8xl font-black"></div>
                         <p class="text-amber-100 text-sm font-semibold uppercase tracking-wider">Perhitungan Snack Catering</p>
                         <h3 class="text-4xl font-extrabold mt-2">{{ quotaData?.snack_quota }} Porsi</h3>
                         <p class="text-xs text-amber-100 mt-2">1 Porsi Wisudawan + {{ quotaData?.total_allowed_guests }} Porsi Tamu Undangan</p>
                     </div>
 
                     <div class="bg-gradient-to-br from-emerald-600 to-emerald-800 text-white rounded-2xl p-6 shadow-xl relative overflow-hidden">
-                        <div class="absolute -right-4 -bottom-4 opacity-10 text-8xl font-black">✅</div>
+                        <div class="absolute -right-4 -bottom-4 opacity-10 text-8xl font-black"></div>
                         <p class="text-emerald-100 text-sm font-semibold uppercase tracking-wider">Status Verifikasi SIKEU</p>
                         <h3 class="text-2xl font-bold mt-2">Lunas / Terverifikasi</h3>
                         <p class="text-xs text-emerald-100 mt-2">NIM: {{ wisudawan?.nim }}</p>
@@ -90,7 +90,7 @@ const submitForm = () => {
                             :disabled="form.guests.length >= maxGuests"
                             class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white font-semibold text-sm rounded-xl transition shadow-md flex items-center gap-1.5"
                         >
-                            <span>➕</span> Tambah Tamu (Maks: {{ maxGuests }})
+                            <span></span> Tambah Tamu (Maks: {{ maxGuests }})
                         </button>
                     </div>
 
@@ -129,7 +129,7 @@ const submitForm = () => {
                                     v-if="form.guests.length > 1"
                                     class="text-red-500 hover:text-red-700 p-2 text-sm font-semibold rounded-lg hover:bg-red-50"
                                 >
-                                    🗑️
+                                    Hapus
                                 </button>
                             </div>
                         </div>
@@ -140,7 +140,7 @@ const submitForm = () => {
                                 :disabled="form.processing"
                                 class="px-8 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl shadow-lg transition flex items-center gap-2"
                             >
-                                <span>💾</span> Simpan Data Pendamping & Snack
+                                <span></span> Simpan Data Pendamping & Snack
                             </button>
                         </div>
                     </form>

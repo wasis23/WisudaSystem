@@ -68,26 +68,26 @@ const downloadPdf = () => {
             </div>
 
             <!-- Filters Bar -->
-            <div class="bg-white dark:bg-gray-800 p-5 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm flex flex-col lg:flex-row gap-4 items-center justify-between">
-                <div class="flex flex-col sm:flex-row items-center gap-3 w-full lg:w-auto">
-                    <div class="w-full sm:w-auto">
+            <div class="bg-white dark:bg-gray-800 p-5 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm flex flex-col xl:flex-row gap-4 items-start xl:items-center justify-between">
+                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 w-full xl:w-auto flex-1">
+                    <div>
                         <label class="text-[11px] font-bold text-gray-400 dark:text-gray-400 uppercase block mb-1">Periode Wisuda:</label>
-                        <select v-model="selectedPeriode" @change="filterYearbook" class="w-full sm:w-auto rounded-xl border-gray-200 dark:border-gray-700 dark:bg-gray-900 text-xs font-medium text-gray-700 dark:text-gray-300">
+                        <select v-model="selectedPeriode" @change="filterYearbook" class="w-full rounded-xl border-gray-200 dark:border-gray-700 dark:bg-gray-900 text-xs font-medium text-gray-700 dark:text-gray-300 truncate">
                             <option v-for="p in periodes" :key="p.id" :value="p.id">{{ p.nama_periode }}</option>
                         </select>
                     </div>
 
-                    <div class="w-full sm:w-auto">
+                    <div>
                         <label class="text-[11px] font-bold text-gray-400 dark:text-gray-400 uppercase block mb-1">Program Studi:</label>
-                        <select v-model="selectedProdi" @change="filterYearbook" class="w-full sm:w-auto rounded-xl border-gray-200 dark:border-gray-700 dark:bg-gray-900 text-xs font-medium text-gray-700 dark:text-gray-300">
+                        <select v-model="selectedProdi" @change="filterYearbook" class="w-full rounded-xl border-gray-200 dark:border-gray-700 dark:bg-gray-900 text-xs font-medium text-gray-700 dark:text-gray-300 truncate">
                             <option value="">Semua Program Studi</option>
                             <option v-for="ps in programStudis" :key="ps.id" :value="ps.id">{{ ps.nama_prodi }} ({{ ps.jenjang }})</option>
                         </select>
                     </div>
 
-                    <div class="w-full sm:w-64">
+                    <div>
                         <label class="text-[11px] font-bold text-gray-400 dark:text-gray-400 uppercase block mb-1">Pencarian:</label>
-                        <div class="relative">
+                        <div class="relative w-full">
                             <input
                                 v-model="searchInput"
                                 @keyup.enter="filterYearbook"
@@ -102,8 +102,8 @@ const downloadPdf = () => {
                     </div>
                 </div>
 
-                <div class="shrink-0 w-full lg:w-auto text-right">
-                    <span class="text-xs font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/50 px-3 py-2 rounded-xl border border-indigo-200 dark:border-indigo-800 inline-block">
+                <div class="shrink-0 self-start xl:self-center pt-1 xl:pt-0">
+                    <span class="text-xs font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/50 px-3.5 py-2 rounded-xl border border-indigo-200 dark:border-indigo-800 whitespace-nowrap inline-block">
                         Total: {{ wisudawans?.total ?? wisudawanList.length }} Wisudawan
                     </span>
                 </div>

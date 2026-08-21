@@ -63,8 +63,8 @@ const displayProdiList = computed(() => {
                     </span>
                 </div>
                 <div class="flex items-center gap-4 text-blue-200 text-[11px]">
-                    <span>📍 Kampus Utama: Jl. KH. Samanhudi No. 84 Surakarta</span>
-                    <span class="hidden md:inline">📞 (0271) 718-694</span>
+                    <span> Kampus Utama: Jl. KH. Samanhudi No. 84 Surakarta</span>
+                    <span class="hidden md:inline"> (0271) 718-694</span>
                 </div>
             </div>
         </div>
@@ -77,7 +77,7 @@ const displayProdiList = computed(() => {
                     <!-- Institution Brand Logo & Title -->
                     <div class="flex items-center gap-3">
                         <div class="w-12 h-12 rounded-xl bg-blue-900 text-amber-400 flex items-center justify-center font-bold text-2xl shadow-md border-2 border-amber-400/40">
-                            🏛️
+                            
                         </div>
                         <div>
                             <h1 class="text-base sm:text-lg font-bold text-slate-900 leading-tight">
@@ -133,7 +133,7 @@ const displayProdiList = computed(() => {
                     <div class="lg:col-span-7 flex flex-col justify-between bg-white border border-slate-300 rounded-2xl p-6 sm:p-8 shadow-md">
                         <div class="space-y-4">
                             <span class="px-3 py-1 bg-blue-50 border border-blue-200 text-blue-800 text-xs font-bold rounded-md inline-block">
-                                🏛️ Portal Informasi Kelulusan
+                                 Portal Informasi Kelulusan
                             </span>
 
                             <h2 class="text-3xl sm:text-4xl font-extrabold text-slate-900 leading-tight tracking-tight">
@@ -149,7 +149,7 @@ const displayProdiList = computed(() => {
                         <div class="pt-6 mt-6 border-t border-slate-200 grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div class="p-4 rounded-xl bg-slate-50 border border-slate-200 flex items-start gap-3">
                                 <div class="w-10 h-10 rounded-lg bg-blue-900 text-white flex items-center justify-center text-lg font-bold shrink-0">
-                                    📍
+                                    
                                 </div>
                                 <div class="space-y-0.5">
                                     <p class="text-xs font-bold text-blue-900 uppercase tracking-wide">Lokasi Acara</p>
@@ -159,7 +159,7 @@ const displayProdiList = computed(() => {
 
                             <div class="p-4 rounded-xl bg-slate-50 border border-slate-200 flex items-start gap-3">
                                 <div class="w-10 h-10 rounded-lg bg-blue-900 text-white flex items-center justify-center text-lg font-bold shrink-0">
-                                    🎓
+                                    
                                 </div>
                                 <div class="space-y-0.5">
                                     <p class="text-xs font-bold text-blue-900 uppercase tracking-wide">Ketentuan Toga</p>
@@ -188,7 +188,7 @@ const displayProdiList = computed(() => {
                             <div class="p-6 space-y-4 text-sm">
                                 <div class="flex items-start gap-4 p-3.5 bg-blue-50/70 border border-blue-100 rounded-xl">
                                     <div class="w-10 h-10 rounded-lg bg-blue-900 text-white flex items-center justify-center font-bold shrink-0">
-                                        📅
+                                        
                                     </div>
                                     <div>
                                         <p class="text-xs text-slate-500 font-medium">Tanggal Pelaksanaan Wisuda</p>
@@ -251,7 +251,7 @@ const displayProdiList = computed(() => {
                     
                     <div class="p-6 rounded-xl border border-slate-200 bg-slate-50 space-y-3">
                         <div class="w-10 h-10 rounded-lg bg-blue-100 text-blue-800 flex items-center justify-center font-bold text-lg">
-                            📷
+                            
                         </div>
                         <h4 class="font-bold text-slate-900 text-base">1. Ketentuan Pas Foto</h4>
                         <p class="text-xs text-slate-600 leading-relaxed">
@@ -261,7 +261,7 @@ const displayProdiList = computed(() => {
 
                     <div class="p-6 rounded-xl border border-slate-200 bg-slate-50 space-y-3">
                         <div class="w-10 h-10 rounded-lg bg-blue-100 text-blue-800 flex items-center justify-center font-bold text-lg">
-                            📜
+                            
                         </div>
                         <h4 class="font-bold text-slate-900 text-base">2. Kutipan & Judul TA</h4>
                         <p class="text-xs text-slate-600 leading-relaxed">
@@ -271,7 +271,7 @@ const displayProdiList = computed(() => {
 
                     <div class="p-6 rounded-xl border border-slate-200 bg-slate-50 space-y-3">
                         <div class="w-10 h-10 rounded-lg bg-blue-100 text-blue-800 flex items-center justify-center font-bold text-lg">
-                            🖥️
+                            
                         </div>
                         <h4 class="font-bold text-slate-900 text-base">3. Proyektor Panggung & Presensi</h4>
                         <p class="text-xs text-slate-600 leading-relaxed">
@@ -367,7 +367,7 @@ const displayProdiList = computed(() => {
                     
                     <div class="md:col-span-6 space-y-3">
                         <div class="flex items-center gap-3">
-                            <span class="text-2xl">🏛️</span>
+                            <span class="text-2xl"></span>
                             <div>
                                 <h4 class="font-bold text-sm text-white">POLITEKNIK INDONUSA SURAKARTA</h4>
                                 <p class="text-blue-300 text-[11px]">Kampus Berbasis Kompetensi & Terakreditasi</p>
@@ -380,9 +380,9 @@ const displayProdiList = computed(() => {
 
                     <div class="md:col-span-3 space-y-2">
                         <h5 class="font-bold text-white text-xs uppercase tracking-wider">Kontak Kampus</h5>
-                        <p class="text-blue-200 text-[11px]">📍 Jl. KH. Samanhudi No. 84, Surakarta</p>
-                        <p class="text-blue-200 text-[11px]">📞 (0271) 718-694</p>
-                        <p class="text-blue-200 text-[11px]">✉️ info@poltekindonusa.ac.id</p>
+                        <p class="text-blue-200 text-[11px]"> Jl. KH. Samanhudi No. 84, Surakarta</p>
+                        <p class="text-blue-200 text-[11px]"> (0271) 718-694</p>
+                        <p class="text-blue-200 text-[11px]"> info@poltekindonusa.ac.id</p>
                     </div>
 
                     <div class="md:col-span-3 space-y-2">

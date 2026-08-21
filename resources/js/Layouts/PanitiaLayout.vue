@@ -44,7 +44,7 @@ const toggleDarkMode = () => {
                                         : 'text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white'
                                 ]"
                             >
-                                📷 Gate Scanner
+                                Gate Scanner
                             </Link>
                             <Link
                                 :href="route('panitia.presensi.wisudawan')"
@@ -55,7 +55,7 @@ const toggleDarkMode = () => {
                                         : 'text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white'
                                 ]"
                             >
-                                📋 Data Wisudawan
+                                Data Wisudawan
                             </Link>
                         </div>
                     </div>

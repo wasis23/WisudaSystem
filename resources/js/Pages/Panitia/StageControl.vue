@@ -185,7 +185,7 @@ const openStageDisplay = () => {
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                         </svg>
-                        <span>Buka Layar Presentasi ➔</span>
+                        <span>Buka Layar Presentasi </span>
                     </button>
                 </div>
             </div>
@@ -193,12 +193,12 @@ const openStageDisplay = () => {
             <!-- Flash Alert Message -->
             <div v-if="$page.props.flash?.success" class="p-4 rounded-xl bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-200 text-xs font-bold flex items-center justify-between shadow-sm">
                 <span class="flex items-center gap-2">
-                    ✅ {{ $page.props.flash.success }}
+                     {{ $page.props.flash.success }}
                 </span>
             </div>
             <div v-if="$page.props.errors?.file" class="p-4 rounded-xl bg-rose-50 dark:bg-rose-950/50 border border-rose-200 dark:border-rose-800 text-rose-800 dark:text-rose-200 text-xs font-bold flex items-center justify-between shadow-sm">
                 <span class="flex items-center gap-2">
-                    ⚠️ {{ $page.props.errors.file }}
+                     {{ $page.props.errors.file }}
                 </span>
             </div>
 
@@ -227,14 +227,14 @@ const openStageDisplay = () => {
                         :disabled="activeIndex === 0"
                         class="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 disabled:opacity-40 rounded-xl font-bold text-xs transition border border-slate-700"
                     >
-                        ◀ Prev
+                         Prev
                     </button>
                     <button
                         @click="nextCandidate"
                         :disabled="activeIndex === wisudawans.length - 1"
                         class="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-40 text-white rounded-xl font-bold text-xs transition shadow-sm"
                     >
-                        Next Candidate ▶
+                        Next Candidate 
                     </button>
                 </div>
             </div>
@@ -271,7 +271,7 @@ const openStageDisplay = () => {
                             type="button"
                             class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 text-xs font-bold"
                         >
-                            ✕
+                            
                         </button>
                     </div>
                 </div>

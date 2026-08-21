@@ -289,7 +289,7 @@ const submitForm = () => {
                                 <!-- Preview Thumbnail -->
                                 <div class="w-20 h-[106px] rounded-xl overflow-hidden border-2 border-slate-300 dark:border-slate-600 bg-slate-100 dark:bg-slate-900 flex items-center justify-center shrink-0">
                                     <img v-if="photoPreview" :src="photoPreview" class="w-full h-full object-cover" alt="Preview Foto" />
-                                    <span v-else class="text-2xl">🖼️</span>
+                                    <span v-else class="text-2xl"></span>
                                 </div>
                                 <!-- Upload Button -->
                                 <div class="flex-1">
@@ -298,7 +298,7 @@ const submitForm = () => {
                                         @click="openFilePicker"
                                         class="w-full py-3 px-4 border-2 border-dashed border-indigo-300 dark:border-indigo-700 rounded-xl text-xs font-bold text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/40 transition text-center"
                                     >
-                                        {{ photoPreview ? '🔄 Ganti & Crop Ulang Foto' : '📷 Pilih & Posisikan Pas Foto' }}
+                                        {{ photoPreview ? 'Ganti & Crop Ulang Foto' : 'Pilih & Posisikan Pas Foto' }}
                                     </button>
                                     <p class="text-[10px] text-slate-400 mt-1.5 leading-tight">
                                         Foto akan di-crop otomatis ke ukuran <strong>3:4</strong> (600×800px) sesuai posisi yang Anda pilih.
@@ -330,7 +330,7 @@ const submitForm = () => {
                 <!-- LIVE STAGE PROJECTION PREVIEW CARD (REAL-TIME SCALED PREVIEW) -->
                 <div class="lg:col-span-5 space-y-4">
                     <div class="bg-indigo-900 text-white p-4 rounded-2xl border border-indigo-700 shadow-md">
-                        <span class="text-xs font-extrabold uppercase tracking-widest text-indigo-300 block">🖥 LIVE PREVIEW TAMPILAN HARI WISUDA</span>
+                        <span class="text-xs font-extrabold uppercase tracking-widest text-indigo-300 block">LIVE PREVIEW TAMPILAN HARI WISUDA</span>
                         <p class="text-xs text-indigo-200 mt-1">Begini penayangan nama, foto, dan data Anda di layar proyektor panggung saat prosesi wisuda!</p>
                     </div>
 
@@ -420,7 +420,7 @@ const submitForm = () => {
                                     }"
                                     class="absolute font-mono font-bold text-emerald-400 leading-none drop-shadow"
                                 >
-                                    IPK: {{ form.ipk || '3.50' }} {{ Number(form.ipk) >= 3.51 ? '(Cumlaude ★)' : '' }}
+                                    IPK: {{ form.ipk || '3.50' }} {{ Number(form.ipk) >= 3.51 ? '(Cumlaude )' : '' }}
                                 </div>
 
                                 <!-- Live TA Title -->
@@ -491,13 +491,13 @@ const submitForm = () => {
                     <div class="flex items-center gap-1.5">
                         <span class="text-[11px] font-bold text-gray-500 dark:text-gray-400 mr-1 uppercase tracking-wider">Zoom & Reset:</span>
                         <button type="button" @click="zoomOut" title="Zoom Out" class="px-2.5 py-1.5 rounded-lg bg-white dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 border border-gray-300 dark:border-gray-600 text-xs font-black text-gray-700 dark:text-gray-200 transition">
-                            ➖ Zoom
+                            Zoom Out
                         </button>
                         <button type="button" @click="zoomIn" title="Zoom In" class="px-2.5 py-1.5 rounded-lg bg-white dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 border border-gray-300 dark:border-gray-600 text-xs font-black text-gray-700 dark:text-gray-200 transition">
-                            ➕ Zoom
+                            Zoom In
                         </button>
                         <button type="button" @click="resetCrop" title="Reset Posisi" class="px-2.5 py-1.5 rounded-lg bg-amber-500/10 dark:bg-amber-500/20 hover:bg-amber-500/20 border border-amber-300 dark:border-amber-700 text-xs font-bold text-amber-700 dark:text-amber-300 transition">
-                            ↺ Reset
+                            Reset
                         </button>
                     </div>
                 </div>
@@ -505,8 +505,8 @@ const submitForm = () => {
                 <!-- Modal Footer Actions -->
                 <div class="px-6 py-4 flex items-center justify-between gap-3">
                     <div class="text-[11px] text-gray-500 dark:text-gray-400 space-y-0.5">
-                        <p class="flex items-center gap-1">👤 <strong>Garis Putih:</strong> Posisikan kepala & bahu di dalam garis panduan</p>
-                        <p class="flex items-center gap-1">🖱️ <strong>Geser / Zoom:</strong> Sesuaikan ukuran wajah agar proporsional</p>
+                        <p class="flex items-center gap-1"> <strong>Garis Putih:</strong> Posisikan kepala & bahu di dalam garis panduan</p>
+                        <p class="flex items-center gap-1"> <strong>Geser / Zoom:</strong> Sesuaikan ukuran wajah agar proporsional</p>
                     </div>
                     <div class="flex gap-3 shrink-0">
                         <button
@@ -521,7 +521,7 @@ const submitForm = () => {
                             @click="applyCrop"
                             class="px-6 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-extrabold transition shadow-md shadow-indigo-500/20"
                         >
-                            ✅ Gunakan Foto Ini
+                            Gunakan Foto Ini
                         </button>
                     </div>
                 </div>

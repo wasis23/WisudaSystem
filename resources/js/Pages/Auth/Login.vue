@@ -59,7 +59,7 @@ const submit = () => {
                 <div class="relative z-10 space-y-6">
                     <div class="flex items-center gap-3">
                         <div class="w-12 h-12 rounded-xl bg-blue-900 text-amber-400 flex items-center justify-center font-bold text-2xl shadow-md border-2 border-amber-400/40">
-                            🏛️
+                            
                         </div>
                         <div>
                             <h1 class="text-sm font-bold tracking-tight text-white leading-tight">
@@ -87,19 +87,19 @@ const submit = () => {
                 <!-- Important Login Notes -->
                 <div class="relative z-10 my-8 p-4 rounded-2xl bg-blue-900/60 border border-blue-800 space-y-2.5 text-xs text-blue-200">
                     <div class="flex items-center gap-2 text-amber-300 font-bold text-[11px] uppercase tracking-wide">
-                        <span>ℹ️ Petunjuk Akses</span>
+                        <span>Petunjuk Akses</span>
                     </div>
                     <ul class="space-y-1.5 text-[11px] text-blue-200/90">
                         <li class="flex items-start gap-2">
-                            <span class="text-amber-400 font-bold">🎓</span>
+                            <span class="text-amber-400 font-bold"></span>
                             <span><strong class="text-amber-300">Mahasiswa:</strong> Gunakan <strong class="text-white">NIM</strong> (diawali huruf, contoh: <span class="font-mono">D23098</span>) + Password SIAKAD.</span>
                         </li>
                         <li class="flex items-start gap-2">
-                            <span class="text-amber-400 font-bold">👩‍🏫</span>
+                            <span class="text-amber-400 font-bold"></span>
                             <span><strong class="text-amber-300">Dosen / Staf:</strong> Gunakan <strong class="text-white">NIDN</strong> (semua angka) + Password SIMPEG.</span>
                         </li>
                         <li class="flex items-start gap-2">
-                            <span class="text-amber-400 font-bold">⚙️</span>
+                            <span class="text-amber-400 font-bold"></span>
                             <span><strong class="text-amber-300">Admin:</strong> Gunakan <strong class="text-white">Email</strong> + Password sistem.</span>
                         </li>
                     </ul>
@@ -145,10 +145,10 @@ const submit = () => {
                             <div class="relative">
                                 <!-- Dynamic icon based on input type -->
                                 <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400 text-sm">
-                                    <span v-if="inputType === 'nim'">🎓</span>
-                                    <span v-else-if="inputType === 'nidn'">👩‍🏫</span>
-                                    <span v-else-if="inputType === 'email'">📧</span>
-                                    <span v-else>🔑</span>
+                                    <span v-if="inputType === 'nim'"></span>
+                                    <span v-else-if="inputType === 'nidn'"></span>
+                                    <span v-else-if="inputType === 'email'"></span>
+                                    <span v-else></span>
                                 </div>
                                 <TextInput
                                     id="email"
@@ -163,13 +163,13 @@ const submit = () => {
                             </div>
                             <!-- Dynamic hint based on input detection -->
                             <p v-if="inputType === 'nim'" class="text-[11px] text-emerald-600 font-semibold flex items-center gap-1">
-                                ✓ Terdeteksi sebagai <strong>NIM Mahasiswa</strong> → Login via SIAKAD
+                                 Terdeteksi sebagai <strong>NIM Mahasiswa</strong> → Login via SIAKAD
                             </p>
                             <p v-else-if="inputType === 'nidn'" class="text-[11px] text-blue-600 font-semibold flex items-center gap-1">
-                                ✓ Terdeteksi sebagai <strong>NIDN Dosen/Staf</strong> → Login via SIMPEG
+                                 Terdeteksi sebagai <strong>NIDN Dosen/Staf</strong> → Login via SIMPEG
                             </p>
                             <p v-else-if="inputType === 'email'" class="text-[11px] text-slate-500 font-semibold flex items-center gap-1">
-                                ✓ Terdeteksi sebagai <strong>Email Administrator</strong>
+                                 Terdeteksi sebagai <strong>Email Administrator</strong>
                             </p>
                             <InputError class="text-xs mt-1" :message="form.errors.email" />
                         </div>
@@ -188,7 +188,7 @@ const submit = () => {
                             </div>
                             <div class="relative">
                                 <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400 text-sm">
-                                    🔒
+                                    
                                 </div>
                                 <TextInput
                                     id="password"

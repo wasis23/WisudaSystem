@@ -221,7 +221,7 @@ const metodePembelajaranList = [
             <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
                     <h2 class="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                        <span>🎓</span>
+                        <span></span>
                         <span>Pendataan Career & Tracer Study Alumni 2026</span>
                     </h2>
                     <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">
@@ -242,7 +242,7 @@ const metodePembelajaranList = [
                 
                 <!-- Notice Banner -->
                 <div class="mb-6 p-4 rounded-2xl bg-blue-900 text-white shadow-md flex items-start gap-3 border border-blue-800">
-                    <span class="text-2xl">📋</span>
+                    <span class="text-2xl"></span>
                     <div class="space-y-1">
                         <h3 class="text-sm font-bold text-amber-300">Wajib Diisi untuk Syarat Pendaftaran Wisuda</h3>
                         <p class="text-xs text-blue-100 leading-relaxed">
@@ -264,7 +264,7 @@ const metodePembelajaranList = [
                         ]"
                     >
                         <span>1. Data Diri & Akademik</span>
-                        <span v-if="isSection1Valid" class="text-emerald-300">✓</span>
+                        <span v-if="isSection1Valid" class="text-emerald-300"></span>
                     </button>
 
                     <button
@@ -278,7 +278,7 @@ const metodePembelajaranList = [
                         ]"
                     >
                         <span>2. Status Pekerjaan</span>
-                        <span v-if="isSection2Valid" class="text-emerald-300">✓</span>
+                        <span v-if="isSection2Valid" class="text-emerald-300"></span>
                     </button>
 
                     <button
@@ -305,7 +305,7 @@ const metodePembelajaranList = [
                         ]"
                     >
                         <span>4. Evaluasi Kompetensi</span>
-                        <span v-if="isSection4Valid" class="text-emerald-300">✓</span>
+                        <span v-if="isSection4Valid" class="text-emerald-300"></span>
                     </button>
 
                     <button
@@ -319,7 +319,7 @@ const metodePembelajaranList = [
                         ]"
                     >
                         <span>5. Kepuasan & Masukan</span>
-                        <span v-if="isSection5Valid" class="text-emerald-300">✓</span>
+                        <span v-if="isSection5Valid" class="text-emerald-300"></span>
                     </button>
                 </div>
 
@@ -1120,7 +1120,7 @@ const metodePembelajaranList = [
                                 class="px-8 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-lg transition disabled:opacity-50 flex items-center gap-2"
                             >
                                 <span v-if="form.processing">Menyimpan Data Tracer Study...</span>
-                                <span v-else>✓ Simpan & Selesaikan Form Tracer Study</span>
+                                <span v-else> Simpan & Selesaikan Form Tracer Study</span>
                             </button>
                         </div>
                     </div>
