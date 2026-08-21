@@ -19,14 +19,14 @@ const getSingleValue = (val, fallback = '') => {
 
 const form = useForm({
     // Section 1: Data Diri & Akademik
-    nim: savedData.nim || props.wisudawan?.nim || '',
-    nama_lengkap: savedData.nama_lengkap || props.wisudawan?.nama_lengkap || '',
-    email: savedData.email || props.wisudawan?.email || props.wisudawan?.user?.email || '',
-    no_whatsapp: savedData.no_whatsapp || props.wisudawan?.nomor_hp || '',
-    prodi: getSingleValue(savedData.prodi, props.wisudawan?.program_studi?.nama_prodi || ''),
+    nim: props.wisudawan?.nim || savedData.nim || '',
+    nama_lengkap: props.wisudawan?.nama_lengkap || savedData.nama_lengkap || '',
+    email: props.wisudawan?.email || props.wisudawan?.user?.email || savedData.email || '',
+    no_whatsapp: props.wisudawan?.nomor_hp || savedData.no_whatsapp || '',
+    prodi: props.wisudawan?.program_studi?.nama_prodi || getSingleValue(savedData.prodi, ''),
     prodi_lainnya: savedData.prodi_lainnya || '',
     jenis_kelas: savedData.jenis_kelas || 'Reguler',
-    alamat_lengkap: savedData.alamat_lengkap || props.wisudawan?.alamat || '',
+    alamat_lengkap: props.wisudawan?.alamat || savedData.alamat_lengkap || '',
 
     // Section 2: Status Pekerjaan & Karir
     status_saat_ini: getSingleValue(savedData.status_saat_ini, ''),
