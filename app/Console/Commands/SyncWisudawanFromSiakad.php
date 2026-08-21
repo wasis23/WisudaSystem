@@ -45,18 +45,21 @@ class SyncWisudawanFromSiakad extends Command
         $this->info("Menghubungkan ke SIAKAD untuk Periode Wisuda: {$activePeriode->nama_periode}...");
 
         try {
-            // 1. Pre-load viewMahasiswaPt map for biodata (NIK, Tempat/Tgl Lahir, Nama Ortu)
-            $this->info('Memuat biodata dari viewMahasiswaPt...');
+            // 1. Pre-load viewMahasiswaPt & wsia_sms map for authentic biodata and prodi (D4/D3)
+            $this->info('Memuat biodata dan program studi asli dari SIAKAD...');
             $ptStudents = DB::connection('siakad')
-                ->table('viewMahasiswaPt as pt')
+                ->table('wsia_mahasiswa_pt as pt')
                 ->leftJoin('wsia_mahasiswa as m', 'pt.id_pd', '=', 'm.id_pd')
+                ->leftJoin('wsia_sms as sms', 'pt.id_sms', '=', 'sms.id_sms')
                 ->select(
                     'pt.nipd as nim',
-                    'pt.nm_pd as nama_lengkap',
-                    'pt.jk as jenis_kelamin',
-                    'pt.email',
-                    'pt.telepon_seluler as nomor_hp',
-                    'pt.nm_prodi as program_studi',
+                    'm.nm_pd as nama_lengkap',
+                    'm.jk as jenis_kelamin',
+                    'm.email',
+                    'm.telepon_seluler as nomor_hp',
+                    'sms.nm_lemb as prodi_nama',
+                    'sms.id_jenj_didik',
+                    'sms.kode_prodi as prodi_kode',
                     'm.nik',
                     'm.tmpt_lahir as tempat_lahir',
                     'm.tgl_lahir as tanggal_lahir',
@@ -108,17 +111,23 @@ class SyncWisudawanFromSiakad extends Command
                 // Match with pt map for full biodata
                 $ptData = $ptStudents->get($cleanNim);
 
-                // 1. Program Studi
-                $prodiName = trim($item->nm_lemb ?? ($ptData->program_studi ?? 'Umum'));
-                if (!isset($prodiMap[$prodiName])) {
-                    $newProdi = ProgramStudi::create([
+                // 1. Program Studi Resmi (D4 / D3 dari SIAKAD)
+                $jenjang = ($ptData?->id_jenj_didik == '23') ? 'D4' : (($ptData?->id_jenj_didik == '22') ? 'D3' : 'S1');
+                $rawProdi = $ptData?->prodi_nama ?? ($item->nm_lemb ?? 'Umum');
+                $prodiName = str_starts_with($rawProdi, 'D4') || str_starts_with($rawProdi, 'D3') ? $rawProdi : ($jenjang . ' ' . $rawProdi);
+
+                $targetProdi = ProgramStudi::where('nama_prodi', $prodiName)
+                    ->orWhere('nama_prodi', 'like', '%' . $rawProdi . '%')
+                    ->first();
+
+                if (!$targetProdi) {
+                    $targetProdi = ProgramStudi::create([
                         'nama_prodi' => $prodiName,
-                        'kode_prodi' => Str::slug($prodiName),
-                        'jenjang' => str_contains($prodiName, 'D4') ? 'D4' : (str_contains($prodiName, 'D3') ? 'D3' : 'S1'),
+                        'kode_prodi' => $jenjang . '-' . ($ptData?->prodi_kode ?? Str::slug($rawProdi)),
+                        'jenjang' => $jenjang,
                     ]);
-                    $prodiMap[$prodiName] = $newProdi->id;
                 }
-                $prodiId = $prodiMap[$prodiName];
+                $prodiId = $targetProdi->id;
 
                 // 2. Pure Authentic IPK & Predikat
                 $rawIpk = (float)($item->ipk ?? 0);
