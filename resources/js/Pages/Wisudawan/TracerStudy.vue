@@ -1,7 +1,7 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import { Head, Link, useForm, usePage } from '@inertiajs/vue3';
-import { ref, computed } from 'vue';
+import { ref, computed, watch } from 'vue';
 
 const props = defineProps({
     wisudawan: Object,
@@ -22,11 +22,10 @@ const getSingleValue = (val, fallback = '') => {
 };
 
 const resolvedProdi = computed(() => {
-    const raw = currentWisudawan.value?.program_studi?.nama_prodi || 
-                props.wisudawan?.program_studi?.nama_prodi || 
-                authUser.value?.program_studi?.nama_prodi || 
-                getSingleValue(savedData.prodi, '');
-    return raw || '-';
+    return props.wisudawan?.program_studi?.nama_prodi || 
+           currentWisudawan.value?.program_studi?.nama_prodi || 
+           authUser.value?.program_studi?.nama_prodi || 
+           getSingleValue(savedData.prodi, '') || '';
 });
 
 const form = useForm({
@@ -35,7 +34,7 @@ const form = useForm({
     nama_lengkap: currentWisudawan.value?.nama_lengkap || authUser.value?.name || savedData.nama_lengkap || '',
     email: currentWisudawan.value?.email || authUser.value?.email || savedData.email || '',
     no_whatsapp: currentWisudawan.value?.nomor_hp || savedData.no_whatsapp || '',
-    prodi: resolvedProdi.value,
+    prodi: resolvedProdi.value || '',
     prodi_lainnya: savedData.prodi_lainnya || '',
     jenis_kelas: savedData.jenis_kelas || 'Reguler',
     alamat_lengkap: currentWisudawan.value?.alamat || savedData.alamat_lengkap || '',
@@ -100,6 +99,12 @@ const form = useForm({
     kepuasan_layanan: getSingleValue(savedData.kepuasan_layanan, ''),
     saran_masukan: savedData.saran_masukan || '',
 });
+
+watch(resolvedProdi, (newVal) => {
+    if (newVal && (!form.prodi || form.prodi === '-')) {
+        form.prodi = newVal;
+    }
+}, { immediate: true });
 
 const activeTab = ref(1);
 
@@ -414,11 +419,11 @@ const metodePembelajaranList = [
                             </label>
                             <div class="flex items-center gap-3 p-3.5 rounded-xl border border-blue-200 dark:border-blue-800 bg-blue-50/70 dark:bg-blue-950/40">
                                 <div class="w-8 h-8 rounded-lg bg-blue-600 text-white flex items-center justify-center font-bold text-xs flex-shrink-0 shadow-sm">
-                                    {{ (form.prodi && form.prodi.startsWith('D4')) ? 'D4' : 'D3' }}
+                                    {{ ((resolvedProdi || form.prodi) && (resolvedProdi || form.prodi).startsWith('D4')) ? 'D4' : 'D3' }}
                                 </div>
                                 <div class="flex-1 min-w-0">
                                     <div class="text-xs font-black text-blue-950 dark:text-blue-100">
-                                        {{ form.prodi || resolvedProdi }}
+                                        {{ resolvedProdi || (form.prodi !== '-' ? form.prodi : '') || 'Sedang memuat data prodi...' }}
                                     </div>
                                     <span class="text-[10px] font-semibold text-blue-600 dark:text-blue-400 block mt-0.5">Program Studi Resmi Terverifikasi</span>
                                 </div>
