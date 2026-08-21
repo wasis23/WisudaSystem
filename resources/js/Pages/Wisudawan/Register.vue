@@ -21,11 +21,24 @@ const cropperRef = ref(null);
 const cropperFileInputRef = ref(null);
 const rawImageSrc = ref('');
 
+const defaultGelar = computed(() => {
+    if (props.wisudawan?.gelar) return props.wisudawan.gelar;
+    const prodi = props.wisudawan?.program_studi || props.programStudis?.find(p => p.id === props.wisudawan?.program_studi_id);
+    const pName = prodi?.nama_prodi || '';
+    if (pName.includes('Otomotif')) return 'S.Tr.T.';
+    if (pName.includes('Perangkat Lunak')) return 'S.Tr.Kom.';
+    if (pName.includes('Produksi Media')) return 'S.Tr.I.Kom.';
+    if (pName.includes('Kesehatan') || pName.includes('Laboratorium')) return 'S.Tr.Kes.';
+    if (pName.includes('Perhotelan')) return 'A.Md.Par.';
+    if (pName.includes('Farmasi')) return 'A.Md.Farm.';
+    return prodi?.gelar || (pName.startsWith('D4') ? 'S.Tr.' : 'A.Md.');
+});
+
 const form = useForm({
     program_studi_id: props.wisudawan?.program_studi_id || (props.programStudis?.[0]?.id || ''),
     nim: props.wisudawan?.nim || '',
     nama_lengkap: props.wisudawan?.nama_lengkap || '',
-    gelar: props.wisudawan?.gelar || 'A.Md.Kom.',
+    gelar: defaultGelar.value,
     nik: props.wisudawan?.nik || '',
     tempat_lahir: props.wisudawan?.tempat_lahir || '',
     tanggal_lahir: props.wisudawan?.tanggal_lahir || '',
