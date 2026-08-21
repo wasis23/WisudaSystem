@@ -23,9 +23,10 @@ const getSingleValue = (val, fallback = '') => {
 
 const resolvedProdi = computed(() => {
     const raw = currentWisudawan.value?.program_studi?.nama_prodi || 
+                props.wisudawan?.program_studi?.nama_prodi || 
                 authUser.value?.program_studi?.nama_prodi || 
                 getSingleValue(savedData.prodi, '');
-    return raw || 'D4 Teknologi Rekayasa Perangkat Lunak';
+    return raw || '-';
 });
 
 const form = useForm({

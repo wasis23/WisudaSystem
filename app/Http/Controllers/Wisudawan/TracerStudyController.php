@@ -12,7 +12,7 @@ class TracerStudyController extends Controller
     public function showForm()
     {
         $user = auth()->user();
-        $wisudawan = $user->wisudawan;
+        $wisudawan = $user->wisudawan ? $user->wisudawan->load('programStudi') : null;
 
         return Inertia::render('Wisudawan/TracerStudy', [
             'wisudawan' => $wisudawan,
