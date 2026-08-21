@@ -53,6 +53,13 @@ class Wisudawan extends Model
         'jumlah_tamu_tambahan',
         'tamu_tambahan_scanned',
         'status_kelulusan_simanta',
+        'status_pembayaran_sikeu',
+        'nominal_bayar_wisuda',
+        'nominal_tagihan_wisuda',
+        'jumlah_undangan_extra_sikeu',
+        'tanggal_bayar_sikeu',
+        'nomor_transaksi_sikeu',
+        'sikeu_synced_at',
     ];
 
     protected $casts = [
@@ -63,8 +70,13 @@ class Wisudawan extends Model
         'is_in_auditorium' => 'boolean',
         'waktu_presensi' => 'datetime',
         'waktu_presensi_venue' => 'datetime',
+        'tanggal_bayar_sikeu' => 'datetime',
+        'sikeu_synced_at' => 'datetime',
         'jumlah_tamu_tambahan' => 'integer',
         'tamu_tambahan_scanned' => 'integer',
+        'nominal_bayar_wisuda' => 'integer',
+        'nominal_tagihan_wisuda' => 'integer',
+        'jumlah_undangan_extra_sikeu' => 'integer',
     ];
 
     public function user()
@@ -90,5 +102,28 @@ class Wisudawan extends Model
     public function tracerStudy()
     {
         return $this->hasOne(TracerStudy::class, 'wisudawan_id');
+    }
+
+    public function sikeuPayment()
+    {
+        return $this->hasOne(SikeuPaymentCache::class, 'nim', 'nim');
+    }
+
+    public function isLunas(): bool
+    {
+        return $this->status_pembayaran_sikeu === 'lunas';
+    }
+
+    public function scopeLunasSikeu($query)
+    {
+        return $query->where('status_pembayaran_sikeu', 'lunas');
+    }
+
+    public function scopeBelumLunasSikeu($query)
+    {
+        return $query->where(function ($q) {
+            $q->where('status_pembayaran_sikeu', 'belum_lunas')
+              ->orWhereNull('status_pembayaran_sikeu');
+        });
     }
 }

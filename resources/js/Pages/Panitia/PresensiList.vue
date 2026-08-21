@@ -204,6 +204,7 @@ const setStatusTab = (status) => {
                             <tr>
                                 <th class="py-3.5 px-4">Wisudawan</th>
                                 <th class="py-3.5 px-4">Program Studi</th>
+                                <th class="py-3.5 px-4 text-center">Status SIKEU</th>
                                 <th class="py-3.5 px-4">Status Gate In</th>
                                 <th class="py-3.5 px-4">Status Auditorium</th>
                             </tr>
@@ -229,6 +230,20 @@ const setStatusTab = (status) => {
                                 <!-- Program Studi -->
                                 <td class="py-3.5 px-4">
                                     <span class="font-medium text-gray-700 dark:text-gray-300">{{ w.program_studi?.nama_prodi }}</span>
+                                </td>
+
+                                <!-- Status SIKEU -->
+                                <td class="py-3.5 px-4 text-center">
+                                    <span
+                                        :class="[
+                                            'px-2.5 py-1 text-[10px] font-extrabold uppercase rounded-full inline-flex items-center gap-1',
+                                            w.status_pembayaran_sikeu === 'lunas'
+                                                ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 border border-emerald-300'
+                                                : 'bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300 border border-rose-300'
+                                        ]"
+                                    >
+                                        {{ w.status_pembayaran_sikeu === 'lunas' ? '✓ Lunas' : '⚠️ Belum Bayar' }}
+                                    </span>
                                 </td>
 
                                 <!-- Status Gate -->

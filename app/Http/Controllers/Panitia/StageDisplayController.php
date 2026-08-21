@@ -23,6 +23,7 @@ class StageDisplayController extends Controller
         $wisudawans = Wisudawan::with(['programStudi'])
             ->where('periode_wisuda_id', $activePeriode->id)
             ->where('status_verifikasi', 'verified')
+            ->where('status_pembayaran_sikeu', 'lunas')
             ->orderByRaw('urutan_tampil IS NULL ASC, urutan_tampil ASC, program_studi_id ASC, nim ASC')
             ->get();
 
@@ -52,6 +53,7 @@ class StageDisplayController extends Controller
         $wisudawans = Wisudawan::with(['programStudi'])
             ->where('periode_wisuda_id', $activePeriode?->id)
             ->where('status_verifikasi', 'verified')
+            ->where('status_pembayaran_sikeu', 'lunas')
             ->orderByRaw('urutan_tampil IS NULL ASC, urutan_tampil ASC, program_studi_id ASC, nim ASC')
             ->get();
 
@@ -78,6 +80,7 @@ class StageDisplayController extends Controller
         $wisudawans = Wisudawan::with(['programStudi'])
             ->where('periode_wisuda_id', $activePeriode?->id)
             ->where('status_verifikasi', 'verified')
+            ->where('status_pembayaran_sikeu', 'lunas')
             ->orderByRaw('urutan_tampil IS NULL ASC, urutan_tampil ASC, program_studi_id ASC, nim ASC')
             ->get();
 

@@ -7,6 +7,7 @@ use App\Http\Controllers\Admin\PeriodeWisudaController;
 use App\Http\Controllers\Admin\ProgramStudiAdminController;
 use App\Http\Controllers\Admin\SimantaSyncController;
 use App\Http\Controllers\Admin\SimpegSyncController;
+use App\Http\Controllers\Admin\SikeuSyncController;
 use App\Http\Controllers\Admin\StageLayoutConfigController;
 use App\Http\Controllers\Admin\TracerStudyAdminController;
 use App\Http\Controllers\KioskScanController;
@@ -45,17 +46,20 @@ Route::get('/dashboard', function () {
     $stats = [
         'totalWisudawan' => \App\Models\Wisudawan::where('periode_wisuda_id', $activePeriode?->id)->count(),
         'tracerCompleted' => \App\Models\Wisudawan::where('periode_wisuda_id', $activePeriode?->id)->where('is_tracer_study_filled', true)->count(),
+        'lunasCount' => \App\Models\Wisudawan::where('periode_wisuda_id', $activePeriode?->id)->where('status_pembayaran_sikeu', 'lunas')->count(),
+        'belumLunasCount' => \App\Models\Wisudawan::where('periode_wisuda_id', $activePeriode?->id)->where(function($q) { $q->where('status_pembayaran_sikeu', 'belum_lunas')->orWhereNull('status_pembayaran_sikeu'); })->count(),
         'hadirCount' => \App\Models\Wisudawan::where('periode_wisuda_id', $activePeriode?->id)->where('is_hadir', true)->count(),
         'belumHadirCount' => \App\Models\Wisudawan::where('periode_wisuda_id', $activePeriode?->id)->where('is_hadir', false)->count(),
         'auditoriumCount' => \App\Models\Wisudawan::where('periode_wisuda_id', $activePeriode?->id)->where('is_in_auditorium', true)->count(),
+        'totalExtraGuests' => \App\Models\Wisudawan::where('periode_wisuda_id', $activePeriode?->id)->sum('jumlah_undangan_extra_sikeu'),
         'activePeriode' => $activePeriode,
         'totalProdi' => \App\Models\ProgramStudi::count(),
     ];
 
-    $recentWisudawan = \App\Models\Wisudawan::with('programStudi')
+    $recentWisudawan = \App\Models\Wisudawan::with(['programStudi', 'sikeuPayment'])
         ->where('periode_wisuda_id', $activePeriode?->id)
         ->latest()
-        ->take(5)
+        ->take(6)
         ->get();
 
     return Inertia::render('Admin/Dashboard', [
@@ -123,6 +127,12 @@ Route::middleware(['auth', 'role:admin_utama'])->prefix('admin')->name('admin.')
     Route::post('/program-studi', [ProgramStudiAdminController::class, 'store'])->name('program-studi.store');
     Route::put('/program-studi/{id}', [ProgramStudiAdminController::class, 'update'])->name('program-studi.update');
     Route::delete('/program-studi/{id}', [ProgramStudiAdminController::class, 'destroy'])->name('program-studi.destroy');
+
+    // ── SIKEU Sync (pembayaran wisuda & kuota undangan dari SIKEU) ───────────
+    Route::get('/sync-sikeu',               [SikeuSyncController::class, 'index'])->name('sync-sikeu.index');
+    Route::post('/sync-sikeu',              [SikeuSyncController::class, 'sync'])->name('sync-sikeu.sync');
+    Route::post('/sync-sikeu/{id}/toggle',  [SikeuSyncController::class, 'toggle'])->name('sync-sikeu.toggle');
+    Route::post('/sync-sikeu/{id}/update',  [SikeuSyncController::class, 'updateDetail'])->name('sync-sikeu.update');
 });
 
 // 2. Security Scan Gate Route
@@ -197,11 +207,13 @@ Route::middleware(['auth', 'role:wisudawan,admin_utama'])->prefix('wisudawan')->
                 }
             }
 
-            $wisudawan->load(['programStudi', 'tamuTambahan']);
+            $wisudawan->load(['programStudi', 'tamuTambahan', 'sikeuPayment']);
+            $sikeuQuota = app(\App\Services\SikeuIntegrationService::class)->getExtraWisudaQuota($wisudawan->nim);
         }
 
         return Inertia::render('Wisudawan/Dashboard', [
             'wisudawan' => $wisudawan,
+            'sikeuQuota' => $sikeuQuota ?? null,
             'stageConfig' => \App\Models\StageLayoutConfig::getDefaultConfig(),
         ]);
     })->name('dashboard');
@@ -340,10 +352,13 @@ Route::middleware(['auth', 'role:wisudawan,admin_utama'])->prefix('wisudawan')->
 
         $activePeriode = \App\Models\PeriodeWisuda::getActive() ?? \App\Models\PeriodeWisuda::latest()->first();
         $programStudis = \App\Models\ProgramStudi::orderBy('nama_prodi')->get();
+        $dosens = \App\Models\SimpegEmployeeCache::dosen()->orderBy('nama')->get(['id', 'nama', 'nidn', 'nip', 'jenis']);
+
         return Inertia::render('Wisudawan/Register', [
             'wisudawan' => $wisudawan,
             'activePeriode' => $activePeriode,
             'programStudis' => $programStudis,
+            'dosens' => $dosens,
             'stageConfig' => \App\Models\StageLayoutConfig::getDefaultConfig(),
         ]);
     })->name('pendaftaran.form');

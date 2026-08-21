@@ -55,6 +55,13 @@ class KioskScanController extends Controller
             ], 404);
         }
 
+        if ($wisudawan->status_pembayaran_sikeu !== 'lunas') {
+            return response()->json([
+                'status' => 'error',
+                'message' => "❌ AKSES DITOLAK: Wisudawan {$wisudawan->nama_lengkap} (NIM: {$wisudawan->nim}) BELUM MELAKUKAN PEMBAYARAN WISUDA di SIKEU!",
+            ], 422);
+        }
+
         // Fetch integration details from SIAKAD, SIMANTA, SIKEU
         $siakadInfo = $this->siakadService->getStudentByNim($wisudawan->nim);
         $simantaInfo = $this->simantaService->getGraduationStatus($wisudawan->nim);

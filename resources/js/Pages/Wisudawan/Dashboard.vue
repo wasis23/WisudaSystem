@@ -6,6 +6,8 @@ import QrcodeVue from 'qrcode.vue';
 
 const props = defineProps({
     wisudawan: Object,
+    sikeuQuota: Object,
+    stageConfig: Object,
 });
 
 const page = usePage();
@@ -13,9 +15,11 @@ const user = computed(() => page.props.auth.user);
 const wisudawanData = computed(() => props.wisudawan || user.value?.wisudawan);
 const isTracerStudyFilled = computed(() => Boolean(wisudawanData.value?.is_tracer_study_filled));
 const isBiodataFilled = computed(() => Boolean(wisudawanData.value?.is_biodata_filled));
+const isLunas = computed(() => {
+    return wisudawanData.value?.status_pembayaran_sikeu === 'lunas' || Boolean(props.sikeuQuota?.has_paid_wisuda);
+});
 
-const guest1 = computed(() => wisudawanData.value?.tamu_tambahan?.[0]);
-const guest2 = computed(() => wisudawanData.value?.tamu_tambahan?.[1]);
+const allGuests = computed(() => wisudawanData.value?.tamu_tambahan || []);
 
 const printTickets = () => {
     window.print();
@@ -77,6 +81,71 @@ const printTickets = () => {
                                 <span>Gabung Grup WhatsApp Wisuda →</span>
                             </a>
                             <span class="text-[11px] text-indigo-200/80">Tautan Resmi WhatsApp Politeknik Indonusa</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SIKEU Financial Status Banner -->
+                <div
+                    :class="[
+                        'rounded-3xl p-6 sm:p-7 border shadow-md relative overflow-hidden transition',
+                        isLunas
+                            ? 'bg-gradient-to-r from-emerald-900/40 via-teal-900/30 to-slate-900/60 border-emerald-500/40 text-slate-100'
+                            : 'bg-gradient-to-r from-rose-950/70 via-amber-950/40 to-slate-900/80 border-rose-500/50 text-rose-100'
+                    ]"
+                >
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-5 relative z-10">
+                        <div class="flex items-start gap-4">
+                            <div
+                                :class="[
+                                    'w-12 h-12 rounded-2xl flex items-center justify-center font-bold text-2xl shrink-0 border shadow-inner',
+                                    isLunas
+                                        ? 'bg-emerald-500/20 text-emerald-300 border-emerald-400/40'
+                                        : 'bg-rose-500/20 text-rose-300 border-rose-400/40 animate-pulse'
+                                ]"
+                            >
+                                {{ isLunas ? '✓' : '⚠️' }}
+                            </div>
+                            <div class="space-y-1">
+                                <div class="flex items-center gap-2">
+                                    <span
+                                        :class="[
+                                            'px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider border',
+                                            isLunas
+                                                ? 'bg-emerald-500/20 text-emerald-300 border-emerald-400/40'
+                                                : 'bg-rose-500/20 text-rose-300 border-rose-400/40'
+                                        ]"
+                                    >
+                                        {{ isLunas ? 'STATUS PEMBAYARAN: LUNAS' : 'STATUS PEMBAYARAN: BELUM LUNAS' }}
+                                    </span>
+                                    <span v-if="sikeuQuota?.tanggal_bayar" class="text-[11px] text-emerald-300 font-mono">
+                                        Tgl: {{ sikeuQuota.tanggal_bayar }}
+                                    </span>
+                                </div>
+
+                                <h3 class="text-lg font-black text-white">
+                                    {{ isLunas ? 'Pembayaran Wisuda Terverifikasi Lunas (SIKEU)' : 'Harap Segera Selesaikan Pembayaran Tagihan Wisuda' }}
+                                </h3>
+
+                                <p class="text-xs text-slate-300 leading-relaxed max-w-3xl">
+                                    <template v-if="isLunas">
+                                        Anda berhak mendapatkan kuota <strong class="text-white">{{ sikeuQuota?.total_allowed_guests || 2 }} Undangan</strong> (2 Undangan Utama <span v-if="(sikeuQuota?.tambahan_wisuda_paid_quota || 0) > 0">+ {{ sikeuQuota.tambahan_wisuda_paid_quota }} Undangan Tambahan SIKEU</span>) serta total <strong class="text-white">{{ sikeuQuota?.snack_quota || 3 }} porsi snack</strong>. E-Ticket dan hak pemanggilan di prosesi layar panggung auditorium telah <strong>AKTIF</strong>.
+                                    </template>
+                                    <template v-else>
+                                        Menurut data Keuangan SIKEU, Anda <strong class="text-rose-300">belum menyelesaikan pembayaran wisuda</strong>. Harap segera melunasi biaya wisuda melalui loket keuangan atau transfer rekening resmi Politeknik Indonusa Surakarta. <span class="font-semibold text-rose-200">Perhatian: E-Ticket Barcode dan pemanggilan prosesi wisuda di panggung ballroom hanya akan aktif jika pembayaran berstatus LUNAS.</span>
+                                    </template>
+                                </p>
+                            </div>
+                        </div>
+
+                        <div class="shrink-0 flex sm:flex-col items-center sm:items-end gap-2">
+                            <Link
+                                :href="route('wisudawan.tamu.form')"
+                                class="px-4 py-2.5 bg-white/10 hover:bg-white/20 border border-white/20 text-white font-bold text-xs rounded-xl transition flex items-center gap-1.5 backdrop-blur-sm"
+                            >
+                                <span>👥</span>
+                                <span>Kelola Tamu & Snack ({{ allGuests.length }}/{{ sikeuQuota?.total_allowed_guests || 2 }}) →</span>
+                            </Link>
                         </div>
                     </div>
                 </div>
@@ -183,35 +252,52 @@ const printTickets = () => {
                     <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-slate-100 dark:border-slate-700">
                         <div>
                             <div class="flex items-center gap-2">
-                                <span class="px-3 py-1 bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 font-bold text-xs rounded-full">
-                                     BIODATA TERVERIFIKASI
+                                <span
+                                    :class="[
+                                        'px-3 py-1 font-bold text-xs rounded-full',
+                                        isLunas
+                                            ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300'
+                                            : 'bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300'
+                                    ]"
+                                >
+                                    {{ isLunas ? '✓ PEMBAYARAN LUNAS & TIKET AKTIF' : '⚠️ MENUNGGU PELUNASAN SIKEU' }}
                                 </span>
-                                <span class="text-xs text-slate-400">3 Barcode Presensi Digital (1 Mahasiswa + 2 Pendamping)</span>
+                                <span class="text-xs text-slate-400">Total {{ 1 + allGuests.length }} Barcode Digital (1 Mahasiswa + {{ allGuests.length }} Undangan)</span>
                             </div>
                             <h3 class="text-xl font-black text-slate-900 dark:text-white mt-1 flex items-center gap-2">
-                                E-Ticket & Barcode Presensi Wisuda
+                                🎫 E-Ticket & Barcode Presensi Wisuda
                             </h3>
                             <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                                Barcode ini berlaku untuk <strong>2x Scan Presensi</strong>: 1. Oleh Security di Halaman Depan & 2. Oleh Staf Presensi di Pintu Masuk Venue Auditorium.
+                                Barcode ini berlaku untuk <strong>2x Scan Presensi</strong>: 1️⃣ Oleh Security di Halaman Depan & 2️⃣ Oleh Staf Presensi di Pintu Masuk Venue Auditorium.
                             </p>
                         </div>
 
                         <button
+                            v-if="isLunas"
                             @click="printTickets"
                             class="px-5 py-2.5 bg-slate-900 hover:bg-slate-800 dark:bg-indigo-600 dark:hover:bg-indigo-700 text-white font-bold text-xs rounded-xl transition flex items-center gap-2 shrink-0 shadow-sm"
                         >
-                            <span></span>
+                            <span>🖨️</span>
                             <span>Cetak / Simpan E-Ticket (PDF)</span>
                         </button>
                     </div>
 
-                    <!-- 3 BARCODES GRID -->
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6" id="ticket-print-area">
+                    <!-- WARNING IF UNPAID -->
+                    <div v-if="!isLunas" class="bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 rounded-2xl p-4 text-xs text-rose-700 dark:text-rose-300 flex items-center gap-3">
+                        <span class="text-2xl">⚠️</span>
+                        <div>
+                            <p class="font-bold">Barcode Presensi Terkunci Sementara</p>
+                            <p class="text-[11px] text-rose-600 dark:text-rose-400 mt-0.5">Petugas scanner di gerbang dan pintu ballroom akan menolak presensi jika status pembayaran belum lunas. Silakan lakukan pembayaran ke Keuangan SIKEU untuk mengaktifkan tiket.</p>
+                        </div>
+                    </div>
+
+                    <!-- DYNAMIC BARCODES GRID -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6" id="ticket-print-area">
                         
                         <!-- CARD 1: BARCODE MAHASISWA -->
                         <div class="bg-gradient-to-b from-indigo-50/50 to-white dark:from-slate-900/50 dark:to-slate-800 rounded-2xl border-2 border-indigo-200 dark:border-indigo-800 p-5 flex flex-col items-center text-center space-y-4 shadow-sm relative overflow-hidden">
                             <div class="w-full bg-indigo-600 text-white py-1.5 px-3 rounded-xl font-extrabold text-xs uppercase tracking-wider">
-                                Mahasiswa Wisudawan
+                                🎓 Mahasiswa Wisudawan
                             </div>
 
                             <div class="bg-white p-3 rounded-2xl border border-indigo-100 shadow-inner">
@@ -240,27 +326,45 @@ const printTickets = () => {
                                 <div class="flex items-center justify-between">
                                     <span class="text-slate-500">1. Security (Gate):</span>
                                     <span :class="['font-bold px-2 py-0.5 rounded-full text-[10px]', wisudawanData?.is_hadir ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800']">
-                                        {{ wisudawanData?.is_hadir ? ' Scanned' : 'Belum Scan' }}
+                                        {{ wisudawanData?.is_hadir ? '✓ Scanned' : '⏳ Belum Scan' }}
                                     </span>
                                 </div>
                                 <div class="flex items-center justify-between">
                                     <span class="text-slate-500">2. Staf Venue (Auditorium):</span>
                                     <span :class="['font-bold px-2 py-0.5 rounded-full text-[10px]', wisudawanData?.is_in_auditorium ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800']">
-                                        {{ wisudawanData?.is_in_auditorium ? ' Scanned' : 'Belum Scan' }}
+                                        {{ wisudawanData?.is_in_auditorium ? '✓ Scanned' : '⏳ Belum Scan' }}
                                     </span>
                                 </div>
                             </div>
                         </div>
 
-                        <!-- CARD 2: PENDAMPING 1 -->
-                        <div class="bg-gradient-to-b from-blue-50/50 to-white dark:from-slate-900/50 dark:to-slate-800 rounded-2xl border-2 border-blue-200 dark:border-blue-800 p-5 flex flex-col items-center text-center space-y-4 shadow-sm relative overflow-hidden">
-                            <div class="w-full bg-blue-600 text-white py-1.5 px-3 rounded-xl font-extrabold text-xs uppercase tracking-wider">
-                                Pendamping / Orang Tua #1
+                        <!-- DYNAMIC GUEST CARDS (2 STANDARD + N EXTRA) -->
+                        <div
+                            v-for="(guest, index) in allGuests"
+                            :key="guest.id || index"
+                            :class="[
+                                'rounded-2xl border-2 p-5 flex flex-col items-center text-center space-y-4 shadow-sm relative overflow-hidden',
+                                index === 0
+                                    ? 'bg-gradient-to-b from-blue-50/50 to-white dark:from-slate-900/50 dark:to-slate-800 border-blue-200 dark:border-blue-800'
+                                    : (index === 1
+                                        ? 'bg-gradient-to-b from-purple-50/50 to-white dark:from-slate-900/50 dark:to-slate-800 border-purple-200 dark:border-purple-800'
+                                        : 'bg-gradient-to-b from-teal-50/50 to-white dark:from-slate-900/50 dark:to-slate-800 border-teal-200 dark:border-teal-800')
+                            ]"
+                        >
+                            <div
+                                :class="[
+                                    'w-full text-white py-1.5 px-3 rounded-xl font-extrabold text-xs uppercase tracking-wider',
+                                    index === 0
+                                        ? 'bg-blue-600'
+                                        : (index === 1 ? 'bg-purple-600' : 'bg-teal-600')
+                                ]"
+                            >
+                                👥 Pendamping #{{ index + 1 }} {{ index >= 2 ? '(Ekstra SIKEU)' : '' }}
                             </div>
 
-                            <div class="bg-white p-3 rounded-2xl border border-blue-100 shadow-inner">
+                            <div class="bg-white p-3 rounded-2xl border border-slate-100 shadow-inner">
                                 <QrcodeVue
-                                    :value="guest1?.qr_guest_token || ('GST-1-' + (wisudawanData?.nim || 'GUEST1'))"
+                                    :value="guest.qr_guest_token || ('GST-' + (index + 1) + '-' + wisudawanData?.nim)"
                                     :size="150"
                                     level="H"
                                     render-as="svg"
@@ -269,13 +373,20 @@ const printTickets = () => {
 
                             <div>
                                 <h4 class="font-extrabold text-sm text-slate-900 dark:text-white">
-                                    {{ guest1?.nama_tamu || 'Pendamping 1 (Orang Tua/Wali)' }}
+                                    {{ guest.nama_tamu || `Pendamping ${index + 1}` }}
                                 </h4>
-                                <p class="text-xs font-semibold text-blue-600 dark:text-blue-400 mt-0.5">
-                                    {{ guest1?.hubungan || 'Orang Tua / Wali' }}
+                                <p
+                                    :class="[
+                                        'text-xs font-semibold mt-0.5',
+                                        index === 0
+                                            ? 'text-blue-600 dark:text-blue-400'
+                                            : (index === 1 ? 'text-purple-600 dark:text-purple-400' : 'text-teal-600 dark:text-teal-400')
+                                    ]"
+                                >
+                                    {{ guest.hubungan || 'Tamu Undangan' }}
                                 </p>
                                 <span class="text-[10px] text-slate-400 block mt-1 font-mono bg-slate-100 dark:bg-slate-700 px-2 py-0.5 rounded">
-                                    ID: {{ guest1?.qr_guest_token || ('GST-1-' + wisudawanData?.nim) }}
+                                    ID: {{ guest.qr_guest_token || ('GST-' + (index + 1) + '-' + wisudawanData?.nim) }}
                                 </span>
                             </div>
 
@@ -283,58 +394,14 @@ const printTickets = () => {
                             <div class="w-full pt-3 border-t border-slate-100 dark:border-slate-700 space-y-1.5 text-left text-[11px]">
                                 <div class="flex items-center justify-between">
                                     <span class="text-slate-500">1. Security (Gate):</span>
-                                    <span :class="['font-bold px-2 py-0.5 rounded-full text-[10px]', (guest1?.is_hadir_gate || guest1?.is_hadir) ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800']">
-                                        {{ (guest1?.is_hadir_gate || guest1?.is_hadir) ? ' Scanned' : 'Belum Scan' }}
+                                    <span :class="['font-bold px-2 py-0.5 rounded-full text-[10px]', (guest.is_hadir_gate || guest.is_hadir) ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800']">
+                                        {{ (guest.is_hadir_gate || guest.is_hadir) ? '✓ Scanned' : '⏳ Belum Scan' }}
                                     </span>
                                 </div>
                                 <div class="flex items-center justify-between">
                                     <span class="text-slate-500">2. Staf Venue (Auditorium):</span>
-                                    <span :class="['font-bold px-2 py-0.5 rounded-full text-[10px]', guest1?.is_hadir_venue ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800']">
-                                        {{ guest1?.is_hadir_venue ? ' Scanned & Snack' : 'Belum Scan' }}
-                                    </span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- CARD 3: PENDAMPING 2 -->
-                        <div class="bg-gradient-to-b from-purple-50/50 to-white dark:from-slate-900/50 dark:to-slate-800 rounded-2xl border-2 border-purple-200 dark:border-purple-800 p-5 flex flex-col items-center text-center space-y-4 shadow-sm relative overflow-hidden">
-                            <div class="w-full bg-purple-600 text-white py-1.5 px-3 rounded-xl font-extrabold text-xs uppercase tracking-wider">
-                                Pendamping / Orang Tua #2
-                            </div>
-
-                            <div class="bg-white p-3 rounded-2xl border border-purple-100 shadow-inner">
-                                <QrcodeVue
-                                    :value="guest2?.qr_guest_token || ('GST-2-' + (wisudawanData?.nim || 'GUEST2'))"
-                                    :size="150"
-                                    level="H"
-                                    render-as="svg"
-                                />
-                            </div>
-
-                            <div>
-                                <h4 class="font-extrabold text-sm text-slate-900 dark:text-white">
-                                    {{ guest2?.nama_tamu || 'Pendamping 2 (Orang Tua/Wali)' }}
-                                </h4>
-                                <p class="text-xs font-semibold text-purple-600 dark:text-purple-400 mt-0.5">
-                                    {{ guest2?.hubungan || 'Orang Tua / Wali' }}
-                                </p>
-                                <span class="text-[10px] text-slate-400 block mt-1 font-mono bg-slate-100 dark:bg-slate-700 px-2 py-0.5 rounded">
-                                    ID: {{ guest2?.qr_guest_token || ('GST-2-' + wisudawanData?.nim) }}
-                                </span>
-                            </div>
-
-                            <!-- SCAN STATUS TIMELINE -->
-                            <div class="w-full pt-3 border-t border-slate-100 dark:border-slate-700 space-y-1.5 text-left text-[11px]">
-                                <div class="flex items-center justify-between">
-                                    <span class="text-slate-500">1. Security (Gate):</span>
-                                    <span :class="['font-bold px-2 py-0.5 rounded-full text-[10px]', (guest2?.is_hadir_gate || guest2?.is_hadir) ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800']">
-                                        {{ (guest2?.is_hadir_gate || guest2?.is_hadir) ? ' Scanned' : 'Belum Scan' }}
-                                    </span>
-                                </div>
-                                <div class="flex items-center justify-between">
-                                    <span class="text-slate-500">2. Staf Venue (Auditorium):</span>
-                                    <span :class="['font-bold px-2 py-0.5 rounded-full text-[10px]', guest2?.is_hadir_venue ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800']">
-                                        {{ guest2?.is_hadir_venue ? ' Scanned & Snack' : 'Belum Scan' }}
+                                    <span :class="['font-bold px-2 py-0.5 rounded-full text-[10px]', guest.is_hadir_venue ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800']">
+                                        {{ guest.is_hadir_venue ? '✓ Scanned & Snack' : '⏳ Belum Scan' }}
                                     </span>
                                 </div>
                             </div>

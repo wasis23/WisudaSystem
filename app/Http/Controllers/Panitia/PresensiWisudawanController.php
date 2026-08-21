@@ -169,6 +169,14 @@ class PresensiWisudawanController extends Controller
             ->first();
 
         if ($wisudawan) {
+            if ($wisudawan->status_pembayaran_sikeu !== 'lunas') {
+                $err = "❌ AKSES DITOLAK: Wisudawan {$wisudawan->nama_lengkap} (NIM: {$wisudawan->nim}) BELUM MELAKUKAN PEMBAYARAN WISUDA di SIKEU!";
+                if ($request->wantsJson()) {
+                    return response()->json(['status' => 'error', 'message' => $err], 422);
+                }
+                return redirect()->back()->with('error', $err);
+            }
+
             if ($wisudawan->status_verifikasi !== 'verified') {
                 return redirect()->back()->with('error', "AKSES DITOLAK: Wisudawan {$wisudawan->nama_lengkap} (NIM: {$wisudawan->nim}) belum lolos verifikasi!");
             }
@@ -241,6 +249,14 @@ class PresensiWisudawanController extends Controller
 
         if ($guest) {
             $wisudawanMain = $guest->wisudawan;
+
+            if ($wisudawanMain && $wisudawanMain->status_pembayaran_sikeu !== 'lunas') {
+                $err = "❌ AKSES DITOLAK: Wisudawan {$wisudawanMain->nama_lengkap} (NIM: {$wisudawanMain->nim}) BELUM MELAKUKAN PEMBAYARAN WISUDA di SIKEU!";
+                if ($request->wantsJson()) {
+                    return response()->json(['status' => 'error', 'message' => $err], 422);
+                }
+                return redirect()->back()->with('error', $err);
+            }
 
             if (!$guest->is_hadir_gate && !$guest->is_hadir) {
                 $guest->update([

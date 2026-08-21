@@ -127,9 +127,19 @@ const downloadPdf = () => {
                             <p class="text-xs text-gray-500 dark:text-gray-400 font-medium truncate">
                                 {{ w.program_studi?.nama_prodi }}
                             </p>
-                            <div class="flex items-center gap-2 pt-0.5">
+                            <div class="flex items-center gap-1.5 pt-0.5 flex-wrap">
                                 <span class="text-xs font-bold text-emerald-600 dark:text-emerald-400 font-mono">IPK {{ w.ipk }}</span>
                                 <span v-if="Number(w.ipk) >= 3.51" class="text-[10px] bg-amber-500 text-gray-950 font-black px-2 py-0.5 rounded-full uppercase">Cumlaude</span>
+                                <span
+                                    :class="[
+                                        'text-[9px] font-extrabold px-2 py-0.5 rounded-full uppercase',
+                                        w.status_pembayaran_sikeu === 'lunas'
+                                            ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300'
+                                            : 'bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300'
+                                    ]"
+                                >
+                                    {{ w.status_pembayaran_sikeu === 'lunas' ? '✓ Lunas' : '⚠️ Belum Bayar' }}
+                                </span>
                             </div>
                         </div>
                     </div>

@@ -15,6 +15,7 @@ class SiakadIntegrationService
         $cleanNim = strtoupper(trim($nim));
 
         try {
+            // 1. Cek view atau langsung tabel mahasiswa_pt / wsia_mahasiswa_pt
             $student = DB::connection('siakad')->table('viewMahasiswaPt')
                 ->where('nipd', $cleanNim)
                 ->first();
@@ -25,19 +26,43 @@ class SiakadIntegrationService
                     ->first();
             }
 
+            // Fallback direct table query if view doesn't return
+            if (!$student) {
+                $ptTable = DB::connection('siakad')->getSchemaBuilder()->hasTable('wsia_mahasiswa_pt') ? 'wsia_mahasiswa_pt' : 'mahasiswa_pt';
+                $student = DB::connection('siakad')->table($ptTable)
+                    ->where('nipd', $cleanNim)
+                    ->first();
+            }
+
             if (!$student) {
                 return null;
             }
 
-            // Lookup detailed biodata in wsia_mahasiswa
+            // 2. Lookup detailed biodata in wsia_mahasiswa
             $bio = null;
-            if (!empty($student->id_pd) || !empty($student->xid_pd)) {
+            $idPd = $student->id_pd ?? $student->xid_pd ?? null;
+            if (!empty($idPd)) {
                 $bio = DB::connection('siakad')->table('wsia_mahasiswa')
-                    ->where(function ($q) use ($student) {
-                        if (!empty($student->id_pd)) $q->where('id_pd', $student->id_pd);
-                        if (!empty($student->xid_pd)) $q->orWhere('xid_pd', $student->xid_pd);
+                    ->where(function ($q) use ($idPd) {
+                        $q->where('id_pd', $idPd)
+                          ->orWhere('xid_pd', $idPd);
                     })
                     ->first();
+            }
+
+            // 3. Lookup program studi in wsia_sms jika ada id_sms
+            $prodiName = $student->nm_lemb ?? $student->nm_prodi ?? null;
+            $idSms = $student->id_sms ?? $student->xid_sms ?? null;
+            if (!$prodiName && !empty($idSms)) {
+                $sms = DB::connection('siakad')->table('wsia_sms')
+                    ->where(function ($q) use ($idSms) {
+                        $q->where('id_sms', $idSms)
+                          ->orWhere('xid_sms', $idSms);
+                    })
+                    ->first();
+                if ($sms) {
+                    $prodiName = $sms->nm_lemb ?? $sms->nm_prodi ?? null;
+                }
             }
 
             $alamatParts = array_filter([
@@ -58,7 +83,7 @@ class SiakadIntegrationService
                 'nomor_hp'      => $bio->telepon_seluler ?? $bio->telepon_rumah ?? $student->telepon_seluler ?? null,
                 'email'         => $bio->email_poltek ?: ($bio->email ?: ($student->email ?? strtolower($cleanNim) . '@students.poltekindonusa.ac.id')),
                 'alamat'        => !empty($alamatParts) ? implode(', ', $alamatParts) : null,
-                'program_studi' => $student->nm_lemb ?? $student->nm_prodi ?? null,
+                'program_studi' => $prodiName,
             ];
         } catch (\Exception $e) {
             Log::warning('SIAKAD Integration error: ' . $e->getMessage());

@@ -1,5 +1,6 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
+import SearchableSelect from '@/Components/SearchableSelect.vue';
 import { Head, useForm } from '@inertiajs/vue3';
 import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue';
 import { Cropper } from 'vue-advanced-cropper';
@@ -9,6 +10,7 @@ const props = defineProps({
     wisudawan: Object,
     activePeriode: Object,
     programStudis: Array,
+    dosens: Array,
     stageConfig: Object,
 });
 
@@ -226,27 +228,39 @@ const submitForm = () => {
                             <textarea v-model="form.judul_ta" rows="2" placeholder="Tuliskan judul TA sesuai terdaftar di akademik..." class="w-full rounded-xl border-slate-300 dark:border-slate-700 dark:bg-slate-900 text-sm" required></textarea>
                         </div>
 
-                        <!-- Dosen Pembimbing 1, 2 & Penguji (Editable) -->
+                        <!-- Dosen Pembimbing 1, 2 & Penguji (Select2 / Searchable SIMPEG) -->
                         <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
                             <div>
                                 <label class="block text-xs font-bold uppercase text-slate-700 dark:text-slate-300 mb-1">
                                     Dosen Pembimbing 1
                                 </label>
-                                <input v-model="form.dosen_pembimbing_1" type="text" placeholder="Nama dosen & gelar..." class="w-full rounded-xl border-slate-300 dark:border-slate-700 dark:bg-slate-900 text-sm" />
+                                <SearchableSelect
+                                    v-model="form.dosen_pembimbing_1"
+                                    :options="dosens || []"
+                                    placeholder="Cari Dosen Pembimbing 1..."
+                                />
                             </div>
 
                             <div>
                                 <label class="block text-xs font-bold uppercase text-slate-700 dark:text-slate-300 mb-1">
                                     Dosen Pembimbing 2
                                 </label>
-                                <input v-model="form.dosen_pembimbing_2" type="text" placeholder="Nama dosen & gelar..." class="w-full rounded-xl border-slate-300 dark:border-slate-700 dark:bg-slate-900 text-sm" />
+                                <SearchableSelect
+                                    v-model="form.dosen_pembimbing_2"
+                                    :options="dosens || []"
+                                    placeholder="Cari Dosen Pembimbing 2..."
+                                />
                             </div>
 
                             <div>
                                 <label class="block text-xs font-bold uppercase text-slate-700 dark:text-slate-300 mb-1">
                                     Dosen Penguji
                                 </label>
-                                <input v-model="form.dosen_penguji" type="text" placeholder="Nama dosen & gelar..." class="w-full rounded-xl border-slate-300 dark:border-slate-700 dark:bg-slate-900 text-sm" />
+                                <SearchableSelect
+                                    v-model="form.dosen_penguji"
+                                    :options="dosens || []"
+                                    placeholder="Cari Dosen Penguji..."
+                                />
                             </div>
                         </div>
 

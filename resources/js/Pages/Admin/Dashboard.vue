@@ -21,17 +21,16 @@ const tracerPercentage = computed(() => {
     <AuthenticatedLayout>
         <div class="space-y-6">
             
-            <!-- TOP STATS CARDS GRID (EXACT PKL DASHBOARD CARD STYLE) -->
-            <div class="grid grid-cols-1 sm:grid-cols-3 gap-6">
+            <!-- KPI CARDS (6 Grid) -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4">
                 
                 <!-- KPI 1: Total Wisudawan -->
                 <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-5 transition hover:shadow-md">
                     <div class="flex items-center justify-between">
-                        <span class="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Total Wisudawan</span>
-                        <div class="w-9 h-9 rounded-xl bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400 flex items-center justify-center">
+                        <span class="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Wisudawan</span>
+                        <div class="w-9 h-9 rounded-xl bg-blue-50 dark:bg-blue-950/50 text-blue-600 dark:text-blue-400 flex items-center justify-center">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l9-5-9-5-9 5 9 5z" />
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0112 20.055a11.952 11.952 0 01-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z" />
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
                             </svg>
                         </div>
                     </div>
@@ -39,11 +38,48 @@ const tracerPercentage = computed(() => {
                         <span class="text-3xl font-black text-gray-900 dark:text-white tracking-tight">
                             {{ stats?.totalWisudawan || 0 }}
                         </span>
-                        <span class="text-xs font-medium text-gray-500">Mahasiswa</span>
+                        <span class="text-xs text-gray-400">Terdaftar</span>
                     </div>
-                    <div class="mt-3 flex items-center gap-1.5 text-xs text-indigo-600 dark:text-indigo-400 font-medium">
-                        <span class="w-2 h-2 rounded-full bg-indigo-500 animate-pulse"></span>
-                        Terdaftar di Sistem
+                    <div class="mt-3 text-xs text-blue-600 dark:text-blue-400 font-medium">
+                        {{ stats?.totalProdi || 0 }} Program Studi
+                    </div>
+                </div>
+
+                <!-- KPI 2: SIKEU Lunas -->
+                <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-5 transition hover:shadow-md">
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider">SIKEU Lunas</span>
+                        <div class="w-9 h-9 rounded-xl bg-emerald-50 dark:bg-emerald-950/50 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
+                            ✓
+                        </div>
+                    </div>
+                    <div class="mt-4 flex items-baseline gap-2">
+                        <span class="text-3xl font-black text-emerald-600 dark:text-emerald-400 tracking-tight">
+                            {{ stats?.lunasCount || 0 }}
+                        </span>
+                        <span class="text-xs text-emerald-600 font-semibold">Lunas</span>
+                    </div>
+                    <div class="mt-3 text-xs text-slate-500 font-medium">
+                        {{ stats?.totalExtraGuests || 0 }} Ekstra Tamu
+                    </div>
+                </div>
+
+                <!-- KPI 3: SIKEU Belum Lunas -->
+                <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-5 transition hover:shadow-md">
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs font-bold text-rose-600 dark:text-rose-400 uppercase tracking-wider">Belum Bayar</span>
+                        <div class="w-9 h-9 rounded-xl bg-rose-50 dark:bg-rose-950/50 text-rose-600 dark:text-rose-400 flex items-center justify-center">
+                            ⚠️
+                        </div>
+                    </div>
+                    <div class="mt-4 flex items-baseline gap-2">
+                        <span class="text-3xl font-black text-rose-600 dark:text-rose-400 tracking-tight">
+                            {{ stats?.belumLunasCount || 0 }}
+                        </span>
+                        <span class="text-xs text-rose-500 font-semibold">Pending</span>
+                    </div>
+                    <div class="mt-3 text-[11px] text-rose-500 font-medium">
+                        Blokir Prosesi
                     </div>
                 </div>
 
@@ -243,7 +279,21 @@ const tracerPercentage = computed(() => {
                         </div>
                     </div>
 
-                    <!-- Gate 4: SIMPEG Duty Assignments -->
+                    <!-- Gate 4: SIKEU Sync -->
+                    <div class="bg-gradient-to-br from-emerald-900/10 via-emerald-900/5 to-transparent border border-emerald-500/20 dark:border-emerald-500/30 rounded-2xl p-5 space-y-3">
+                        <div class="flex items-center justify-between">
+                            <span class="text-2xl">💳</span>
+                            <Link :href="route('admin.sync-sikeu.index')" class="px-3 py-1 bg-emerald-600 text-white font-bold text-xs rounded-lg hover:bg-emerald-500 transition">
+                                Kelola SIKEU &rarr;
+                            </Link>
+                        </div>
+                        <div>
+                            <h4 class="font-bold text-sm text-gray-900 dark:text-white">Sync Pembayaran SIKEU</h4>
+                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Verifikasi pembayaran wisuda, filter mahasiswa lunas, dan atur kuota ekstra undangan.</p>
+                        </div>
+                    </div>
+
+                    <!-- Gate 5: SIMPEG Duty Assignments -->
                     <div class="bg-gradient-to-br from-sky-900/10 via-sky-900/5 to-transparent border border-sky-500/20 dark:border-sky-500/30 rounded-2xl p-5 space-y-3">
                         <div class="flex items-center justify-between">
                             <span class="text-2xl">‍</span>
@@ -289,6 +339,7 @@ const tracerPercentage = computed(() => {
                                 <th class="py-3 px-3">Wisudawan</th>
                                 <th class="py-3 px-3">NIM</th>
                                 <th class="py-3 px-3">Program Studi</th>
+                                <th class="py-3 px-3 text-center">Status SIKEU</th>
                                 <th class="py-3 px-3 text-center">Tracer Study</th>
                                 <th class="py-3 px-3 text-right">Aksi</th>
                             </tr>
@@ -316,6 +367,18 @@ const tracerPercentage = computed(() => {
                                     <td class="py-3 px-3">
                                         <span class="px-2.5 py-1 rounded-full text-[11px] font-semibold bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300">
                                             {{ w.program_studi?.nama_prodi || 'Program Studi' }}
+                                        </span>
+                                    </td>
+                                    <td class="py-3 px-3 text-center">
+                                        <span
+                                            :class="[
+                                                'px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-wide inline-flex items-center gap-1',
+                                                w.status_pembayaran_sikeu === 'lunas'
+                                                    ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 border border-emerald-300'
+                                                    : 'bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300 border border-rose-300'
+                                            ]"
+                                        >
+                                            <span>{{ w.status_pembayaran_sikeu === 'lunas' ? '✓ Lunas' : '⚠️ Belum Bayar' }}</span>
                                         </span>
                                     </td>
                                     <td class="py-3 px-3 text-center">

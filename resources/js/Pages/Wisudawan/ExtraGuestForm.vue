@@ -69,11 +69,11 @@ const submitForm = () => {
                         <p class="text-xs text-amber-100 mt-2">1 Porsi Wisudawan + {{ quotaData?.total_allowed_guests }} Porsi Tamu Undangan</p>
                     </div>
 
-                    <div class="bg-gradient-to-br from-emerald-600 to-emerald-800 text-white rounded-2xl p-6 shadow-xl relative overflow-hidden">
-                        <div class="absolute -right-4 -bottom-4 opacity-10 text-8xl font-black"></div>
-                        <p class="text-emerald-100 text-sm font-semibold uppercase tracking-wider">Status Verifikasi SIKEU</p>
-                        <h3 class="text-2xl font-bold mt-2">Lunas / Terverifikasi</h3>
-                        <p class="text-xs text-emerald-100 mt-2">NIM: {{ wisudawan?.nim }}</p>
+                    <div :class="['text-white rounded-2xl p-6 shadow-xl relative overflow-hidden', quotaData?.has_paid_wisuda ? 'bg-gradient-to-br from-emerald-600 to-emerald-800' : 'bg-gradient-to-br from-rose-600 to-rose-800']">
+                        <div class="absolute -right-4 -bottom-4 opacity-10 text-8xl font-black">{{ quotaData?.has_paid_wisuda ? '✅' : '⚠️' }}</div>
+                        <p class="text-xs font-semibold uppercase tracking-wider opacity-80">Status Verifikasi SIKEU</p>
+                        <h3 class="text-2xl font-bold mt-2">{{ quotaData?.has_paid_wisuda ? 'Lunas / Terverifikasi' : 'Belum Lunas' }}</h3>
+                        <p class="text-xs opacity-90 mt-2">NIM: {{ wisudawan?.nim }}</p>
                     </div>
                 </div>
 
