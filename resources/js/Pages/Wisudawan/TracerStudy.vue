@@ -1,14 +1,18 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
-import { Head, Link, useForm } from '@inertiajs/vue3';
+import { Head, Link, useForm, usePage } from '@inertiajs/vue3';
 import { ref, computed } from 'vue';
 
 const props = defineProps({
     wisudawan: Object,
 });
 
+const page = usePage();
+const authUser = computed(() => page.props.auth?.user);
+const currentWisudawan = computed(() => props.wisudawan || authUser.value?.wisudawan);
+
 // Existing tracer_study_data, tracer_study relation, or default values
-const savedData = props.wisudawan?.tracer_study_data || props.wisudawan?.tracer_study || {};
+const savedData = currentWisudawan.value?.tracer_study_data || currentWisudawan.value?.tracer_study || {};
 
 const getSingleValue = (val, fallback = '') => {
     if (Array.isArray(val)) {
@@ -17,16 +21,23 @@ const getSingleValue = (val, fallback = '') => {
     return val || fallback;
 };
 
+const resolvedProdi = computed(() => {
+    const raw = currentWisudawan.value?.program_studi?.nama_prodi || 
+                authUser.value?.program_studi?.nama_prodi || 
+                getSingleValue(savedData.prodi, '');
+    return raw || 'D4 Teknologi Rekayasa Perangkat Lunak';
+});
+
 const form = useForm({
     // Section 1: Data Diri & Akademik
-    nim: props.wisudawan?.nim || savedData.nim || '',
-    nama_lengkap: props.wisudawan?.nama_lengkap || savedData.nama_lengkap || '',
-    email: props.wisudawan?.email || props.wisudawan?.user?.email || savedData.email || '',
-    no_whatsapp: props.wisudawan?.nomor_hp || savedData.no_whatsapp || '',
-    prodi: props.wisudawan?.program_studi?.nama_prodi || getSingleValue(savedData.prodi, ''),
+    nim: currentWisudawan.value?.nim || authUser.value?.email?.split('@')?.[0]?.toUpperCase() || savedData.nim || '',
+    nama_lengkap: currentWisudawan.value?.nama_lengkap || authUser.value?.name || savedData.nama_lengkap || '',
+    email: currentWisudawan.value?.email || authUser.value?.email || savedData.email || '',
+    no_whatsapp: currentWisudawan.value?.nomor_hp || savedData.no_whatsapp || '',
+    prodi: resolvedProdi.value,
     prodi_lainnya: savedData.prodi_lainnya || '',
     jenis_kelas: savedData.jenis_kelas || 'Reguler',
-    alamat_lengkap: props.wisudawan?.alamat || savedData.alamat_lengkap || '',
+    alamat_lengkap: currentWisudawan.value?.alamat || savedData.alamat_lengkap || '',
 
     // Section 2: Status Pekerjaan & Karir
     status_saat_ini: getSingleValue(savedData.status_saat_ini, ''),
@@ -401,20 +412,16 @@ const metodePembelajaranList = [
                                 <span class="text-[11px] font-normal text-slate-500 block">Terisi otomatis sesuai data akademik wisudawan di SIAKAD.</span>
                             </label>
                             <div class="flex items-center gap-3 p-3.5 rounded-xl border border-blue-200 dark:border-blue-800 bg-blue-50/70 dark:bg-blue-950/40">
-                                <div class="w-8 h-8 rounded-lg bg-blue-600 text-white flex items-center justify-center font-bold text-xs flex-shrink-0">
-                                    {{ form.prodi.startsWith('D4') ? 'D4' : 'D3' }}
+                                <div class="w-8 h-8 rounded-lg bg-blue-600 text-white flex items-center justify-center font-bold text-xs flex-shrink-0 shadow-sm">
+                                    {{ (form.prodi && form.prodi.startsWith('D4')) ? 'D4' : 'D3' }}
                                 </div>
                                 <div class="flex-1 min-w-0">
-                                    <input
-                                        v-model="form.prodi"
-                                        type="text"
-                                        readonly
-                                        class="w-full bg-transparent border-0 p-0 text-xs font-bold text-blue-900 dark:text-blue-200 focus:ring-0 cursor-default"
-                                        required
-                                    />
-                                    <span class="text-[11px] text-blue-600 dark:text-blue-400">Terverifikasi Otomatis</span>
+                                    <div class="text-xs font-black text-blue-950 dark:text-blue-100">
+                                        {{ form.prodi || resolvedProdi }}
+                                    </div>
+                                    <span class="text-[10px] font-semibold text-blue-600 dark:text-blue-400 block mt-0.5">Program Studi Resmi Terverifikasi</span>
                                 </div>
-                                <span class="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-bold bg-blue-100 text-blue-800 dark:bg-blue-900/60 dark:text-blue-300 border border-blue-200">
+                                <span class="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-bold bg-blue-100 text-blue-800 dark:bg-blue-900/60 dark:text-blue-300 border border-blue-200 shrink-0">
                                     Terkunci
                                 </span>
                             </div>
