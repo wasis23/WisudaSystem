@@ -29,6 +29,8 @@ const defaultGelar = computed(() => {
     if (pName.includes('Perangkat Lunak')) return 'S.Tr.Kom.';
     if (pName.includes('Produksi Media')) return 'S.Tr.I.Kom.';
     if (pName.includes('Kesehatan') || pName.includes('Laboratorium')) return 'S.Tr.Kes.';
+    if (pName.includes('Akuntansi')) return 'S.Tr.Ak.';
+    if (pName.includes('Ritel') || pName.includes('Bisnis')) return 'S.Tr.Bns.';
     if (pName.includes('Perhotelan')) return 'A.Md.Par.';
     if (pName.includes('Farmasi')) return 'A.Md.Farm.';
     return prodi?.gelar || (pName.startsWith('D4') ? 'S.Tr.' : 'A.Md.');
