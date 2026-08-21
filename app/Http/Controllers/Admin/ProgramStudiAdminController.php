@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\ProgramStudi;
+use App\Models\SimpegEmployeeCache;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -15,8 +16,20 @@ class ProgramStudiAdminController extends Controller
             ->orderBy('id', 'asc')
             ->get();
 
+        $dosenList = SimpegEmployeeCache::dosen()
+            ->orderBy('nama', 'asc')
+            ->get(['id', 'nama', 'nip', 'nidn'])
+            ->map(function ($d) {
+                return [
+                    'id' => $d->id,
+                    'nama' => $d->nama,
+                    'nip' => $d->nip ?: ($d->nidn ?: '-'),
+                ];
+            });
+
         return Inertia::render('Admin/ProgramStudi/Index', [
             'programStudis' => $programStudis,
+            'dosenList' => $dosenList,
         ]);
     }
 

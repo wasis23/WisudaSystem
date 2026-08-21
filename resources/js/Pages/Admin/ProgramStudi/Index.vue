@@ -5,11 +5,16 @@ import { ref } from 'vue';
 
 const props = defineProps({
     programStudis: Array,
+    dosenList: {
+        type: Array,
+        default: () => [],
+    },
 });
 
 const showModal = ref(false);
 const isEditing = ref(false);
 const editingId = ref(null);
+const selectedDosenId = ref('');
 
 const form = useForm({
     kode_prodi: '',
@@ -20,9 +25,19 @@ const form = useForm({
     kaprodi_nip: '',
 });
 
+const onDosenSelectChange = () => {
+    if (!selectedDosenId.value) return;
+    const dosen = props.dosenList.find(d => String(d.id) === String(selectedDosenId.value));
+    if (dosen) {
+        form.kaprodi_nama = dosen.nama;
+        form.kaprodi_nip = dosen.nip && dosen.nip !== '-' ? dosen.nip : '';
+    }
+};
+
 const openAddModal = () => {
     isEditing.value = false;
     editingId.value = null;
+    selectedDosenId.value = '';
     form.reset();
     form.clearErrors();
     showModal.value = true;
@@ -38,11 +53,20 @@ const openEditModal = (item) => {
     form.gelar = item.gelar || '';
     form.kaprodi_nama = item.kaprodi_nama || '';
     form.kaprodi_nip = item.kaprodi_nip || '';
+
+    // Match selected dosen if exists in list
+    const match = props.dosenList.find(
+        d => (item.kaprodi_nama && d.nama.toLowerCase().includes(item.kaprodi_nama.toLowerCase())) ||
+             (item.kaprodi_nip && d.nip === item.kaprodi_nip)
+    );
+    selectedDosenId.value = match ? match.id : '';
+
     showModal.value = true;
 };
 
 const closeModal = () => {
     showModal.value = false;
+    selectedDosenId.value = '';
     form.reset();
     form.clearErrors();
 };
@@ -255,25 +279,45 @@ const deleteProdi = (item) => {
                             </div>
                         </div>
 
-                        <!-- Kaprodi Nama & NIP -->
-                        <div>
-                            <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">Nama Ketua Program Studi (Kaprodi)</label>
-                            <input
-                                v-model="form.kaprodi_nama"
-                                type="text"
-                                placeholder="Contoh: Dr. Eng. Budi Santoso, M.T."
-                                class="w-full rounded-xl border-slate-300 dark:border-slate-700 dark:bg-slate-800 text-xs text-slate-900 dark:text-white focus:ring-indigo-500 focus:border-indigo-500"
-                            />
-                        </div>
+                        <!-- Kaprodi Selection from SIMPEG Dosen API / Cache -->
+                        <div class="space-y-3 pt-2 border-t border-slate-100 dark:border-slate-800">
+                            <div>
+                                <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">
+                                    Pilih Kaprodi (Dari Data SIMPEG Dosen)
+                                </label>
+                                <select
+                                    v-model="selectedDosenId"
+                                    @change="onDosenSelectChange"
+                                    class="w-full rounded-xl border-slate-300 dark:border-slate-700 dark:bg-slate-800 text-xs text-slate-900 dark:text-white focus:ring-indigo-500 focus:border-indigo-500"
+                                >
+                                    <option value="">-- Pilih Dosen Kaprodi --</option>
+                                    <option v-for="dosen in dosenList" :key="dosen.id" :value="dosen.id">
+                                        {{ dosen.nama }} (NIP/NIDN: {{ dosen.nip }})
+                                    </option>
+                                </select>
+                            </div>
 
-                        <div>
-                            <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">NIP Kaprodi</label>
-                            <input
-                                v-model="form.kaprodi_nip"
-                                type="text"
-                                placeholder="Contoh: 198501012010011001"
-                                class="w-full rounded-xl border-slate-300 dark:border-slate-700 dark:bg-slate-800 text-xs text-slate-900 dark:text-white focus:ring-indigo-500 focus:border-indigo-500 font-mono"
-                            />
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                <div>
+                                    <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">Nama Kaprodi</label>
+                                    <input
+                                        v-model="form.kaprodi_nama"
+                                        type="text"
+                                        placeholder="Nama Kaprodi..."
+                                        class="w-full rounded-xl border-slate-300 dark:border-slate-700 dark:bg-slate-800 text-xs text-slate-900 dark:text-white focus:ring-indigo-500 focus:border-indigo-500"
+                                    />
+                                </div>
+
+                                <div>
+                                    <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">NIP / NIDN Kaprodi</label>
+                                    <input
+                                        v-model="form.kaprodi_nip"
+                                        type="text"
+                                        placeholder="Otomatis dari dosen terpilih..."
+                                        class="w-full rounded-xl border-slate-300 dark:border-slate-700 dark:bg-slate-800 text-xs text-slate-900 dark:text-white focus:ring-indigo-500 focus:border-indigo-500 font-mono"
+                                    />
+                                </div>
+                            </div>
                         </div>
 
                         <!-- Submit Footer -->
