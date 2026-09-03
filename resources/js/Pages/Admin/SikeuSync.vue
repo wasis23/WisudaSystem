@@ -121,8 +121,8 @@ const formatDate = (dateStr) => {
                 </div>
             </div>
 
-            <!-- Stats Grid -->
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <!-- Stats Grid (5 Cards) -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
                 <!-- Card 1: Lunas -->
                 <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700/60 shadow-sm">
                     <div class="flex items-center justify-between">
@@ -135,10 +135,10 @@ const formatDate = (dateStr) => {
                     </div>
                     <div class="mt-3 flex items-baseline gap-2">
                         <span class="text-3xl font-black text-slate-900 dark:text-white">{{ stats.total_lunas }}</span>
-                        <span class="text-xs text-slate-500 font-medium">/ {{ stats.total_cached }} Mahasiswa</span>
+                        <span class="text-xs text-slate-500 font-medium">/ {{ stats.total_cached }} Mhs</span>
                     </div>
                     <p class="text-[11px] text-emerald-600 dark:text-emerald-400 mt-1 font-semibold">
-                        Diberikan akses penuh barcode & prosesi panggung.
+                        Akses barcode & prosesi panggung.
                     </p>
                 </div>
 
@@ -146,7 +146,7 @@ const formatDate = (dateStr) => {
                 <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700/60 shadow-sm">
                     <div class="flex items-center justify-between">
                         <span class="text-xs font-bold uppercase tracking-wider text-rose-600 dark:text-rose-400">
-                            Belum Lunas / Tertunda
+                            Belum Lunas
                         </span>
                         <span class="p-2 rounded-xl bg-rose-50 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 text-lg">
                             ⚠️
@@ -157,7 +157,7 @@ const formatDate = (dateStr) => {
                         <span class="text-xs text-slate-500 font-medium">Mahasiswa</span>
                     </div>
                     <p class="text-[11px] text-rose-600 dark:text-rose-400 mt-1 font-semibold">
-                        Akses prosesi & gate otomatis diblokir sampai lunas.
+                        Akses prosesi diblokir otomatis.
                     </p>
                 </div>
 
@@ -165,37 +165,33 @@ const formatDate = (dateStr) => {
                 <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700/60 shadow-sm">
                     <div class="flex items-center justify-between">
                         <span class="text-xs font-bold uppercase tracking-wider text-indigo-600 dark:text-indigo-400">
-                            Total Dana Masuk
+                            Dana Masuk SIKEU
                         </span>
                         <span class="p-2 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 text-lg">
                             💰
                         </span>
                     </div>
                     <div class="mt-3">
-                        <span class="text-2xl font-black text-slate-900 dark:text-white">{{ formatRupiah(stats.total_nominal) }}</span>
+                        <span class="text-xl font-black text-slate-900 dark:text-white">{{ formatRupiah(stats.total_nominal) }}</span>
                     </div>
                     <p class="text-[11px] text-slate-500 mt-1">
-                        Tercatat di sistem keuangan SIKEU.
+                        Total penerimaan kas wisuda.
                     </p>
                 </div>
 
-                <!-- Card 4: Ekstra Tamu & Batas Kuota -->
+                <!-- Card 4: Ekstra Tamu Terisi -->
                 <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700/60 shadow-sm">
                     <div class="flex items-center justify-between">
                         <span class="text-xs font-bold uppercase tracking-wider text-purple-600 dark:text-purple-400">
-                            Ekstra Tamu Berbayar
+                            Ekstra Terpesan
                         </span>
-                        <Link
-                            :href="route('admin.periode.index')"
-                            class="text-[10px] font-bold text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 underline flex items-center gap-1"
-                            title="Ubah batas kuota tamu di Menu Periode Wisuda"
-                        >
-                            ⚙️ Atur Batas
-                        </Link>
+                        <span class="p-2 rounded-xl bg-purple-50 dark:bg-purple-950/60 text-purple-600 dark:text-purple-400 text-lg">
+                            👥
+                        </span>
                     </div>
                     <div class="mt-3 flex items-baseline gap-2">
                         <span class="text-3xl font-black text-slate-900 dark:text-white">{{ stats.total_extra_guests }}</span>
-                        <span class="text-xs text-slate-500 font-bold">/ {{ stats.max_extra_guests ?? 60 }} Maks Kuota</span>
+                        <span class="text-xs text-slate-500 font-bold">/ {{ stats.max_extra_guests ?? 60 }} Maks</span>
                     </div>
                     <div class="w-full bg-slate-100 dark:bg-slate-700 h-1.5 rounded-full mt-2 overflow-hidden">
                         <div
@@ -204,7 +200,33 @@ const formatDate = (dateStr) => {
                         ></div>
                     </div>
                     <p class="text-[11px] text-purple-600 dark:text-purple-400 mt-1.5 font-semibold">
-                        Sisa kuota: {{ Math.max(0, (stats.max_extra_guests || 60) - (stats.total_extra_guests || 0)) }} kursi tambahan.
+                        Tercatat lunas via SIKEU.
+                    </p>
+                </div>
+
+                <!-- Card 5: Sisa Kuota Tamu Tambahan Tersedia -->
+                <div class="bg-gradient-to-br from-purple-900 to-indigo-900 text-white p-5 rounded-2xl border border-purple-800 shadow-md relative overflow-hidden">
+                    <div class="absolute -right-2 -bottom-2 opacity-10 text-6xl font-black">🎟️</div>
+                    <div class="flex items-center justify-between relative z-10">
+                        <span class="text-xs font-bold uppercase tracking-wider text-purple-200">
+                            Sisa Kuota Tersedia
+                        </span>
+                        <Link
+                            :href="route('admin.periode.index')"
+                            class="text-[10px] font-bold text-amber-300 hover:text-amber-200 underline flex items-center gap-1"
+                            title="Ubah batas kuota maksimal tamu"
+                        >
+                            ⚙️ Ubah Max
+                        </Link>
+                    </div>
+                    <div class="mt-3 flex items-baseline gap-2 relative z-10">
+                        <span class="text-3xl font-black text-amber-300">
+                            {{ Math.max(0, (stats.max_extra_guests || 60) - (stats.total_extra_guests || 0)) }}
+                        </span>
+                        <span class="text-xs text-purple-200 font-semibold">Kursi Kosong</span>
+                    </div>
+                    <p class="text-[11px] text-purple-200/90 mt-1 font-medium relative z-10">
+                        Dari batas maksimal {{ stats.max_extra_guests ?? 60 }} kursi tamu.
                     </p>
                 </div>
             </div>
