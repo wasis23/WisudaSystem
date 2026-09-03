@@ -293,13 +293,13 @@ const formatDate = (dateStr) => {
 
                                 <td class="p-3.5">
                                     <div class="font-semibold text-slate-900 dark:text-white flex items-center gap-1.5">
-                                        <span>👥 {{ item.total_kuota_undangan || 2 }} Undangan</span>
+                                        <span>👥 {{ item.total_kuota_undangan || 2 }} Pendamping</span>
                                         <span v-if="item.jumlah_undangan_extra > 0" class="px-1.5 py-0.2 text-[10px] bg-purple-100 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300 rounded font-bold">
                                             +{{ item.jumlah_undangan_extra }} Extra
                                         </span>
                                     </div>
                                     <div class="text-[11px] text-slate-500 mt-0.5">
-                                        🍱 {{ item.snack_kuota || 3 }} Porsi Snack
+                                        🍱 {{ item.snack_kuota || 3 }} Snack (1 Wisudawan + {{ item.total_kuota_undangan || 2 }} Pendamping)
                                     </div>
                                 </td>
 
