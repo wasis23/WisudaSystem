@@ -84,6 +84,7 @@ Route::middleware(['auth', 'role:admin_utama'])->prefix('admin')->name('admin.')
     // Periode Wisuda Management
     Route::get('/periode', [PeriodeWisudaController::class, 'index'])->name('periode.index');
     Route::post('/periode', [PeriodeWisudaController::class, 'store'])->name('periode.store');
+    Route::put('/periode/{periode}', [PeriodeWisudaController::class, 'update'])->name('periode.update');
     Route::patch('/periode/{id}/toggle', [PeriodeWisudaController::class, 'toggleActive'])->name('periode.toggle');
     Route::post('/periode/sync-siakad', [PeriodeWisudaController::class, 'syncSiakad'])->name('periode.sync-siakad');
 

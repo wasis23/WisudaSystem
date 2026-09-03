@@ -18,6 +18,7 @@ class PeriodeWisuda extends Model
         'tahun_akademik',
         'tanggal_pelaksanaan',
         'kuota_peserta',
+        'max_tamu_tambahan',
         'tanggal_buka_pendaftaran',
         'tanggal_tutup_pendaftaran',
         'is_active',
@@ -30,6 +31,7 @@ class PeriodeWisuda extends Model
         'is_active' => 'boolean',
         'nomor_periode' => 'integer',
         'kuota_peserta' => 'integer',
+        'max_tamu_tambahan' => 'integer',
     ];
 
     public function wisudawan(): HasMany

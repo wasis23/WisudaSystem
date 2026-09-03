@@ -1,6 +1,6 @@
 <script setup>
 import AdminLayout from '@/Layouts/AdminLayout.vue';
-import { Head, useForm, router } from '@inertiajs/vue3';
+import { Head, Link, useForm, router } from '@inertiajs/vue3';
 import { ref } from 'vue';
 
 const props = defineProps({
@@ -179,22 +179,32 @@ const formatDate = (dateStr) => {
                     </p>
                 </div>
 
-                <!-- Card 4: Ekstra Tamu -->
+                <!-- Card 4: Ekstra Tamu & Batas Kuota -->
                 <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700/60 shadow-sm">
                     <div class="flex items-center justify-between">
                         <span class="text-xs font-bold uppercase tracking-wider text-purple-600 dark:text-purple-400">
                             Ekstra Tamu Berbayar
                         </span>
-                        <span class="p-2 rounded-xl bg-purple-50 dark:bg-purple-950/60 text-purple-600 dark:text-purple-400 text-lg">
-                            👥
-                        </span>
+                        <Link
+                            :href="route('admin.periode.index')"
+                            class="text-[10px] font-bold text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 underline flex items-center gap-1"
+                            title="Ubah batas kuota tamu di Menu Periode Wisuda"
+                        >
+                            ⚙️ Atur Batas
+                        </Link>
                     </div>
                     <div class="mt-3 flex items-baseline gap-2">
                         <span class="text-3xl font-black text-slate-900 dark:text-white">{{ stats.total_extra_guests }}</span>
-                        <span class="text-xs text-slate-500 font-medium">Kursi Tambahan</span>
+                        <span class="text-xs text-slate-500 font-bold">/ {{ stats.max_extra_guests ?? 60 }} Maks Kuota</span>
                     </div>
-                    <p class="text-[11px] text-purple-600 dark:text-purple-400 mt-1 font-semibold">
-                        Katering snack disesuaikan otomatis.
+                    <div class="w-full bg-slate-100 dark:bg-slate-700 h-1.5 rounded-full mt-2 overflow-hidden">
+                        <div
+                            class="bg-purple-600 h-full rounded-full transition-all duration-500"
+                            :style="{ width: `${Math.min(100, Math.round(((stats.total_extra_guests || 0) / (stats.max_extra_guests || 60)) * 100))}%` }"
+                        ></div>
+                    </div>
+                    <p class="text-[11px] text-purple-600 dark:text-purple-400 mt-1.5 font-semibold">
+                        Sisa kuota: {{ Math.max(0, (stats.max_extra_guests || 60) - (stats.total_extra_guests || 0)) }} kursi tambahan.
                     </p>
                 </div>
             </div>

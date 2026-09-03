@@ -57,6 +57,9 @@ class SikeuSyncController extends Controller
             ->limit(10)
             ->get();
 
+        $activePeriode = \App\Models\PeriodeWisuda::getActive() ?? \App\Models\PeriodeWisuda::latest()->first();
+        $maxExtraGuests = $activePeriode?->max_tamu_tambahan ?? 60;
+
         return Inertia::render('Admin/SikeuSync', [
             'stats' => [
                 'total_wisudawan' => $totalWisudawan,
@@ -65,6 +68,7 @@ class SikeuSyncController extends Controller
                 'total_belum_lunas' => $totalBelumLunas,
                 'total_nominal' => $totalNominal,
                 'total_extra_guests' => $totalExtraGuests,
+                'max_extra_guests' => $maxExtraGuests,
                 'last_sync' => $lastSync,
             ],
             'recentLogs' => $recentLogs,
