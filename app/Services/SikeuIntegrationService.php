@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\SikeuPaymentCache;
+use App\Models\SimantaMahasiswaLulusCache;
 use App\Models\Wisudawan;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
@@ -82,7 +83,7 @@ class SikeuIntegrationService
                             }
 
                             if (str_contains($namaBiaya, 'tambahan') || str_contains($keterangan, 'tambahan') || str_contains($keterangan, 'undangan')) {
-                                $totalExtraGuests += max(1, (int)($nominal / 125000));
+                                $totalExtraGuests += max(1, (int)round($nominal / 375000));
                             }
                         }
 
@@ -211,42 +212,45 @@ class SikeuIntegrationService
         $insertedCount = 0;
         $updatedCount = 0;
 
-        // Ambil seluruh wisudawan terdaftar
+        // Ambil NIM dari wisudawan terdaftar, atau dari cache SIMANTA jika wisudawan belum di-import
         $wisudawans = Wisudawan::all();
+        $nims = $wisudawans->pluck('nim')->toArray();
+        if (empty($nims)) {
+            $nims = SimantaMahasiswaLulusCache::pluck('nim')->toArray();
+        }
 
         try {
-            // 1. Ambil mapping NIM -> no_pend & Nama dari SIAKAD
-            $nims = $wisudawans->pluck('nim')->toArray();
-            $siakadStudents = DB::connection('siakad')->table('viewMahasiswaPt')
-                ->whereIn('nipd', $nims)
-                ->whereNotNull('no_pend')
-                ->get(['nipd as nim', 'no_pend', 'nm_pd as nama'])
-                ->keyBy(fn($item) => strtoupper(trim($item->nim)));
-
-            $noPendToNim = [];
-            foreach ($siakadStudents as $s) {
-                $noPendToNim[trim($s->no_pend)] = strtoupper(trim($s->nim));
-            }
-
-            // 2. Query pembayaran wisuda riil dari SIKEU berdasarkan no_pend (hanya data aktif yang belum/tidak dikoreksi)
-            $noPends = array_keys($noPendToNim);
-            $paymentsByNoPend = DB::connection('sikeu')->table('riwayat_bayar')
-                ->whereIn('no_pend', $noPends)
+            // 1. Ambil data transaksi riwayat_bayar wisuda langsung dari SIKEU
+            $sikeuPaymentsQuery = DB::connection('sikeu')->table('riwayat_bayar')
                 ->whereNull('koreksi')
                 ->whereNull('deletedAt')
                 ->where(function ($q) {
                     $q->where('nama_biaya', 'LIKE', '%wisuda%')
                       ->orWhere('keterangan', 'LIKE', '%wisuda%');
-                })
-                ->orderBy('tanggal', 'desc')
-                ->get()
-                ->groupBy('no_pend');
+                });
 
-            foreach ($wisudawans as $w) {
-                $nim = strtoupper(trim($w->nim));
-                $studentInfo = $siakadStudents->get($nim);
-                $noPend = $studentInfo->no_pend ?? null;
-                $payments = $noPend ? ($paymentsByNoPend->get($noPend) ?? collect()) : collect();
+            // 2. Ambil mapping no_pend -> NIM dari SIAKAD
+            $siakadStudents = DB::connection('siakad')->table('viewMahasiswaPt')
+                ->whereNotNull('no_pend')
+                ->get(['nipd as nim', 'no_pend', 'nm_pd as nama'])
+                ->keyBy(fn($item) => strtoupper(trim($item->nim)));
+
+            $noPendToStudent = [];
+            foreach ($siakadStudents as $s) {
+                $noPendToStudent[trim($s->no_pend)] = $s;
+            }
+
+            $paymentsByNoPend = $sikeuPaymentsQuery->orderBy('tanggal', 'desc')->get()->groupBy('no_pend');
+
+            // Kumpulkan seluruh no_pend yang memiliki transaksi wisuda
+            $targetNoPends = $paymentsByNoPend->keys();
+
+            foreach ($targetNoPends as $noPend) {
+                $studentInfo = $noPendToStudent[$noPend] ?? null;
+                $nim = $studentInfo ? strtoupper(trim($studentInfo->nim)) : null;
+                if (!$nim) continue;
+
+                $payments = $paymentsByNoPend->get($noPend) ?? collect();
 
                 $totalBayar = 0;
                 $totalExtra = 0;
@@ -266,7 +270,7 @@ class SikeuIntegrationService
                         $kets[] = $p->nama_biaya . ($p->keterangan ? ' (' . $p->keterangan . ')' : '');
 
                         if (str_contains($namaBiaya, 'tambahan') || str_contains($ket, 'tambahan') || str_contains($ket, 'undangan')) {
-                            $totalExtra += max(1, (int)($jml / 125000));
+                            $totalExtra += max(1, (int)round($jml / 375000));
                         } else {
                             if (!empty($p->tagihan) && (int)$p->tagihan > 0) {
                                 $totalTagihanPokok = max($totalTagihanPokok, (int)$p->tagihan);
@@ -284,7 +288,7 @@ class SikeuIntegrationService
                     'nama' => $studentInfo->nama ?? $w->nama_lengkap,
                     'status_bayar' => $isLunas ? 'lunas' : 'belum_lunas',
                     'total_bayar' => $totalBayar,
-                    'total_tagihan' => $totalTagihanPokok + ($totalExtra * 125000),
+                    'total_tagihan' => $totalTagihanPokok + ($totalExtra * 375000),
                     'jumlah_undangan_extra' => $totalExtra,
                     'total_kuota_undangan' => 2 + $totalExtra,
                     'snack_kuota' => 3 + $totalExtra,
