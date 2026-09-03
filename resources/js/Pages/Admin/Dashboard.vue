@@ -16,7 +16,7 @@ const tracerPercentage = computed(() => {
 </script>
 
 <template>
-    <Head title="Dashboard PKL - Laravel" />
+    <Head title="Dashboard - Sistem Wisuda" />
 
     <AuthenticatedLayout>
         <div class="space-y-6">
@@ -27,7 +27,7 @@ const tracerPercentage = computed(() => {
                 <!-- KPI 1: Total Wisudawan -->
                 <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-5 transition hover:shadow-md">
                     <div class="flex items-center justify-between">
-                        <span class="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Wisudawan</span>
+                        <span class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Wisudawan</span>
                         <div class="w-9 h-9 rounded-xl bg-blue-50 dark:bg-blue-950/50 text-blue-600 dark:text-blue-400 flex items-center justify-center">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
@@ -38,9 +38,9 @@ const tracerPercentage = computed(() => {
                         <span class="text-3xl font-black text-gray-900 dark:text-white tracking-tight">
                             {{ stats?.totalWisudawan || 0 }}
                         </span>
-                        <span class="text-xs text-gray-400">Terdaftar</span>
+                        <span class="text-xs text-gray-400 font-medium">Terdaftar</span>
                     </div>
-                    <div class="mt-3 text-xs text-blue-600 dark:text-blue-400 font-medium">
+                    <div class="mt-3 text-xs text-blue-600 dark:text-blue-400 font-medium truncate">
                         {{ stats?.totalProdi || 0 }} Program Studi
                     </div>
                 </div>
@@ -50,7 +50,9 @@ const tracerPercentage = computed(() => {
                     <div class="flex items-center justify-between">
                         <span class="text-xs font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider">SIKEU Lunas</span>
                         <div class="w-9 h-9 rounded-xl bg-emerald-50 dark:bg-emerald-950/50 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
-                            ✓
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
+                            </svg>
                         </div>
                     </div>
                     <div class="mt-4 flex items-baseline gap-2">
@@ -59,7 +61,7 @@ const tracerPercentage = computed(() => {
                         </span>
                         <span class="text-xs text-emerald-600 font-semibold">Lunas</span>
                     </div>
-                    <div class="mt-3 text-xs text-slate-500 font-medium">
+                    <div class="mt-3 text-xs text-slate-500 font-medium truncate">
                         {{ stats?.totalExtraGuests || 0 }} Ekstra Tamu
                     </div>
                 </div>
@@ -67,9 +69,11 @@ const tracerPercentage = computed(() => {
                 <!-- KPI 3: SIKEU Belum Lunas -->
                 <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-5 transition hover:shadow-md">
                     <div class="flex items-center justify-between">
-                        <span class="text-xs font-bold text-rose-600 dark:text-rose-400 uppercase tracking-wider">Belum Bayar</span>
+                        <span class="text-xs font-bold text-rose-600 dark:text-rose-400 uppercase tracking-wider">Belum Lunas</span>
                         <div class="w-9 h-9 rounded-xl bg-rose-50 dark:bg-rose-950/50 text-rose-600 dark:text-rose-400 flex items-center justify-center">
-                            ⚠️
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                            </svg>
                         </div>
                     </div>
                     <div class="mt-4 flex items-baseline gap-2">
@@ -78,39 +82,37 @@ const tracerPercentage = computed(() => {
                         </span>
                         <span class="text-xs text-rose-500 font-semibold">Pending</span>
                     </div>
-                    <div class="mt-3 text-[11px] text-rose-500 font-medium">
+                    <div class="mt-3 text-xs text-rose-500 font-medium truncate">
                         Blokir Prosesi
                     </div>
                 </div>
 
-                <!-- KPI 2: PESERTA BELUM DATANG (IMPORTANT FOR ADMIN) -->
-                <div class="bg-gradient-to-br from-amber-500 to-amber-600 text-white rounded-2xl shadow-lg p-5 transition hover:shadow-xl relative overflow-hidden">
+                <!-- KPI 4: PESERTA BELUM HADIR -->
+                <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-5 transition hover:shadow-md">
                     <div class="flex items-center justify-between">
-                        <span class="text-xs font-bold text-amber-100 uppercase tracking-wider">BELUM HADIR (BELUM DATANG)</span>
-                        <div class="w-9 h-9 rounded-xl bg-amber-400/30 text-white flex items-center justify-center text-lg">
-                            ⏳
+                        <span class="text-xs font-bold text-amber-600 dark:text-amber-400 uppercase tracking-wider">Belum Hadir</span>
+                        <div class="w-9 h-9 rounded-xl bg-amber-50 dark:bg-amber-950/50 text-amber-600 dark:text-amber-400 flex items-center justify-center">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
                         </div>
                     </div>
                     <div class="mt-4 flex items-baseline gap-2">
-                        <span class="text-4xl font-black tracking-tight">
+                        <span class="text-3xl font-black text-amber-600 dark:text-amber-400 tracking-tight">
                             {{ stats?.belumHadirCount ?? 0 }}
                         </span>
-                        <span class="text-xs font-medium text-amber-100">Peserta Belum Hadir</span>
+                        <span class="text-xs text-amber-600 font-semibold">Peserta</span>
                     </div>
-                    <div class="mt-3">
-                        <Link 
-                            :href="route('admin.monitoring-presensi', { status: 'belum_hadir' })" 
-                            class="inline-flex items-center gap-1 text-xs font-bold text-amber-950 bg-white hover:bg-amber-50 px-3 py-1.5 rounded-lg transition shadow-sm"
-                        >
-                            <span> Cek Daftar Peserta Belum Datang &rarr;</span>
-                        </Link>
+                    <div class="mt-3 flex items-center gap-1.5 text-xs text-amber-600 dark:text-amber-400 font-medium truncate">
+                        <span class="w-2 h-2 rounded-full bg-amber-500"></span>
+                        Belum Check-in
                     </div>
                 </div>
 
-                <!-- KPI 3: HADIR GATE & AUDITORIUM -->
-                <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-emerald-100 dark:border-emerald-900/50 p-5 transition hover:shadow-md">
+                <!-- KPI 5: HADIR GATE & AUDITORIUM -->
+                <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-5 transition hover:shadow-md">
                     <div class="flex items-center justify-between">
-                        <span class="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Sudah Hadir Gate / Auditorium</span>
+                        <span class="text-xs font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider">Sudah Hadir</span>
                         <div class="w-9 h-9 rounded-xl bg-emerald-50 dark:bg-emerald-950/50 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -118,39 +120,39 @@ const tracerPercentage = computed(() => {
                         </div>
                     </div>
                     <div class="mt-4 flex items-baseline gap-2">
-                        <span class="text-3xl font-black text-gray-900 dark:text-white tracking-tight">
+                        <span class="text-3xl font-black text-emerald-600 dark:text-emerald-400 tracking-tight">
                             {{ stats?.hadirCount || 0 }}
                         </span>
-                        <span class="text-xs font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded-full">
-                            {{ stats?.auditoriumCount || 0 }} di Ballroom
+                        <span class="text-xs font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded-full truncate">
+                            {{ stats?.auditoriumCount || 0 }} di Audi
                         </span>
                     </div>
-                    <div class="mt-3 flex items-center gap-1.5 text-xs text-emerald-600 dark:text-emerald-400 font-medium">
+                    <div class="mt-3 flex items-center gap-1.5 text-xs text-emerald-600 dark:text-emerald-400 font-medium truncate">
                         <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
-                        Tercatat Gate Scan
+                        Gate Scan Presensi
                     </div>
                 </div>
 
-                <!-- KPI 4: Tracer Study Terisi -->
+                <!-- KPI 6: Tracer Study Terisi -->
                 <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-5 transition hover:shadow-md">
                     <div class="flex items-center justify-between">
-                        <span class="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Tracer Study Terisi</span>
+                        <span class="text-xs font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider">Tracer Study</span>
                         <div class="w-9 h-9 rounded-xl bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400 flex items-center justify-center">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                             </svg>
                         </div>
                     </div>
                     <div class="mt-4 flex items-baseline gap-2">
-                        <span class="text-3xl font-black text-gray-900 dark:text-white tracking-tight">
+                        <span class="text-3xl font-black text-indigo-600 dark:text-indigo-400 tracking-tight">
                             {{ stats?.tracerCompleted || 0 }}
                         </span>
-                        <span class="text-xs font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded-full">
+                        <span class="text-xs font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/40 px-2 py-0.5 rounded-full">
                             {{ tracerPercentage }}%
                         </span>
                     </div>
                     <div class="mt-3 w-full bg-gray-100 dark:bg-gray-700 h-1.5 rounded-full overflow-hidden">
-                        <div class="bg-emerald-500 h-full rounded-full transition-all duration-500" :style="{ width: `${tracerPercentage}%` }"></div>
+                        <div class="bg-indigo-500 h-full rounded-full transition-all duration-500" :style="{ width: `${tracerPercentage}%` }"></div>
                     </div>
                 </div>
             </div>
@@ -228,88 +230,6 @@ const tracerPercentage = computed(() => {
                 </div>
             </div>
 
-            <!-- SCAN GATES & ACCESS PREVIEW SECTION -->
-            <div class="space-y-4">
-                <h3 class="text-sm font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-                    <span class="text-base"></span>
-                    <span>Akses Modul Gate Scanner & TV Kiosk Display</span>
-                </h3>
-
-                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                    
-                    <!-- Gate 1: Security Mobile Scanner -->
-                    <div class="bg-gradient-to-br from-amber-900/10 via-amber-900/5 to-transparent border border-amber-500/20 dark:border-amber-500/30 rounded-2xl p-5 space-y-3">
-                        <div class="flex items-center justify-between">
-                            <span class="text-2xl"></span>
-                            <Link :href="route('security.scan')" class="px-3 py-1 bg-amber-500 text-slate-950 font-bold text-xs rounded-lg hover:bg-amber-400 transition">
-                                Buka Preview &rarr;
-                            </Link>
-                        </div>
-                        <div>
-                            <h4 class="font-bold text-sm text-gray-900 dark:text-white">Gate Scan Security</h4>
-                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Scanner presensi mobile via kamera HP untuk petugas Security di gerbang masuk.</p>
-                        </div>
-                    </div>
-
-                    <!-- Gate 2: Receptionist & Snack Mobile Scanner -->
-                    <div class="bg-gradient-to-br from-purple-900/10 via-purple-900/5 to-transparent border border-purple-500/20 dark:border-purple-500/30 rounded-2xl p-5 space-y-3">
-                        <div class="flex items-center justify-between">
-                            <span class="text-2xl">‍</span>
-                            <Link :href="route('receptionist.scan')" class="px-3 py-1 bg-purple-600 text-white font-bold text-xs rounded-lg hover:bg-purple-500 transition">
-                                Buka Preview &rarr;
-                            </Link>
-                        </div>
-                        <div>
-                            <h4 class="font-bold text-sm text-gray-900 dark:text-white">Gate Scan Receptionist</h4>
-                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Pemeriksaan tamu pendamping, verifikasi kehadiran, dan pembagian snack.</p>
-                        </div>
-                    </div>
-
-                    <!-- Gate 3: TV Display Kiosk -->
-                    <div class="bg-gradient-to-br from-emerald-900/10 via-emerald-900/5 to-transparent border border-emerald-500/20 dark:border-emerald-500/30 rounded-2xl p-5 space-y-3">
-                        <div class="flex items-center justify-between">
-                            <span class="text-2xl"></span>
-                            <a :href="route('kiosk.display')" target="_blank" class="px-3 py-1 bg-emerald-600 text-white font-bold text-xs rounded-lg hover:bg-emerald-500 transition flex items-center gap-1">
-                                <span>Layar TV ↗</span>
-                            </a>
-                        </div>
-                        <div>
-                            <h4 class="font-bold text-sm text-gray-900 dark:text-white">Self-Service TV Kiosk</h4>
-                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Layar TV Display ballroom terhubung USB scanner laptop untuk scan mandiri.</p>
-                        </div>
-                    </div>
-
-                    <!-- Gate 4: SIKEU Sync -->
-                    <div class="bg-gradient-to-br from-emerald-900/10 via-emerald-900/5 to-transparent border border-emerald-500/20 dark:border-emerald-500/30 rounded-2xl p-5 space-y-3">
-                        <div class="flex items-center justify-between">
-                            <span class="text-2xl">💳</span>
-                            <Link :href="route('admin.sync-sikeu.index')" class="px-3 py-1 bg-emerald-600 text-white font-bold text-xs rounded-lg hover:bg-emerald-500 transition">
-                                Kelola SIKEU &rarr;
-                            </Link>
-                        </div>
-                        <div>
-                            <h4 class="font-bold text-sm text-gray-900 dark:text-white">Sync Pembayaran SIKEU</h4>
-                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Verifikasi pembayaran wisuda, filter mahasiswa lunas, dan atur kuota ekstra undangan.</p>
-                        </div>
-                    </div>
-
-                    <!-- Gate 5: SIMPEG Duty Assignments -->
-                    <div class="bg-gradient-to-br from-sky-900/10 via-sky-900/5 to-transparent border border-sky-500/20 dark:border-sky-500/30 rounded-2xl p-5 space-y-3">
-                        <div class="flex items-center justify-between">
-                            <span class="text-2xl">‍</span>
-                            <Link :href="route('admin.duty-assignments.index')" class="px-3 py-1 bg-sky-600 text-white font-bold text-xs rounded-lg hover:bg-sky-500 transition">
-                                Kelola Tugas &rarr;
-                            </Link>
-                        </div>
-                        <div>
-                            <h4 class="font-bold text-sm text-gray-900 dark:text-white">Penugasan Staff SIMPEG</h4>
-                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Pilih pegawai dari SIMPEG untuk ditugaskan scan presensi gate.</p>
-                        </div>
-                    </div>
-
-                </div>
-            </div>
-
             <!-- RECENT REGISTERED WISUDAWAN TABLE CARD -->
             <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-6 space-y-4">
                 <div class="flex items-center justify-between pb-3 border-b border-gray-100 dark:border-gray-700">
@@ -372,13 +292,19 @@ const tracerPercentage = computed(() => {
                                     <td class="py-3 px-3 text-center">
                                         <span
                                             :class="[
-                                                'px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-wide inline-flex items-center gap-1',
+                                                'px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-wide inline-flex items-center gap-1.5',
                                                 w.status_pembayaran_sikeu === 'lunas'
                                                     ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 border border-emerald-300'
                                                     : 'bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300 border border-rose-300'
                                             ]"
                                         >
-                                            <span>{{ w.status_pembayaran_sikeu === 'lunas' ? '✓ Lunas' : '⚠️ Belum Bayar' }}</span>
+                                            <svg v-if="w.status_pembayaran_sikeu === 'lunas'" class="w-3 h-3 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
+                                            </svg>
+                                            <svg v-else class="w-3 h-3 text-rose-600 dark:text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                                            </svg>
+                                            <span>{{ w.status_pembayaran_sikeu === 'lunas' ? 'Lunas' : 'Belum Bayar' }}</span>
                                         </span>
                                     </td>
                                     <td class="py-3 px-3 text-center">

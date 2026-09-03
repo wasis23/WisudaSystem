@@ -570,6 +570,7 @@ class SimantaSyncController extends Controller
                     'qr_code_token'            => $qrToken,
                     'status_verifikasi'        => 'verified',
                     'email'                    => strtolower($nim) . '@students.poltekindonusa.ac.id',
+                    'gelar'                    => $programStudi->gelar,
                     'ipk'                      => 3.50,
                     'predikat_kelulusan'       => 'Memuaskan',
                 ]);

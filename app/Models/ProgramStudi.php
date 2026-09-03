@@ -18,6 +18,7 @@ class ProgramStudi extends Model
         'gelar',
         'kaprodi_nama',
         'kaprodi_nip',
+        'kaprodi_foto',
     ];
 
     public function wisudawans()

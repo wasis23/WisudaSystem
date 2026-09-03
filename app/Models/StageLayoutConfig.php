@@ -49,7 +49,7 @@ class StageLayoutConfig extends Model
                 'photo_h' => 420,
                 'nama_x' => 480,
                 'nama_y' => 180,
-                'nama_font_size' => 48,
+                'nama_font_size' => 35,
                 'nim_x' => 480,
                 'nim_y' => 250,
                 'nim_font_size' => 24,

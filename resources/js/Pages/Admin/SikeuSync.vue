@@ -97,7 +97,11 @@ const formatDate = (dateStr) => {
             <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                 <div>
                     <h2 class="text-2xl font-black text-slate-900 dark:text-white flex items-center gap-2.5">
-                        <span>💳</span>
+                        <span class="p-2 bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 rounded-xl">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                            </svg>
+                        </span>
                         <span>Integrasi Keuangan SIKEU & Pembayaran Wisuda</span>
                     </h2>
                     <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">
@@ -115,7 +119,9 @@ const formatDate = (dateStr) => {
                             <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                             <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
                         </svg>
-                        <span v-else>⚡</span>
+                        <svg v-else class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                        </svg>
                         <span>{{ syncForm.processing ? 'Menyinkronkan...' : 'Sinkronkan Pembayaran SIKEU' }}</span>
                     </button>
                 </div>
@@ -129,8 +135,10 @@ const formatDate = (dateStr) => {
                         <span class="text-xs font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
                             Pembayaran Lunas
                         </span>
-                        <span class="p-2 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 text-lg">
-                            ✓
+                        <span class="p-2 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 text-lg flex items-center justify-center">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
+                            </svg>
                         </span>
                     </div>
                     <div class="mt-3 flex items-baseline gap-2">
@@ -148,8 +156,10 @@ const formatDate = (dateStr) => {
                         <span class="text-xs font-bold uppercase tracking-wider text-rose-600 dark:text-rose-400">
                             Belum Lunas
                         </span>
-                        <span class="p-2 rounded-xl bg-rose-50 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 text-lg">
-                            ⚠️
+                        <span class="p-2 rounded-xl bg-rose-50 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 text-lg flex items-center justify-center">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                            </svg>
                         </span>
                     </div>
                     <div class="mt-3 flex items-baseline gap-2">
@@ -167,8 +177,10 @@ const formatDate = (dateStr) => {
                         <span class="text-xs font-bold uppercase tracking-wider text-indigo-600 dark:text-indigo-400">
                             Dana Masuk SIKEU
                         </span>
-                        <span class="p-2 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 text-lg">
-                            💰
+                        <span class="p-2 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 text-lg flex items-center justify-center">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
                         </span>
                     </div>
                     <div class="mt-3">
@@ -185,8 +197,10 @@ const formatDate = (dateStr) => {
                         <span class="text-xs font-bold uppercase tracking-wider text-purple-600 dark:text-purple-400">
                             Ekstra Terpesan
                         </span>
-                        <span class="p-2 rounded-xl bg-purple-50 dark:bg-purple-950/60 text-purple-600 dark:text-purple-400 text-lg">
-                            👥
+                        <span class="p-2 rounded-xl bg-purple-50 dark:bg-purple-950/60 text-purple-600 dark:text-purple-400 text-lg flex items-center justify-center">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                            </svg>
                         </span>
                     </div>
                     <div class="mt-3 flex items-baseline gap-2">
@@ -314,7 +328,12 @@ const formatDate = (dateStr) => {
                                                 : 'bg-rose-100 text-rose-800 dark:bg-rose-950/60 dark:text-rose-300 border border-rose-300 dark:border-rose-700'
                                         ]"
                                     >
-                                        <span>{{ item.status_bayar === 'lunas' ? '✓' : '⚠️' }}</span>
+                                        <svg v-if="item.status_bayar === 'lunas'" class="w-3 h-3 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
+                                        </svg>
+                                        <svg v-else class="w-3 h-3 text-rose-600 dark:text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                                        </svg>
                                         <span>{{ item.status_bayar === 'lunas' ? 'Lunas' : 'Belum Lunas' }}</span>
                                     </span>
                                 </td>
@@ -354,7 +373,7 @@ const formatDate = (dateStr) => {
                                                 : 'bg-emerald-50 dark:bg-emerald-950/50 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-100'
                                         ]"
                                     >
-                                        {{ item.status_bayar === 'lunas' ? 'Set Belum Lunas' : 'Set Lunas ✓' }}
+                                        {{ item.status_bayar === 'lunas' ? 'Set Belum Lunas' : 'Set Lunas' }}
                                     </button>
 
                                     <button
@@ -389,7 +408,9 @@ const formatDate = (dateStr) => {
             <!-- Recent Sync Logs -->
             <div v-if="recentLogs && recentLogs.length > 0" class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700/60 p-5 shadow-sm">
                 <h4 class="font-extrabold text-sm text-slate-900 dark:text-white mb-3 flex items-center gap-2">
-                    <span>📜</span>
+                    <svg class="w-4 h-4 text-indigo-600 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
                     <span>Riwayat Sinkronisasi SIKEU Terakhir</span>
                 </h4>
                 <div class="divide-y divide-slate-100 dark:divide-slate-800 text-xs">
@@ -412,7 +433,9 @@ const formatDate = (dateStr) => {
                         Edit Data Pembayaran & Kuota
                     </h3>
                     <button @click="closeEditModal" class="text-slate-400 hover:text-slate-600 text-xl font-bold">
-                        ✕
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
                     </button>
                 </div>
 
@@ -425,8 +448,8 @@ const formatDate = (dateStr) => {
                     <div>
                         <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">Status Pembayaran</label>
                         <select v-model="editForm.status_bayar" class="w-full rounded-xl border-slate-300 dark:border-slate-700 dark:bg-slate-900 text-xs font-semibold">
-                            <option value="lunas">✓ LUNAS (Diizinkan Prosesi & Barcode)</option>
-                            <option value="belum_lunas">⚠️ BELUM LUNAS (Blokir Prosesi)</option>
+                            <option value="lunas">LUNAS (Diizinkan Prosesi & Barcode)</option>
+                            <option value="belum_lunas">BELUM LUNAS (Blokir Prosesi)</option>
                         </select>
                     </div>
 

@@ -409,7 +409,7 @@ const submitForm = () => {
                                     :style="{
                                         left: (stageConfig?.nama_x || 480) + 'px',
                                         top: (stageConfig?.nama_y || 180) + 'px',
-                                        fontSize: (stageConfig?.nama_font_size || 48) + 'px',
+                                        fontSize: (stageConfig?.nama_font_size || 35) + 'px',
                                     }"
                                     class="absolute font-black text-white whitespace-nowrap leading-none drop-shadow-lg"
                                 >

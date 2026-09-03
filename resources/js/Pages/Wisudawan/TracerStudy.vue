@@ -26,7 +26,7 @@ const resolvedProdi = computed(() => {
            currentWisudawan.value?.program_studi?.nama_prodi || 
            authUser.value?.program_studi?.nama_prodi || 
            getSingleValue(savedData.prodi, '') || 
-           'D3 Farmasi';
+           '';
 });
 
 const form = useForm({

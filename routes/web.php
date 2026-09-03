@@ -8,6 +8,7 @@ use App\Http\Controllers\Admin\ProgramStudiAdminController;
 use App\Http\Controllers\Admin\SimantaSyncController;
 use App\Http\Controllers\Admin\SimpegSyncController;
 use App\Http\Controllers\Admin\SikeuSyncController;
+use App\Http\Controllers\Admin\SqliteViewerController;
 use App\Http\Controllers\Admin\StageLayoutConfigController;
 use App\Http\Controllers\Admin\TracerStudyAdminController;
 use App\Http\Controllers\KioskScanController;
@@ -15,6 +16,7 @@ use App\Http\Controllers\Panitia\PresensiWisudawanController;
 use App\Http\Controllers\Panitia\StageDisplayController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Wisudawan\ExtraGuestController;
+use App\Http\Controllers\Wisudawan\TicketPdfController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Str;
@@ -95,6 +97,13 @@ Route::middleware(['auth', 'role:admin_utama'])->prefix('admin')->name('admin.')
     // Buku Kenangan PDF & Data Wisudawan
     Route::get('/buku-kenangan', [BukuKenanganController::class, 'index'])->name('buku-kenangan.index');
     Route::get('/buku-kenangan/export', [BukuKenanganController::class, 'exportPdf'])->name('buku-kenangan.export');
+    Route::get('/buku-kenangan/export-tanpa-foto', [BukuKenanganController::class, 'exportTanpaFoto'])->name('buku-kenangan.export-tanpa-foto');
+    Route::post('/buku-kenangan/footer-image', [BukuKenanganController::class, 'updateFooterImage'])->name('buku-kenangan.footer-image.update');
+    Route::delete('/buku-kenangan/footer-image', [BukuKenanganController::class, 'destroyFooterImage'])->name('buku-kenangan.footer-image.destroy');
+    Route::post('/buku-kenangan/default-foto', [BukuKenanganController::class, 'updateDefaultFoto'])->name('buku-kenangan.default-foto.update');
+    Route::delete('/buku-kenangan/default-foto', [BukuKenanganController::class, 'destroyDefaultFoto'])->name('buku-kenangan.default-foto.destroy');
+    Route::post('/buku-kenangan/wisudawan/{id}/foto', [BukuKenanganController::class, 'updateFotoWisudawan'])->name('buku-kenangan.wisudawan.foto.update');
+    Route::delete('/buku-kenangan/wisudawan/{id}/foto', [BukuKenanganController::class, 'deleteFotoWisudawan'])->name('buku-kenangan.wisudawan.foto.destroy');
 
     // SIMPEG Scan Duty Assignment (Security & Receptionist)
     Route::get('/duty-assignments', [DutyAssignmentController::class, 'index'])->name('duty-assignments.index');
@@ -128,6 +137,8 @@ Route::middleware(['auth', 'role:admin_utama'])->prefix('admin')->name('admin.')
     Route::get('/program-studi', [ProgramStudiAdminController::class, 'index'])->name('program-studi.index');
     Route::post('/program-studi', [ProgramStudiAdminController::class, 'store'])->name('program-studi.store');
     Route::put('/program-studi/{id}', [ProgramStudiAdminController::class, 'update'])->name('program-studi.update');
+    Route::post('/program-studi/{id}', [ProgramStudiAdminController::class, 'update'])->name('program-studi.update.post');
+    Route::delete('/program-studi/{id}/foto', [ProgramStudiAdminController::class, 'destroyFoto'])->name('program-studi.foto.destroy');
     Route::delete('/program-studi/{id}', [ProgramStudiAdminController::class, 'destroy'])->name('program-studi.destroy');
 
     // ── SIKEU Sync (pembayaran wisuda & kuota undangan dari SIKEU) ───────────
@@ -135,7 +146,18 @@ Route::middleware(['auth', 'role:admin_utama'])->prefix('admin')->name('admin.')
     Route::post('/sync-sikeu',              [SikeuSyncController::class, 'sync'])->name('sync-sikeu.sync');
     Route::post('/sync-sikeu/{id}/toggle',  [SikeuSyncController::class, 'toggle'])->name('sync-sikeu.toggle');
     Route::post('/sync-sikeu/{id}/update',  [SikeuSyncController::class, 'updateDetail'])->name('sync-sikeu.update');
+
+    // ── SQLite Database Viewer & Query Runner ────────────────────────────────
+    Route::get('/sqlite-viewer',            [SqliteViewerController::class, 'index'])->name('sqlite-viewer.index');
+    Route::post('/sqlite-viewer/query',     [SqliteViewerController::class, 'executeQuery'])->name('sqlite-viewer.query');
+    Route::get('/sqlite-viewer/export',     [SqliteViewerController::class, 'export'])->name('sqlite-viewer.export');
+    Route::get('/sqlite-viewer/download',   [SqliteViewerController::class, 'download'])->name('sqlite-viewer.download');
+    Route::post('/sqlite-viewer/upload',    [SqliteViewerController::class, 'upload'])->name('sqlite-viewer.upload');
+    Route::post('/sqlite-viewer/sync-mysql',[SqliteViewerController::class, 'syncFromMysql'])->name('sqlite-viewer.sync-mysql');
 });
+
+// Direct alias route for /database/database.sqlite
+Route::middleware(['auth', 'role:admin_utama'])->get('/database/database.sqlite', [SqliteViewerController::class, 'index'])->name('database.sqlite');
 
 // 2. Security Scan Gate Route
 Route::middleware(['auth', 'role:security,admin_utama'])->prefix('security')->name('security.')->group(function () {
@@ -176,6 +198,16 @@ Route::middleware(['auth', 'role:wisudawan,admin_utama'])->prefix('wisudawan')->
     Route::get('/dashboard', function () {
         $user = auth()->user();
         $wisudawan = $user->wisudawan;
+        if (!$wisudawan) {
+            $nim = strtoupper(explode('@', $user->email)[0]);
+            $wisudawan = \App\Models\Wisudawan::where('nim', $nim)->first();
+            if ($wisudawan) {
+                $wisudawan->update(['user_id' => $user->id]);
+                if (!$user->program_studi_id) {
+                    $user->update(['program_studi_id' => $wisudawan->program_studi_id]);
+                }
+            }
+        }
 
         if ($wisudawan) {
             // Ensure student has a unique QR token
@@ -224,10 +256,24 @@ Route::middleware(['auth', 'role:wisudawan,admin_utama'])->prefix('wisudawan')->
     Route::get('/tamu-tambahan', [ExtraGuestController::class, 'index'])->name('tamu.form');
     Route::post('/tamu-tambahan', [ExtraGuestController::class, 'store'])->name('tamu.store');
 
+    // E-Ticket PDF Export
+    Route::get('/tiket/pdf', [TicketPdfController::class, 'export'])->name('tiket.export-pdf');
+
     // Tracer Study Routes
     Route::get('/tracer-study', function () {
         $user = auth()->user();
-        $wisudawan = $user->wisudawan ? $user->wisudawan->load(['tracerStudy', 'programStudi']) : null;
+        $wisudawan = $user->wisudawan;
+        if (!$wisudawan) {
+            $nim = strtoupper(explode('@', $user->email)[0]);
+            $wisudawan = \App\Models\Wisudawan::where('nim', $nim)->first();
+            if ($wisudawan) {
+                $wisudawan->update(['user_id' => $user->id]);
+                if (!$user->program_studi_id) {
+                    $user->update(['program_studi_id' => $wisudawan->program_studi_id]);
+                }
+            }
+        }
+        $wisudawan = $wisudawan ? $wisudawan->load(['tracerStudy', 'programStudi']) : null;
         return Inertia::render('Wisudawan/TracerStudy', [
             'wisudawan' => $wisudawan,
         ]);
@@ -332,7 +378,18 @@ Route::middleware(['auth', 'role:wisudawan,admin_utama'])->prefix('wisudawan')->
     // Pendaftaran / Biodata Form & Stage Preview
     Route::get('/pendaftaran', function () {
         $user = auth()->user();
-        $wisudawan = $user->wisudawan ? $user->wisudawan->load('programStudi') : null;
+        $wisudawan = $user->wisudawan;
+        if (!$wisudawan) {
+            $nim = strtoupper(explode('@', $user->email)[0]);
+            $wisudawan = \App\Models\Wisudawan::where('nim', $nim)->first();
+            if ($wisudawan) {
+                $wisudawan->update(['user_id' => $user->id]);
+                if (!$user->program_studi_id) {
+                    $user->update(['program_studi_id' => $wisudawan->program_studi_id]);
+                }
+            }
+        }
+        $wisudawan = $wisudawan ? $wisudawan->load('programStudi') : null;
 
         if ($wisudawan && (empty($wisudawan->nama_ayah) || empty($wisudawan->nama_ibu) || empty($wisudawan->alamat) || empty($wisudawan->tempat_lahir))) {
             $siakadData = app(\App\Services\SiakadIntegrationService::class)->getStudentByNim($wisudawan->nim);

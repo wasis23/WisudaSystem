@@ -18,6 +18,13 @@ const currentWisudawan = computed(() => {
     return props.wisudawans[currentIndex.value] || null;
 });
 
+const defaultSilhouette = computed(() => {
+    if (props.activePeriode?.buku_kenangan_default_foto && props.activePeriode.buku_kenangan_default_foto !== '0') {
+        return `/storage/${props.activePeriode.buku_kenangan_default_foto}`;
+    }
+    return '/images/default_toga_silhouette.png';
+});
+
 const setCandidateIndex = (newIndex) => {
     if (newIndex >= 0 && newIndex < props.wisudawans.length) {
         currentIndex.value = newIndex;
@@ -196,8 +203,18 @@ onUnmounted(() => {
                         }"
                         class="absolute border-4 border-white/20 bg-slate-900 rounded-3xl overflow-hidden shadow-2xl"
                     >
-                        <img v-if="currentWisudawan.pas_foto" :src="`/storage/${currentWisudawan.pas_foto}`" class="w-full h-full object-cover" />
-                        <div v-else class="w-full h-full flex items-center justify-center text-slate-500 font-bold text-lg">Pas Foto</div>
+                        <img
+                            v-if="currentWisudawan.pas_foto"
+                            :src="`/storage/${currentWisudawan.pas_foto}`"
+                            class="w-full h-full object-cover"
+                            @error="$event.target.src = defaultSilhouette"
+                        />
+                        <img
+                            v-else
+                            :src="defaultSilhouette"
+                            alt="Siluet Wisudawan"
+                            class="w-full h-full object-cover"
+                        />
                     </div>
 
                     <!-- Nama Lengkap Wisudawan & Gelar -->
@@ -205,7 +222,7 @@ onUnmounted(() => {
                         :style="{
                             left: (stageConfig?.nama_x || 480) + 'px',
                             top: (stageConfig?.nama_y || 180) + 'px',
-                            fontSize: (stageConfig?.nama_font_size || 48) + 'px',
+                            fontSize: (stageConfig?.nama_font_size || 35) + 'px',
                         }"
                         class="absolute font-black text-white whitespace-nowrap leading-none tracking-tight drop-shadow-xl"
                     >

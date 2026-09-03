@@ -33,6 +33,17 @@ class HandleInertiaRequests extends Middleware
 
         if ($user) {
             $user->loadMissing(['programStudi', 'wisudawan']);
+            if ($user->role === 'wisudawan' && (!$user->wisudawan || !$user->program_studi_id)) {
+                $nim = strtoupper(explode('@', $user->email)[0]);
+                $wisudawan = \App\Models\Wisudawan::where('nim', $nim)->first();
+                if ($wisudawan) {
+                    $wisudawan->update(['user_id' => $user->id]);
+                    if (!$user->program_studi_id) {
+                        $user->update(['program_studi_id' => $wisudawan->program_studi_id]);
+                    }
+                    $user->load('wisudawan', 'programStudi');
+                }
+            }
         }
 
         return [

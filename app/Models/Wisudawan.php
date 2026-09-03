@@ -79,6 +79,72 @@ class Wisudawan extends Model
         'jumlah_undangan_extra_sikeu' => 'integer',
     ];
 
+    protected $appends = [
+        'ttl',
+        'pekerjaan',
+        'orang_tua',
+    ];
+
+    public function getOrangTuaAttribute()
+    {
+        $ayah = $this->nama_ayah ? mb_convert_case(mb_strtolower(trim($this->nama_ayah)), MB_CASE_TITLE, 'UTF-8') : '';
+        $ibu = $this->nama_ibu ? mb_convert_case(mb_strtolower(trim($this->nama_ibu)), MB_CASE_TITLE, 'UTF-8') : '';
+
+        if ($ayah && $ibu) {
+            return "{$ayah} & {$ibu}";
+        } elseif ($ayah) {
+            return $ayah;
+        } elseif ($ibu) {
+            return $ibu;
+        }
+
+        return '-';
+    }
+
+    public function getTtlAttribute()
+    {
+        $tempat = $this->tempat_lahir ? mb_convert_case(mb_strtolower(trim($this->tempat_lahir)), MB_CASE_TITLE, 'UTF-8') : '';
+        $tanggal = $this->tanggal_lahir && $this->tanggal_lahir !== '0000-00-00'
+            ? \Carbon\Carbon::parse($this->tanggal_lahir)->locale('id')->translatedFormat('j F Y')
+            : '';
+
+        if ($tempat && $tanggal) {
+            return "{$tempat}, {$tanggal}";
+        } elseif ($tempat) {
+            return $tempat;
+        } elseif ($tanggal) {
+            return $tanggal;
+        }
+
+        return '-';
+    }
+
+    public function getPekerjaanAttribute()
+    {
+        $d = $this->tracer_study_data;
+        $posisi = $d['posisi_jabatan'] ?? ($d['posisi_lainnya'] ?? ($this->tracer_jabatan ?: null));
+        $instansi = $d['nama_perusahaan'] ?? ($d['nama_usaha'] ?? ($this->tracer_nama_instansi ?: null));
+        $status = $d['status_saat_ini'] ?? ($this->tracer_status_pekerjaan ?: null);
+
+        $parts = [];
+        if ($posisi && trim($posisi) !== '-' && !in_array(strtolower(trim($posisi)), ['belum bekerja', 'tidak', 'belum'])) {
+            $parts[] = trim($posisi);
+        }
+        if ($instansi && trim($instansi) !== '-' && !in_array(strtolower(trim($instansi)), ['belum bekerja', 'belum berwirausaha', 'tidak', 'belum'])) {
+            $parts[] = trim($instansi);
+        }
+
+        if (!empty($parts)) {
+            return implode(' - ', $parts);
+        }
+
+        if ($status && trim($status) !== '-' && !in_array(strtolower(trim($status)), ['tidak bekerja tetapi sedang mencari kerja', 'belum bekerja', 'belum'])) {
+            return trim($status);
+        }
+
+        return '-';
+    }
+
     public function user()
     {
         return $this->belongsTo(User::class, 'user_id');

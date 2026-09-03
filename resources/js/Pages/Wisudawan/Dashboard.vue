@@ -98,13 +98,18 @@ const printTickets = () => {
                         <div class="flex items-start gap-4">
                             <div
                                 :class="[
-                                    'w-12 h-12 rounded-2xl flex items-center justify-center font-bold text-2xl shrink-0 border shadow-inner',
+                                    'w-12 h-12 rounded-2xl flex items-center justify-center font-bold text-xl shrink-0 border shadow-inner',
                                     isLunas
                                         ? 'bg-emerald-500/20 text-emerald-300 border-emerald-400/40'
                                         : 'bg-rose-500/20 text-rose-300 border-rose-400/40 animate-pulse'
                                 ]"
                             >
-                                {{ isLunas ? '✓' : '⚠️' }}
+                                <svg v-if="isLunas" class="w-6 h-6 text-emerald-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
+                                </svg>
+                                <svg v-else class="w-6 h-6 text-rose-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                                </svg>
                             </div>
                             <div class="space-y-1">
                                 <div class="flex items-center gap-2">
@@ -141,9 +146,11 @@ const printTickets = () => {
                         <div class="shrink-0 flex sm:flex-col items-center sm:items-end gap-2">
                             <Link
                                 :href="route('wisudawan.tamu.form')"
-                                class="px-4 py-2.5 bg-white/10 hover:bg-white/20 border border-white/20 text-white font-bold text-xs rounded-xl transition flex items-center gap-1.5 backdrop-blur-sm"
+                                class="px-4 py-2.5 bg-white/10 hover:bg-white/20 border border-white/20 text-white font-bold text-xs rounded-xl transition flex items-center gap-2 backdrop-blur-sm"
                             >
-                                <span>👥</span>
+                                <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                                </svg>
                                 <span>Kelola Tamu & Snack ({{ allGuests.length }}/{{ sikeuQuota?.total_allowed_guests || 2 }}) →</span>
                             </Link>
                         </div>
@@ -254,37 +261,51 @@ const printTickets = () => {
                             <div class="flex items-center gap-2">
                                 <span
                                     :class="[
-                                        'px-3 py-1 font-bold text-xs rounded-full',
+                                        'px-3 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-wider inline-flex items-center gap-1.5',
                                         isLunas
                                             ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300'
                                             : 'bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300'
                                     ]"
                                 >
-                                    {{ isLunas ? '✓ PEMBAYARAN LUNAS & TIKET AKTIF' : '⚠️ MENUNGGU PELUNASAN SIKEU' }}
+                                    <svg v-if="isLunas" class="w-3 h-3 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
+                                    </svg>
+                                    <svg v-else class="w-3 h-3 text-rose-600 dark:text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                                    </svg>
+                                    <span>{{ isLunas ? 'PEMBAYARAN LUNAS & TIKET AKTIF' : 'MENUNGGU PELUNASAN SIKEU' }}</span>
                                 </span>
                                 <span class="text-xs text-slate-400">Total {{ 1 + allGuests.length }} Barcode Digital (1 Mahasiswa + {{ allGuests.length }} Undangan)</span>
                             </div>
                             <h3 class="text-xl font-black text-slate-900 dark:text-white mt-1 flex items-center gap-2">
-                                🎫 E-Ticket & Barcode Presensi Wisuda
+                                <svg class="w-6 h-6 text-indigo-600 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z" />
+                                </svg>
+                                <span>E-Ticket & Barcode Presensi Wisuda</span>
                             </h3>
                             <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                                Barcode ini berlaku untuk <strong>2x Scan Presensi</strong>: 1️⃣ Oleh Security di Halaman Depan & 2️⃣ Oleh Staf Presensi di Pintu Masuk Venue Auditorium.
+                                Barcode ini berlaku untuk <strong>2x Scan Presensi</strong>: 1. Oleh Security di Halaman Depan & 2. Oleh Staf Presensi di Pintu Masuk Venue Auditorium.
                             </p>
                         </div>
 
-                        <button
+                        <a
                             v-if="isLunas"
-                            @click="printTickets"
-                            class="px-5 py-2.5 bg-slate-900 hover:bg-slate-800 dark:bg-indigo-600 dark:hover:bg-indigo-700 text-white font-bold text-xs rounded-xl transition flex items-center gap-2 shrink-0 shadow-sm"
+                            :href="route('wisudawan.tiket.export-pdf')"
+                            target="_blank"
+                            class="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl transition flex items-center gap-2 shrink-0 shadow-sm hover:scale-105 transform duration-150"
                         >
-                            <span>🖨️</span>
-                            <span>Cetak / Simpan E-Ticket (PDF)</span>
-                        </button>
+                            <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                            </svg>
+                            <span>Unduh E-Ticket Resmi (PDF)</span>
+                        </a>
                     </div>
 
                     <!-- WARNING IF UNPAID -->
                     <div v-if="!isLunas" class="bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 rounded-2xl p-4 text-xs text-rose-700 dark:text-rose-300 flex items-center gap-3">
-                        <span class="text-2xl">⚠️</span>
+                        <svg class="w-6 h-6 text-rose-600 dark:text-rose-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                        </svg>
                         <div>
                             <p class="font-bold">Barcode Presensi Terkunci Sementara</p>
                             <p class="text-[11px] text-rose-600 dark:text-rose-400 mt-0.5">Petugas scanner di gerbang dan pintu ballroom akan menolak presensi jika status pembayaran belum lunas. Silakan lakukan pembayaran ke Keuangan SIKEU untuk mengaktifkan tiket.</p>
@@ -296,8 +317,12 @@ const printTickets = () => {
                         
                         <!-- CARD 1: BARCODE MAHASISWA -->
                         <div class="bg-gradient-to-b from-indigo-50/50 to-white dark:from-slate-900/50 dark:to-slate-800 rounded-2xl border-2 border-indigo-200 dark:border-indigo-800 p-5 flex flex-col items-center text-center space-y-4 shadow-sm relative overflow-hidden">
-                            <div class="w-full bg-indigo-600 text-white py-1.5 px-3 rounded-xl font-extrabold text-xs uppercase tracking-wider">
-                                🎓 Mahasiswa Wisudawan
+                            <div class="w-full bg-indigo-600 text-white py-1.5 px-3 rounded-xl font-extrabold text-xs uppercase tracking-wider flex items-center justify-center gap-1.5">
+                                <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l9-5-9-5-9 5 9 5z" />
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z" />
+                                </svg>
+                                <span>Mahasiswa Wisudawan</span>
                             </div>
 
                             <div class="bg-white p-3 rounded-2xl border border-indigo-100 shadow-inner">
@@ -326,13 +351,13 @@ const printTickets = () => {
                                 <div class="flex items-center justify-between">
                                     <span class="text-slate-500">1. Security (Gate):</span>
                                     <span :class="['font-bold px-2 py-0.5 rounded-full text-[10px]', wisudawanData?.is_hadir ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800']">
-                                        {{ wisudawanData?.is_hadir ? '✓ Scanned' : '⏳ Belum Scan' }}
+                                        {{ wisudawanData?.is_hadir ? 'Scanned' : 'Belum Scan' }}
                                     </span>
                                 </div>
                                 <div class="flex items-center justify-between">
                                     <span class="text-slate-500">2. Staf Venue (Auditorium):</span>
                                     <span :class="['font-bold px-2 py-0.5 rounded-full text-[10px]', wisudawanData?.is_in_auditorium ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800']">
-                                        {{ wisudawanData?.is_in_auditorium ? '✓ Scanned' : '⏳ Belum Scan' }}
+                                        {{ wisudawanData?.is_in_auditorium ? 'Scanned' : 'Belum Scan' }}
                                     </span>
                                 </div>
                             </div>
@@ -353,13 +378,16 @@ const printTickets = () => {
                         >
                             <div
                                 :class="[
-                                    'w-full text-white py-1.5 px-3 rounded-xl font-extrabold text-xs uppercase tracking-wider',
+                                    'w-full text-white py-1.5 px-3 rounded-xl font-extrabold text-xs uppercase tracking-wider flex items-center justify-center gap-1.5',
                                     index === 0
                                         ? 'bg-blue-600'
                                         : (index === 1 ? 'bg-purple-600' : 'bg-teal-600')
                                 ]"
                             >
-                                👥 Pendamping #{{ index + 1 }} {{ index >= 2 ? '(Ekstra SIKEU)' : '' }}
+                                <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                </svg>
+                                <span>Pendamping #{{ index + 1 }} {{ index >= 2 ? '(Ekstra SIKEU)' : '' }}</span>
                             </div>
 
                             <div class="bg-white p-3 rounded-2xl border border-slate-100 shadow-inner">
@@ -395,13 +423,13 @@ const printTickets = () => {
                                 <div class="flex items-center justify-between">
                                     <span class="text-slate-500">1. Security (Gate):</span>
                                     <span :class="['font-bold px-2 py-0.5 rounded-full text-[10px]', (guest.is_hadir_gate || guest.is_hadir) ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800']">
-                                        {{ (guest.is_hadir_gate || guest.is_hadir) ? '✓ Scanned' : '⏳ Belum Scan' }}
+                                        {{ (guest.is_hadir_gate || guest.is_hadir) ? 'Scanned' : 'Belum Scan' }}
                                     </span>
                                 </div>
                                 <div class="flex items-center justify-between">
                                     <span class="text-slate-500">2. Staf Venue (Auditorium):</span>
                                     <span :class="['font-bold px-2 py-0.5 rounded-full text-[10px]', guest.is_hadir_venue ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800']">
-                                        {{ guest.is_hadir_venue ? '✓ Scanned & Snack' : '⏳ Belum Scan' }}
+                                        {{ guest.is_hadir_venue ? 'Scanned & Snack' : 'Belum Scan' }}
                                     </span>
                                 </div>
                             </div>

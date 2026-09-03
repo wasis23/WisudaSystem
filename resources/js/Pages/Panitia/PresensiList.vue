@@ -236,13 +236,19 @@ const setStatusTab = (status) => {
                                 <td class="py-3.5 px-4 text-center">
                                     <span
                                         :class="[
-                                            'px-2.5 py-1 text-[10px] font-extrabold uppercase rounded-full inline-flex items-center gap-1',
+                                            'px-2.5 py-1 text-[10px] font-extrabold uppercase rounded-full inline-flex items-center gap-1.5',
                                             w.status_pembayaran_sikeu === 'lunas'
                                                 ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 border border-emerald-300'
                                                 : 'bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300 border border-rose-300'
                                         ]"
                                     >
-                                        {{ w.status_pembayaran_sikeu === 'lunas' ? '✓ Lunas' : '⚠️ Belum Bayar' }}
+                                        <svg v-if="w.status_pembayaran_sikeu === 'lunas'" class="w-3 h-3 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
+                                        </svg>
+                                        <svg v-else class="w-3 h-3 text-rose-600 dark:text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                                        </svg>
+                                        <span>{{ w.status_pembayaran_sikeu === 'lunas' ? 'Lunas' : 'Belum Bayar' }}</span>
                                     </span>
                                 </td>
 
@@ -295,22 +301,27 @@ const setStatusTab = (status) => {
                         Menampilkan <strong>{{ wisudawans.from || 0 }}</strong> - <strong>{{ wisudawans.to || 0 }}</strong> dari <strong>{{ wisudawans.total || 0 }}</strong> wisudawan (50 per halaman)
                     </div>
                     <div class="flex items-center gap-1 flex-wrap">
-                        <Link
-                            v-for="(link, idx) in wisudawans.links"
-                            :key="idx"
-                            :href="link.url || '#'"
-                            v-html="link.label"
-                            :class="[
-                                'px-3 py-1.5 rounded-lg text-xs font-semibold transition',
-                                link.active
-                                    ? 'bg-indigo-600 text-white shadow-sm'
-                                    : link.url
-                                        ? 'bg-gray-50 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-600'
-                                        : 'text-gray-400 dark:text-gray-600 cursor-not-allowed opacity-50'
-                            ]"
-                            :preserve-state="true"
-                            :preserve-scroll="true"
-                        />
+                        <template v-for="(link, idx) in wisudawans.links" :key="idx">
+                            <Link
+                                v-if="link.url"
+                                :href="link.url"
+                                :class="[
+                                    'px-3 py-1.5 rounded-lg text-xs font-semibold transition inline-flex items-center justify-center select-none',
+                                    link.active
+                                        ? 'bg-indigo-600 text-white shadow-sm'
+                                        : 'bg-gray-50 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-600'
+                                ]"
+                                :preserve-state="true"
+                                :preserve-scroll="true"
+                            >
+                                <span v-html="link.label" />
+                            </Link>
+                            <span
+                                v-else
+                                class="px-3 py-1.5 rounded-lg text-xs font-semibold text-gray-400 dark:text-gray-600 cursor-not-allowed opacity-50 bg-gray-50/50 dark:bg-gray-800/50 inline-flex items-center justify-center select-none"
+                                v-html="link.label"
+                            />
+                        </template>
                     </div>
                 </div>
             </div>

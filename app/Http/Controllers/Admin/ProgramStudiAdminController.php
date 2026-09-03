@@ -8,6 +8,8 @@ use App\Models\SimpegEmployeeCache;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
+use Illuminate\Support\Facades\Storage;
+
 class ProgramStudiAdminController extends Controller
 {
     public function index()
@@ -42,7 +44,13 @@ class ProgramStudiAdminController extends Controller
             'gelar' => 'nullable|string|max:100',
             'kaprodi_nama' => 'nullable|string|max:255',
             'kaprodi_nip' => 'nullable|string|max:100',
+            'kaprodi_foto' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:5120',
         ]);
+
+        if ($request->hasFile('kaprodi_foto')) {
+            $path = $request->file('kaprodi_foto')->store('kaprodi_foto', 'public');
+            $validated['kaprodi_foto'] = $path;
+        }
 
         ProgramStudi::create($validated);
 
@@ -60,11 +68,38 @@ class ProgramStudiAdminController extends Controller
             'gelar' => 'nullable|string|max:100',
             'kaprodi_nama' => 'nullable|string|max:255',
             'kaprodi_nip' => 'nullable|string|max:100',
+            'kaprodi_foto' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:5120',
         ]);
+
+        if ($request->hasFile('kaprodi_foto')) {
+            if ($prodi->kaprodi_foto && Storage::disk('public')->exists($prodi->kaprodi_foto)) {
+                Storage::disk('public')->delete($prodi->kaprodi_foto);
+            }
+            $path = $request->file('kaprodi_foto')->store('kaprodi_foto', 'public');
+            $validated['kaprodi_foto'] = $path;
+        }
 
         $prodi->update($validated);
 
+        // Auto-sinkronkan gelar ke seluruh wisudawan pada program studi ini jika gelar diubah/diset
+        if (array_key_exists('gelar', $validated) && $validated['gelar']) {
+            $prodi->wisudawans()->update(['gelar' => $validated['gelar']]);
+        }
+
         return redirect()->back()->with('success', "Gelar dan data Program Studi {$prodi->nama_prodi} berhasil diperbarui.");
+    }
+
+    public function destroyFoto($id)
+    {
+        $prodi = ProgramStudi::findOrFail($id);
+
+        if ($prodi->kaprodi_foto && Storage::disk('public')->exists($prodi->kaprodi_foto)) {
+            Storage::disk('public')->delete($prodi->kaprodi_foto);
+        }
+
+        $prodi->update(['kaprodi_foto' => null]);
+
+        return redirect()->back()->with('success', "Foto Kaprodi {$prodi->nama_prodi} berhasil dihapus.");
     }
 
     public function destroy($id)
@@ -73,6 +108,10 @@ class ProgramStudiAdminController extends Controller
 
         if ($prodi->wisudawans_count > 0) {
             return redirect()->back()->with('error', 'Program Studi tidak dapat dihapus karena masih memiliki data wisudawan terikat.');
+        }
+
+        if ($prodi->kaprodi_foto && Storage::disk('public')->exists($prodi->kaprodi_foto)) {
+            Storage::disk('public')->delete($prodi->kaprodi_foto);
         }
 
         $prodi->delete();

@@ -17,7 +17,7 @@ const form = useForm({
     photo_h: props.config.photo_h || 420,
     nama_x: props.config.nama_x || 480,
     nama_y: props.config.nama_y || 180,
-    nama_font_size: props.config.nama_font_size || 48,
+    nama_font_size: props.config.nama_font_size || 35,
     nim_x: props.config.nim_x || 480,
     nim_y: props.config.nim_y || 250,
     nim_font_size: props.config.nim_font_size || 24,

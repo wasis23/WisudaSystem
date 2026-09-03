@@ -1,6 +1,6 @@
 <script setup>
 import AdminLayout from '@/Layouts/AdminLayout.vue';
-import { Head, useForm } from '@inertiajs/vue3';
+import { Head, useForm, router } from '@inertiajs/vue3';
 import { ref } from 'vue';
 
 const props = defineProps({
@@ -15,6 +15,9 @@ const showModal = ref(false);
 const isEditing = ref(false);
 const editingId = ref(null);
 const selectedDosenId = ref('');
+const currentKaprodiFoto = ref(null);
+const fileInput = ref(null);
+const photoPreview = ref(null);
 
 const form = useForm({
     kode_prodi: '',
@@ -23,6 +26,7 @@ const form = useForm({
     gelar: '',
     kaprodi_nama: '',
     kaprodi_nip: '',
+    kaprodi_foto: null,
 });
 
 const onDosenSelectChange = () => {
@@ -34,10 +38,24 @@ const onDosenSelectChange = () => {
     }
 };
 
+const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+        form.kaprodi_foto = file;
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            photoPreview.value = e.target.result;
+        };
+        reader.readAsDataURL(file);
+    }
+};
+
 const openAddModal = () => {
     isEditing.value = false;
     editingId.value = null;
     selectedDosenId.value = '';
+    currentKaprodiFoto.value = null;
+    photoPreview.value = null;
     form.reset();
     form.clearErrors();
     showModal.value = true;
@@ -53,6 +71,9 @@ const openEditModal = (item) => {
     form.gelar = item.gelar || '';
     form.kaprodi_nama = item.kaprodi_nama || '';
     form.kaprodi_nip = item.kaprodi_nip || '';
+    form.kaprodi_foto = null;
+    currentKaprodiFoto.value = item.kaprodi_foto ? `/storage/${item.kaprodi_foto}` : null;
+    photoPreview.value = null;
 
     // Match selected dosen if exists in list
     const match = props.dosenList.find(
@@ -67,25 +88,42 @@ const openEditModal = (item) => {
 const closeModal = () => {
     showModal.value = false;
     selectedDosenId.value = '';
+    currentKaprodiFoto.value = null;
+    photoPreview.value = null;
     form.reset();
     form.clearErrors();
 };
 
 const submitForm = () => {
     if (isEditing.value) {
-        form.put(route('admin.program-studi.update', editingId.value), {
+        // Use post with _method PUT if sending files or use direct post route
+        form.post(route('admin.program-studi.update.post', editingId.value), {
+            forceFormData: true,
             onSuccess: () => closeModal(),
         });
     } else {
         form.post(route('admin.program-studi.store'), {
+            forceFormData: true,
             onSuccess: () => closeModal(),
+        });
+    }
+};
+
+const deleteKaprodiFoto = (item) => {
+    if (confirm(`Hapus foto Kaprodi ${item.nama_prodi}?`)) {
+        router.delete(route('admin.program-studi.foto.destroy', item.id), {
+            onSuccess: () => {
+                if (editingId.value === item.id) {
+                    currentKaprodiFoto.value = null;
+                }
+            }
         });
     }
 };
 
 const deleteProdi = (item) => {
     if (confirm(`Apakah Anda yakin ingin menghapus Program Studi "${item.nama_prodi}"?`)) {
-        form.delete(route('admin.program-studi.destroy', item.id));
+        router.delete(route('admin.program-studi.destroy', item.id));
     }
 };
 </script>
@@ -105,7 +143,7 @@ const deleteProdi = (item) => {
                         Pengaturan Program Studi & Gelar Lulusan
                     </h2>
                     <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                        Kelola data program studi, jenjang pendidikan, serta penulisan gelar akademik kelulusan wisudawan.
+                        Kelola data program studi, jenjang pendidikan, foto Kaprodi untuk Buku Kenangan, serta penulisan gelar akademik kelulusan wisudawan.
                     </p>
                 </div>
 
@@ -121,10 +159,10 @@ const deleteProdi = (item) => {
             </div>
 
             <!-- FLASH NOTIFICATION -->
-            <div v-if="$page.props.flash.success" class="p-4 bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800 rounded-2xl text-emerald-800 dark:text-emerald-200 text-xs font-bold">
+            <div v-if="$page.props.flash?.success" class="p-4 bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800 rounded-2xl text-emerald-800 dark:text-emerald-200 text-xs font-bold">
                 {{ $page.props.flash.success }}
             </div>
-            <div v-if="$page.props.flash.error" class="p-4 bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-800 rounded-2xl text-rose-800 dark:text-rose-200 text-xs font-bold">
+            <div v-if="$page.props.flash?.error" class="p-4 bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-800 rounded-2xl text-rose-800 dark:text-rose-200 text-xs font-bold">
                 {{ $page.props.flash.error }}
             </div>
 
@@ -169,11 +207,27 @@ const deleteProdi = (item) => {
                                 </td>
 
                                 <td class="px-5 py-4">
-                                    <div class="font-medium text-slate-800 dark:text-slate-200">
-                                        {{ item.kaprodi_nama || '-' }}
-                                    </div>
-                                    <div v-if="item.kaprodi_nip" class="text-[11px] text-slate-400 font-mono">
-                                        NIP. {{ item.kaprodi_nip }}
+                                    <div class="flex items-center gap-3">
+                                        <div class="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 overflow-hidden shrink-0 flex items-center justify-center">
+                                            <img
+                                                v-if="item.kaprodi_foto"
+                                                :src="`/storage/${item.kaprodi_foto}`"
+                                                alt="Foto Kaprodi"
+                                                class="w-full h-full object-cover"
+                                            />
+                                            <svg v-else class="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                            </svg>
+                                        </div>
+                                        <div>
+                                            <div class="font-medium text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+                                                <span>{{ item.kaprodi_nama || '-' }}</span>
+                                                <span v-if="item.kaprodi_foto" class="inline-block px-1.5 py-0.5 bg-emerald-100 dark:bg-emerald-900/60 text-emerald-700 dark:text-emerald-300 text-[9px] font-bold rounded">Ada Foto</span>
+                                            </div>
+                                            <div v-if="item.kaprodi_nip" class="text-[11px] text-slate-400 font-mono">
+                                                NIP/NIDN: {{ item.kaprodi_nip }}
+                                            </div>
+                                        </div>
                                     </div>
                                 </td>
 
@@ -187,7 +241,7 @@ const deleteProdi = (item) => {
                                             @click="openEditModal(item)"
                                             class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-[11px] rounded-lg transition"
                                         >
-                                            Edit Gelar
+                                            Edit Prodi & Kaprodi
                                         </button>
 
                                         <button
@@ -214,11 +268,11 @@ const deleteProdi = (item) => {
 
         <!-- MODAL FORM PROGRAM STUDI & GELAR -->
         <Teleport to="body">
-            <div v-if="showModal" class="fixed inset-0 z-[9999] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
-                <div class="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden border border-slate-200 dark:border-slate-700">
+            <div v-if="showModal" class="fixed inset-0 z-[9999] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 overflow-y-auto">
+                <div class="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden border border-slate-200 dark:border-slate-700 my-8">
                     <div class="px-6 py-4 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between">
                         <h3 class="text-base font-bold text-slate-900 dark:text-white">
-                            {{ isEditing ? 'Edit Gelar & Program Studi' : 'Tambah Program Studi Baru' }}
+                            {{ isEditing ? 'Edit Data Program Studi & Kaprodi' : 'Tambah Program Studi Baru' }}
                         </h3>
                         <button @click="closeModal" class="text-slate-400 hover:text-slate-700 dark:hover:text-white text-2xl">&times;</button>
                     </div>
@@ -279,8 +333,12 @@ const deleteProdi = (item) => {
                             </div>
                         </div>
 
-                        <!-- Kaprodi Selection from SIMPEG Dosen API / Cache -->
-                        <div class="space-y-3 pt-2 border-t border-slate-100 dark:border-slate-800">
+                        <!-- Kaprodi Selection & Details -->
+                        <div class="space-y-3 pt-3 border-t border-slate-100 dark:border-slate-800">
+                            <h4 class="font-bold text-slate-900 dark:text-white text-xs uppercase tracking-wider text-indigo-600 dark:text-indigo-400">
+                                Profil Ketua Program Studi (Kaprodi)
+                            </h4>
+
                             <div>
                                 <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">
                                     Pilih Kaprodi (Dari Data SIMPEG Dosen)
@@ -303,7 +361,7 @@ const deleteProdi = (item) => {
                                     <input
                                         v-model="form.kaprodi_nama"
                                         type="text"
-                                        placeholder="Nama Kaprodi..."
+                                        placeholder="Nama & Gelar Kaprodi..."
                                         class="w-full rounded-xl border-slate-300 dark:border-slate-700 dark:bg-slate-800 text-xs text-slate-900 dark:text-white focus:ring-indigo-500 focus:border-indigo-500"
                                     />
                                 </div>
@@ -313,10 +371,52 @@ const deleteProdi = (item) => {
                                     <input
                                         v-model="form.kaprodi_nip"
                                         type="text"
-                                        placeholder="Otomatis dari dosen terpilih..."
+                                        placeholder="NIP / NIDN Kaprodi..."
                                         class="w-full rounded-xl border-slate-300 dark:border-slate-700 dark:bg-slate-800 text-xs text-slate-900 dark:text-white focus:ring-indigo-500 focus:border-indigo-500 font-mono"
                                     />
                                 </div>
+                            </div>
+
+                            <!-- Upload Foto Kaprodi -->
+                            <div class="pt-2">
+                                <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1.5">
+                                    Foto Resmi Kaprodi (Untuk Buku Kenangan)
+                                </label>
+
+                                <div class="flex items-center gap-4 bg-slate-50 dark:bg-slate-800/60 p-3 rounded-xl border border-slate-200 dark:border-slate-700">
+                                    <!-- Photo Preview -->
+                                    <div class="w-16 h-20 bg-slate-200 dark:bg-slate-700 rounded-lg overflow-hidden border border-slate-300 dark:border-slate-600 flex items-center justify-center shrink-0">
+                                        <img
+                                            v-if="photoPreview || currentKaprodiFoto"
+                                            :src="photoPreview || currentKaprodiFoto"
+                                            alt="Preview Foto Kaprodi"
+                                            class="w-full h-full object-cover"
+                                        />
+                                        <span v-else class="text-[10px] text-slate-400 font-semibold text-center px-1">Foto Kaprodi</span>
+                                    </div>
+
+                                    <div class="flex-1 space-y-1.5">
+                                        <input
+                                            ref="fileInput"
+                                            type="file"
+                                            accept="image/jpeg,image/png,image/jpg,image/webp"
+                                            @change="handleFileChange"
+                                            class="block w-full text-xs text-slate-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 cursor-pointer"
+                                        />
+                                        <p class="text-[10px] text-slate-400">
+                                            Format: JPG, PNG, WEBP. Maks 5MB. Rasio portrait 3:4 atau 4:5 disarankan.
+                                        </p>
+                                        <button
+                                            v-if="isEditing && currentKaprodiFoto"
+                                            type="button"
+                                            @click="deleteKaprodiFoto({ id: editingId, nama_prodi: form.nama_prodi })"
+                                            class="text-[10px] font-bold text-rose-600 hover:underline"
+                                        >
+                                            Hapus Foto Saat Ini
+                                        </button>
+                                    </div>
+                                </div>
+                                <div v-if="form.errors.kaprodi_foto" class="text-rose-500 mt-1 text-[11px]">{{ form.errors.kaprodi_foto }}</div>
                             </div>
                         </div>
 

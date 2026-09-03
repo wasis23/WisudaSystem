@@ -70,7 +70,14 @@ const submitForm = () => {
                     </div>
 
                     <div :class="['text-white rounded-2xl p-6 shadow-xl relative overflow-hidden', quotaData?.has_paid_wisuda ? 'bg-gradient-to-br from-emerald-600 to-emerald-800' : 'bg-gradient-to-br from-rose-600 to-rose-800']">
-                        <div class="absolute -right-4 -bottom-4 opacity-10 text-8xl font-black">{{ quotaData?.has_paid_wisuda ? '✅' : '⚠️' }}</div>
+                        <div class="absolute -right-4 -bottom-4 opacity-10 pointer-events-none">
+                            <svg v-if="quotaData?.has_paid_wisuda" class="w-28 h-28 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            <svg v-else class="w-28 h-28 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                            </svg>
+                        </div>
                         <p class="text-xs font-semibold uppercase tracking-wider opacity-80">Status Verifikasi SIKEU</p>
                         <h3 class="text-2xl font-bold mt-2">{{ quotaData?.has_paid_wisuda ? 'Lunas / Terverifikasi' : 'Belum Lunas' }}</h3>
                         <p class="text-xs opacity-90 mt-2">NIM: {{ wisudawan?.nim }}</p>
