@@ -143,7 +143,7 @@ const formatDate = (dateStr) => {
                     </div>
                     <div class="mt-3 flex items-baseline gap-2">
                         <span class="text-3xl font-black text-slate-900 dark:text-white">{{ stats.total_lunas }}</span>
-                        <span class="text-xs text-slate-500 font-medium">/ {{ stats.total_cached }} Mhs</span>
+                        <span class="text-xs text-slate-500 font-medium">/ {{ stats.total_wisudawan || stats.total_cached }} Wisudawan</span>
                     </div>
                     <p class="text-[11px] text-emerald-600 dark:text-emerald-400 mt-1 font-semibold">
                         Akses barcode & prosesi panggung.
@@ -164,7 +164,7 @@ const formatDate = (dateStr) => {
                     </div>
                     <div class="mt-3 flex items-baseline gap-2">
                         <span class="text-3xl font-black text-rose-600 dark:text-rose-400">{{ stats.total_belum_lunas }}</span>
-                        <span class="text-xs text-slate-500 font-medium">Mahasiswa</span>
+                        <span class="text-xs text-slate-500 font-medium">/ {{ stats.total_wisudawan || stats.total_cached }} Wisudawan</span>
                     </div>
                     <p class="text-[11px] text-rose-600 dark:text-rose-400 mt-1 font-semibold">
                         Akses prosesi diblokir otomatis.
@@ -253,7 +253,7 @@ const formatDate = (dateStr) => {
                             @click="setStatusFilter('')"
                             :class="['px-3 py-1.5 rounded-xl text-xs font-bold transition', !statusFilter ? 'bg-indigo-600 text-white' : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200']"
                         >
-                            Semua ({{ stats.total_cached }})
+                            Semua ({{ stats.total_wisudawan || stats.total_cached }})
                         </button>
                         <button
                             @click="setStatusFilter('lunas')"

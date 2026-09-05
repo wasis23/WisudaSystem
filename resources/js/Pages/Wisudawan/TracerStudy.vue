@@ -108,6 +108,8 @@ watch(resolvedProdi, (newVal) => {
 }, { immediate: true });
 
 const activeTab = ref(1);
+const errorMessage = ref('');
+const missingFields = ref([]);
 
 const isSection1Valid = computed(() => {
     return form.nim && form.nama_lengkap && form.email && form.no_whatsapp && Boolean(form.prodi) && form.jenis_kelas && form.alamat_lengkap;
@@ -132,8 +134,89 @@ const isSection5Valid = computed(() => {
     return Boolean(form.kepuasan_layanan) && form.saran_masukan.trim() !== '';
 });
 
+const validateForm = () => {
+    const errors = [];
+    let firstInvalidTab = null;
+
+    if (!form.nim || form.nim.trim() === '') {
+        errors.push('Bagian 1: NIM wajib diisi.');
+        if (!firstInvalidTab) firstInvalidTab = 1;
+    }
+    if (!form.nama_lengkap || form.nama_lengkap.trim() === '') {
+        errors.push('Bagian 1: Nama Lengkap wajib diisi.');
+        if (!firstInvalidTab) firstInvalidTab = 1;
+    }
+    if (!form.email || form.email.trim() === '') {
+        errors.push('Bagian 1: Alamat Email wajib diisi.');
+        if (!firstInvalidTab) firstInvalidTab = 1;
+    }
+    if (!form.no_whatsapp || form.no_whatsapp.trim() === '') {
+        errors.push('Bagian 1: No. WhatsApp aktif wajib diisi.');
+        if (!firstInvalidTab) firstInvalidTab = 1;
+    }
+    if (!form.jenis_kelas) {
+        errors.push('Bagian 1: Jenis Kelas (Reguler/Transfer/Karyawan/RPL) wajib dipilih.');
+        if (!firstInvalidTab) firstInvalidTab = 1;
+    }
+    if (!form.alamat_lengkap || form.alamat_lengkap.trim() === '') {
+        errors.push('Bagian 1: Alamat Tinggal Lengkap wajib diisi.');
+        if (!firstInvalidTab) firstInvalidTab = 1;
+    }
+
+    if (!form.status_saat_ini) {
+        errors.push('Bagian 2: Status Pekerjaan/Aktivitas saat ini wajib dipilih.');
+        if (!firstInvalidTab) firstInvalidTab = 2;
+    }
+
+    if (!isSection4Valid.value) {
+        errors.push('Bagian 4: Semua butir evaluasi kompetensi & metode pembelajaran wajib dinilai (skala 1-5).');
+        if (!firstInvalidTab) firstInvalidTab = 4;
+    }
+
+    if (!form.kepuasan_layanan) {
+        errors.push('Bagian 5: Tingkat kepuasan layanan kampus wajib dinilai.');
+        if (!firstInvalidTab) firstInvalidTab = 5;
+    }
+    if (!form.saran_masukan || form.saran_masukan.trim() === '') {
+        errors.push('Bagian 5: Kolom saran dan masukan alumni wajib diisi.');
+        if (!firstInvalidTab) firstInvalidTab = 5;
+    }
+
+    return {
+        isValid: errors.length === 0,
+        errors,
+        firstInvalidTab,
+    };
+};
+
 const submit = () => {
-    form.post(route('wisudawan.tracer.store'));
+    errorMessage.value = '';
+    missingFields.value = [];
+
+    // Ensure prodi is not empty
+    if (!form.prodi || form.prodi === '-') {
+        form.prodi = resolvedProdi.value || 'D4 Teknologi Rekayasa Perangkat Lunak';
+    }
+
+    const validation = validateForm();
+    if (!validation.isValid) {
+        errorMessage.value = 'Pengisian Formulir Tracer Study Belum Lengkap';
+        missingFields.value = validation.errors;
+        if (validation.firstInvalidTab) {
+            activeTab.value = validation.firstInvalidTab;
+        }
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        return;
+    }
+
+    form.post(route('wisudawan.tracer.store'), {
+        preserveScroll: false,
+        onError: (errors) => {
+            errorMessage.value = 'Gagal menyimpan data Tracer Study. Keterangan kendala:';
+            missingFields.value = Object.values(errors);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+    });
 };
 
 const prodiOptions = [
@@ -258,6 +341,45 @@ const metodePembelajaranList = [
         <div class="py-6">
             <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
                 
+                <!-- ERROR / VALIDATION ALERT BANNER -->
+                <div
+                    v-if="errorMessage || $page.props.flash?.error || (missingFields && missingFields.length > 0)"
+                    class="mb-6 p-5 rounded-2xl bg-gradient-to-r from-rose-500/15 via-red-500/10 to-rose-500/5 border-2 border-rose-500/40 text-rose-950 dark:text-rose-200 shadow-md animate-fadeIn"
+                >
+                    <div class="flex items-start justify-between gap-3">
+                        <div class="flex items-start gap-3">
+                            <div class="w-9 h-9 rounded-xl bg-rose-500 text-white flex items-center justify-center shrink-0 shadow-sm">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                                </svg>
+                            </div>
+                            <div class="space-y-1.5">
+                                <h4 class="text-xs sm:text-sm font-black text-rose-900 dark:text-rose-100">
+                                    {{ errorMessage || 'Pengisian Tracer Study Tidak Sukses / Belum Lengkap' }}
+                                </h4>
+                                <p v-if="$page.props.flash?.error" class="text-xs text-rose-800 dark:text-rose-300 font-medium">
+                                    <span class="font-bold">Keterangan:</span> {{ $page.props.flash.error }}
+                                </p>
+                                <div v-if="missingFields.length > 0" class="space-y-1 pt-1">
+                                    <p class="text-[11px] font-bold text-rose-900 dark:text-rose-200">Keterangan penyebab tidak sukses:</p>
+                                    <ul class="list-disc list-inside text-xs text-rose-800 dark:text-rose-300 space-y-0.5">
+                                        <li v-for="(field, idx) in missingFields" :key="idx">{{ field }}</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                        <button
+                            type="button"
+                            @click="errorMessage = ''; missingFields = []"
+                            class="text-rose-700 hover:text-rose-950 dark:text-rose-300 p-1 rounded-lg transition"
+                        >
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+
                 <!-- Notice Banner -->
                 <div class="mb-6 p-4 rounded-2xl bg-blue-900 text-white shadow-md flex items-start gap-3 border border-blue-800">
                     <span class="text-2xl"></span>
@@ -342,7 +464,7 @@ const metodePembelajaranList = [
                 </div>
 
                 <!-- Main Form Card -->
-                <form @submit.prevent="submit" class="bg-white dark:bg-slate-800 rounded-3xl p-6 sm:p-8 border border-slate-200 dark:border-slate-700 shadow-xl space-y-8">
+                <form novalidate @submit.prevent="submit" class="bg-white dark:bg-slate-800 rounded-3xl p-6 sm:p-8 border border-slate-200 dark:border-slate-700 shadow-xl space-y-8">
                     
                     <!-- SECTION 1: Data Diri & Akademik -->
                     <div v-show="activeTab === 1" class="space-y-6">
@@ -365,7 +487,6 @@ const metodePembelajaranList = [
                                     type="text"
                                     class="w-full text-xs border-slate-300 dark:border-slate-700 rounded-xl dark:bg-slate-900 dark:text-white"
                                     placeholder="Nomor Induk Mahasiswa"
-                                    required
                                 />
                             </div>
 
@@ -379,7 +500,6 @@ const metodePembelajaranList = [
                                     type="text"
                                     class="w-full text-xs border-slate-300 dark:border-slate-700 rounded-xl dark:bg-slate-900 dark:text-white"
                                     placeholder="Nama Lengkap Alumni"
-                                    required
                                 />
                             </div>
 
@@ -393,7 +513,6 @@ const metodePembelajaranList = [
                                     type="email"
                                     class="w-full text-xs border-slate-300 dark:border-slate-700 rounded-xl dark:bg-slate-900 dark:text-white"
                                     placeholder="contoh@gmail.com"
-                                    required
                                 />
                             </div>
 
@@ -407,7 +526,6 @@ const metodePembelajaranList = [
                                     type="tel"
                                     class="w-full text-xs border-slate-300 dark:border-slate-700 rounded-xl dark:bg-slate-900 dark:text-white"
                                     placeholder="08..."
-                                    required
                                 />
                             </div>
                         </div>
@@ -447,7 +565,6 @@ const metodePembelajaranList = [
                                         v-model="form.jenis_kelas"
                                         :value="jk"
                                         class="text-blue-600 focus:ring-blue-500"
-                                        required
                                     />
                                     <span class="text-slate-800 dark:text-slate-200 font-medium">{{ jk }}</span>
                                 </label>
@@ -464,7 +581,6 @@ const metodePembelajaranList = [
                                 rows="3"
                                 class="w-full text-xs border-slate-300 dark:border-slate-700 rounded-xl dark:bg-slate-900 dark:text-white"
                                 placeholder="Alamat tinggal lengkap (Jalan, RT/RW, Desa, Kecamatan, Kabupaten/Kota)"
-                                required
                             ></textarea>
                         </div>
 
@@ -507,7 +623,6 @@ const metodePembelajaranList = [
                                         :value="opt"
                                         v-model="form.status_saat_ini"
                                         class="text-blue-600 focus:ring-blue-500"
-                                        required
                                     />
                                     <span class="text-slate-800 dark:text-slate-200 font-medium">{{ opt }}</span>
                                 </label>
@@ -971,7 +1086,6 @@ const metodePembelajaranList = [
                                                     :value="String(n)"
                                                     v-model="form.kompetensi_lulus[aspek]"
                                                     class="text-blue-600 focus:ring-blue-500"
-                                                    required
                                                 />
                                             </td>
                                         </tr>
@@ -1003,7 +1117,6 @@ const metodePembelajaranList = [
                                                     :value="String(n)"
                                                     v-model="form.kompetensi_kerja[aspek]"
                                                     class="text-blue-600 focus:ring-blue-500"
-                                                    required
                                                 />
                                             </td>
                                         </tr>
@@ -1035,7 +1148,6 @@ const metodePembelajaranList = [
                                                     :value="String(n)"
                                                     v-model="form.metode_pembelajaran[metode]"
                                                     class="text-blue-600 focus:ring-blue-500"
-                                                    required
                                                 />
                                             </td>
                                         </tr>
@@ -1090,7 +1202,6 @@ const metodePembelajaranList = [
                                         :value="opt"
                                         v-model="form.kepuasan_layanan"
                                         class="text-blue-600 focus:ring-blue-500"
-                                        required
                                     />
                                     <span class="font-medium text-slate-800 dark:text-slate-200">{{ opt }}</span>
                                 </label>
@@ -1107,7 +1218,6 @@ const metodePembelajaranList = [
                                 rows="5"
                                 class="w-full text-xs border-slate-300 dark:border-slate-700 rounded-xl dark:bg-slate-900 dark:text-white"
                                 placeholder="Tuliskan saran dan masukan lengkap Anda di sini..."
-                                required
                             ></textarea>
                         </div>
 
@@ -1121,9 +1231,10 @@ const metodePembelajaranList = [
                             </button>
 
                             <button
-                                type="submit"
+                                type="button"
+                                @click="submit"
                                 :disabled="form.processing"
-                                class="px-8 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-lg transition disabled:opacity-50 flex items-center gap-2"
+                                class="px-8 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-lg transition disabled:opacity-50 flex items-center gap-2 cursor-pointer"
                             >
                                 <span v-if="form.processing">Menyimpan Data Tracer Study...</span>
                                 <span v-else> Simpan & Selesaikan Form Tracer Study</span>

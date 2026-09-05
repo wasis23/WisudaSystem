@@ -48,7 +48,7 @@ class RegistrationController extends Controller
             'jenis_kelamin' => 'required|in:L,P',
             'nomor_hp' => 'required|string|max:20',
             'alamat' => 'required|string|max:500',
-            'ipk' => 'required|numeric|between:0.00,4.00',
+            'ipk' => 'nullable',
             'judul_ta' => 'required|string|max:500',
             'tanggal_lulus' => 'required|date',
             'nama_ayah' => 'required|string|max:255',
@@ -69,12 +69,17 @@ class RegistrationController extends Controller
         }
 
         // Auto calculate Predikat Kelulusan
-        $ipk = (float) $validated['ipk'];
-        $predikat = 'Sangat Memuaskan';
-        if ($ipk >= 3.51) {
-            $predikat = 'Dengan Pujian (Cumlaude)';
-        } elseif ($ipk < 3.00) {
-            $predikat = 'Memuaskan';
+        $rawIpk = $validated['ipk'] ?? null;
+        $ipk = (is_numeric($rawIpk) && floatval($rawIpk) > 0) ? (float) $rawIpk : null;
+        $validated['ipk'] = $ipk;
+        $predikat = '-';
+        if ($ipk !== null) {
+            $predikat = 'Sangat Memuaskan';
+            if ($ipk >= 3.51) {
+                $predikat = 'Dengan Pujian (Cumlaude)';
+            } elseif ($ipk < 3.00) {
+                $predikat = 'Memuaskan';
+            }
         }
 
         $qrToken = $user->wisudawan?->qr_code_token ?? 'WSD-' . strtoupper(Str::random(12));

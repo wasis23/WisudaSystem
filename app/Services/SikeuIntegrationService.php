@@ -212,97 +212,111 @@ class SikeuIntegrationService
         $insertedCount = 0;
         $updatedCount = 0;
 
-        // Ambil NIM dari wisudawan terdaftar, atau dari cache SIMANTA jika wisudawan belum di-import
-        $wisudawans = Wisudawan::all();
-        $nims = $wisudawans->pluck('nim')->toArray();
-        if (empty($nims)) {
+        $activePeriode = \App\Models\PeriodeWisuda::getActive() ?? \App\Models\PeriodeWisuda::latest()->first();
+        $wisudawans = Wisudawan::when($activePeriode?->id, fn($q) => $q->where('periode_wisuda_id', $activePeriode->id))->get();
+        if ($wisudawans->isEmpty()) {
+            $wisudawans = Wisudawan::all();
+        }
+
+        if ($wisudawans->isEmpty()) {
             $nims = SimantaMahasiswaLulusCache::pluck('nim')->toArray();
+        } else {
+            $nims = $wisudawans->pluck('nim')->filter()->map(fn($n) => strtoupper(trim($n)))->toArray();
         }
 
         try {
-            // 1. Ambil data transaksi riwayat_bayar wisuda langsung dari SIKEU
-            $sikeuPaymentsQuery = DB::connection('sikeu')->table('riwayat_bayar')
-                ->whereNull('koreksi')
-                ->whereNull('deletedAt')
-                ->where(function ($q) {
-                    $q->where('nama_biaya', 'LIKE', '%wisuda%')
-                      ->orWhere('keterangan', 'LIKE', '%wisuda%');
-                });
-
-            // 2. Ambil mapping no_pend -> NIM dari SIAKAD
+            // 1. Ambil mapping no_pend -> NIM dari SIAKAD
             $siakadStudents = DB::connection('siakad')->table('viewMahasiswaPt')
+                ->whereIn('nipd', $nims)
                 ->whereNotNull('no_pend')
                 ->get(['nipd as nim', 'no_pend', 'nm_pd as nama'])
                 ->keyBy(fn($item) => strtoupper(trim($item->nim)));
 
             $noPendToStudent = [];
+            $noPends = [];
             foreach ($siakadStudents as $s) {
-                $noPendToStudent[trim($s->no_pend)] = $s;
+                $trimmedNoPend = trim($s->no_pend);
+                if ($trimmedNoPend) {
+                    $noPendToStudent[$trimmedNoPend] = $s;
+                    $noPends[] = $trimmedNoPend;
+                }
             }
 
-            $paymentsByNoPend = $sikeuPaymentsQuery->orderBy('tanggal', 'desc')->get()->groupBy('no_pend');
+            // 2. Ambil data transaksi riwayat_bayar wisuda hanya untuk mahasiswa wisudawan bersangkutan
+            $paymentsByNoPend = collect();
+            if (!empty($noPends)) {
+                $paymentsByNoPend = DB::connection('sikeu')->table('riwayat_bayar')
+                    ->whereIn('no_pend', $noPends)
+                    ->whereNull('koreksi')
+                    ->whereNull('deletedAt')
+                    ->where(function ($q) {
+                        $q->where('nama_biaya', 'LIKE', '%wisuda%')
+                          ->orWhere('keterangan', 'LIKE', '%wisuda%');
+                    })
+                    ->orderBy('tanggal', 'desc')
+                    ->get()
+                    ->groupBy('no_pend');
+            }
 
-            // Kumpulkan seluruh no_pend yang memiliki transaksi wisuda
-            $targetNoPends = $paymentsByNoPend->keys();
+            if ($wisudawans->isNotEmpty()) {
+                foreach ($wisudawans as $w) {
+                    $nim = strtoupper(trim($w->nim));
+                    $studentInfo = $siakadStudents[$nim] ?? null;
+                    $noPend = $studentInfo ? trim($studentInfo->no_pend) : null;
+                    $payments = ($noPend && $paymentsByNoPend->has($noPend)) ? $paymentsByNoPend->get($noPend) : collect();
 
-            foreach ($targetNoPends as $noPend) {
-                $studentInfo = $noPendToStudent[$noPend] ?? null;
-                $nim = $studentInfo ? strtoupper(trim($studentInfo->nim)) : null;
-                if (!$nim) continue;
+                    $totalBayar = 0;
+                    $totalExtra = 0;
+                    $totalTagihanPokok = 2650000;
+                    $lastDate = null;
+                    $noTx = null;
+                    $kets = [];
 
-                $payments = $paymentsByNoPend->get($noPend) ?? collect();
+                    if ($payments->isNotEmpty()) {
+                        foreach ($payments as $p) {
+                            $ket = strtolower($p->keterangan ?? '');
+                            $namaBiaya = strtolower($p->nama_biaya ?? '');
+                            $jml = (int)($p->jumlah_bayar ?? 0);
+                            $totalBayar += $jml;
+                            $lastDate = $p->tanggal ?? $p->createdAt ?? $lastDate;
+                            $noTx = $p->kode ?? $noTx;
+                            $kets[] = $p->nama_biaya . ($p->keterangan ? ' (' . $p->keterangan . ')' : '');
 
-                $totalBayar = 0;
-                $totalExtra = 0;
-                $totalTagihanPokok = 2650000;
-                $lastDate = null;
-                $noTx = null;
-                $kets = [];
-
-                if ($payments->isNotEmpty()) {
-                    foreach ($payments as $p) {
-                        $ket = strtolower($p->keterangan ?? '');
-                        $namaBiaya = strtolower($p->nama_biaya ?? '');
-                        $jml = (int)($p->jumlah_bayar ?? 0);
-                        $totalBayar += $jml;
-                        $lastDate = $p->tanggal ?? $p->createdAt ?? $lastDate;
-                        $noTx = $p->kode ?? $noTx;
-                        $kets[] = $p->nama_biaya . ($p->keterangan ? ' (' . $p->keterangan . ')' : '');
-
-                        if (str_contains($namaBiaya, 'tambahan') || str_contains($ket, 'tambahan') || str_contains($ket, 'undangan')) {
-                            $totalExtra += max(1, (int)round($jml / 375000));
-                        } else {
-                            if (!empty($p->tagihan) && (int)$p->tagihan > 0) {
-                                $totalTagihanPokok = max($totalTagihanPokok, (int)$p->tagihan);
+                            if (str_contains($namaBiaya, 'tambahan') || str_contains($ket, 'tambahan') || str_contains($ket, 'undangan')) {
+                                $totalExtra += max(1, (int)round($jml / 375000));
+                            } else {
+                                if (!empty($p->tagihan) && (int)$p->tagihan > 0) {
+                                    $totalTagihanPokok = max($totalTagihanPokok, (int)$p->tagihan);
+                                }
                             }
                         }
                     }
+
+                    // Status lunas HANYA jika total pembayaran mencukupi tagihan wisuda penuh (minimal 2.500.000 / sesuai tagihan)
+                    $isLunas = ($totalBayar >= $totalTagihanPokok || $totalBayar >= 2500000);
+
+                    $exists = SikeuPaymentCache::where('nim', $nim)->exists();
+                    $this->saveToCache([
+                        'nim' => $nim,
+                        'nama' => $w->nama_lengkap ?? ($studentInfo->nama ?? null),
+                        'status_bayar' => $isLunas ? 'lunas' : 'belum_lunas',
+                        'total_bayar' => $totalBayar,
+                        'total_tagihan' => $totalTagihanPokok + ($totalExtra * 375000),
+                        'jumlah_undangan_extra' => $totalExtra,
+                        'total_kuota_undangan' => 2 + $totalExtra,
+                        'snack_kuota' => 3 + $totalExtra,
+                        'tanggal_bayar' => $lastDate,
+                        'no_transaksi' => $noTx,
+                        'keterangan' => !empty($kets) ? implode(', ', array_filter($kets)) : 'Belum ada catatan pembayaran wisuda di SIKEU.',
+                    ]);
+
+                    if ($exists) {
+                        $updatedCount++;
+                    } else {
+                        $insertedCount++;
+                    }
+                    $syncedCount++;
                 }
-
-                // Status lunas HANYA jika total pembayaran mencukupi tagihan wisuda penuh (minimal 2.500.000 / sesuai tagihan)
-                $isLunas = ($totalBayar >= $totalTagihanPokok || $totalBayar >= 2500000);
-
-                $exists = SikeuPaymentCache::where('nim', $nim)->exists();
-                $this->saveToCache([
-                    'nim' => $nim,
-                    'nama' => $studentInfo->nama ?? $w->nama_lengkap,
-                    'status_bayar' => $isLunas ? 'lunas' : 'belum_lunas',
-                    'total_bayar' => $totalBayar,
-                    'total_tagihan' => $totalTagihanPokok + ($totalExtra * 375000),
-                    'jumlah_undangan_extra' => $totalExtra,
-                    'total_kuota_undangan' => 2 + $totalExtra,
-                    'snack_kuota' => 3 + $totalExtra,
-                    'tanggal_bayar' => $lastDate,
-                    'no_transaksi' => $noTx,
-                    'keterangan' => !empty($kets) ? implode(', ', array_filter($kets)) : 'Belum ada catatan pembayaran wisuda di SIKEU.',
-                ]);
-
-                if ($exists) {
-                    $updatedCount++;
-                } else {
-                    $insertedCount++;
-                }
-                $syncedCount++;
             }
         } catch (\Exception $e) {
             Log::error('Error processing SIKEU payments: ' . $e->getMessage());

@@ -3,6 +3,7 @@
 use App\Http\Controllers\Admin\BukuKenanganController;
 use App\Http\Controllers\Admin\DutyAssignmentController;
 use App\Http\Controllers\Admin\FakultasProdiController;
+use App\Http\Controllers\Admin\ManualBookController;
 use App\Http\Controllers\Admin\PeriodeWisudaController;
 use App\Http\Controllers\Admin\ProgramStudiAdminController;
 use App\Http\Controllers\Admin\SimantaSyncController;
@@ -68,6 +69,8 @@ Route::get('/dashboard', function () {
         'stats' => $stats,
         'recentWisudawan' => $recentWisudawan,
         'stageConfig' => \App\Models\StageLayoutConfig::getDefaultConfig(),
+        'activePeriode' => $activePeriode,
+        'manualBookUrl' => $activePeriode?->manual_book_pdf ? asset('storage/' . $activePeriode->manual_book_pdf) : (file_exists(public_path('manual_book.pdf')) ? asset('manual_book.pdf') : null),
     ]);
 })->middleware(['auth', 'verified'])->name('dashboard');
 
@@ -75,6 +78,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+    Route::get('/manual-book/download', [ManualBookController::class, 'download'])->name('manual-book.download');
 });
 
 // Self-Service Kiosk Scan (TV Display + Laptop + USB Scanner)
@@ -154,6 +158,10 @@ Route::middleware(['auth', 'role:admin_utama'])->prefix('admin')->name('admin.')
     Route::get('/sqlite-viewer/download',   [SqliteViewerController::class, 'download'])->name('sqlite-viewer.download');
     Route::post('/sqlite-viewer/upload',    [SqliteViewerController::class, 'upload'])->name('sqlite-viewer.upload');
     Route::post('/sqlite-viewer/sync-mysql',[SqliteViewerController::class, 'syncFromMysql'])->name('sqlite-viewer.sync-mysql');
+
+    // ── Manual Book PDF Management ──────────────────────────────────────────
+    Route::post('/manual-book/upload',      [ManualBookController::class, 'upload'])->name('manual-book.upload');
+    Route::delete('/manual-book',           [ManualBookController::class, 'destroy'])->name('manual-book.destroy');
 });
 
 // Direct alias route for /database/database.sqlite
@@ -245,10 +253,14 @@ Route::middleware(['auth', 'role:wisudawan,admin_utama'])->prefix('wisudawan')->
             $sikeuQuota = app(\App\Services\SikeuIntegrationService::class)->getExtraWisudaQuota($wisudawan->nim);
         }
 
+        $activePeriode = \App\Models\PeriodeWisuda::getActive() ?? \App\Models\PeriodeWisuda::latest()->first();
+
         return Inertia::render('Wisudawan/Dashboard', [
             'wisudawan' => $wisudawan,
             'sikeuQuota' => $sikeuQuota ?? null,
             'stageConfig' => \App\Models\StageLayoutConfig::getDefaultConfig(),
+            'activePeriode' => $activePeriode,
+            'manualBookUrl' => $activePeriode?->manual_book_pdf ? asset('storage/' . $activePeriode->manual_book_pdf) : (file_exists(public_path('manual_book.pdf')) ? asset('manual_book.pdf') : null),
         ]);
     })->name('dashboard');
 
@@ -281,14 +293,62 @@ Route::middleware(['auth', 'role:wisudawan,admin_utama'])->prefix('wisudawan')->
 
     Route::post('/tracer-study', function (\Illuminate\Http\Request $request) {
         $user = auth()->user();
-        if ($user->wisudawan) {
-            $wisudawan = $user->wisudawan;
 
-            $statusStr = is_array($request->status_saat_ini) ? implode(', ', $request->status_saat_ini) : ($request->tracer_status_pekerjaan ?? '');
+        try {
+            $validated = $request->validate([
+                'nim' => 'required|string|max:50',
+                'nama_lengkap' => 'required|string|max:255',
+                'email' => 'required|email|max:255',
+                'no_whatsapp' => 'required|string|max:50',
+                'jenis_kelas' => 'required|string|max:50',
+                'alamat_lengkap' => 'required|string|max:1000',
+                'status_saat_ini' => 'required',
+                'kepuasan_layanan' => 'required',
+                'saran_masukan' => 'required|string|max:2000',
+            ], [
+                'nim.required' => 'NIM wajib diisi.',
+                'nama_lengkap.required' => 'Nama lengkap wajib diisi.',
+                'email.required' => 'Alamat email wajib diisi.',
+                'email.email' => 'Format penulisan email tidak valid.',
+                'no_whatsapp.required' => 'Nomor WhatsApp aktif wajib diisi.',
+                'jenis_kelas.required' => 'Jenis kelas (Reguler/Transfer/Karyawan/RPL) wajib dipilih.',
+                'alamat_lengkap.required' => 'Alamat tempat tinggal lengkap wajib diisi.',
+                'status_saat_ini.required' => 'Status pekerjaan/karir saat ini wajib dipilih.',
+                'kepuasan_layanan.required' => 'Tingkat kepuasan layanan kampus wajib dinilai.',
+                'saran_masukan.required' => 'Saran dan masukan alumni wajib diisi.',
+            ]);
+
+            $wisudawan = $user->wisudawan;
+            if (!$wisudawan) {
+                $nimFromEmail = strtoupper(explode('@', $user->email)[0]);
+                $wisudawan = \App\Models\Wisudawan::where('nim', $nimFromEmail)
+                    ->orWhere('nim', $request->nim)
+                    ->orWhere('email', $user->email)
+                    ->first();
+
+                if ($wisudawan) {
+                    $wisudawan->update(['user_id' => $user->id]);
+                } else {
+                    $activePeriode = \App\Models\PeriodeWisuda::getActive() ?? \App\Models\PeriodeWisuda::latest()->first();
+                    $wisudawan = \App\Models\Wisudawan::create([
+                        'user_id' => $user->id,
+                        'periode_wisuda_id' => $activePeriode?->id ?? 1,
+                        'program_studi_id' => $user->program_studi_id ?? 1,
+                        'nim' => $request->nim ?: $nimFromEmail,
+                        'nama_lengkap' => $request->nama_lengkap ?: $user->name,
+                        'email' => $request->email ?: $user->email,
+                        'nomor_hp' => $request->no_whatsapp ?: '-',
+                        'alamat' => $request->alamat_lengkap ?: '-',
+                        'qr_code_token' => 'WSD-' . ($request->nim ?: 'MHS') . '-' . strtoupper(\Illuminate\Support\Str::random(4)),
+                    ]);
+                }
+            }
+
+            $statusStr = is_array($request->status_saat_ini) ? implode(', ', $request->status_saat_ini) : ($request->status_saat_ini ?? ($request->tracer_status_pekerjaan ?? ''));
             $instansiStr = $request->nama_perusahaan ?: ($request->nama_usaha ?: ($request->tempat_bekerja ?: ($request->tracer_nama_instansi ?? '')));
-            $jabatanStr = is_array($request->posisi_jabatan) ? implode(', ', $request->posisi_jabatan) : ($request->tracer_jabatan ?? '');
-            $gajiStr = is_array($request->gaji_per_bulan) && count($request->gaji_per_bulan) ? implode(', ', $request->gaji_per_bulan) : (is_array($request->gaji_usaha) && count($request->gaji_usaha) ? implode(', ', $request->gaji_usaha) : ($request->tracer_pendapatan ?? ''));
-            $kesesuaianStr = is_array($request->keselarasan_pekerjaan) && count($request->keselarasan_pekerjaan) ? implode(', ', $request->keselarasan_pekerjaan) : (is_array($request->keselarasan_usaha) && count($request->keselarasan_usaha) ? implode(', ', $request->keselarasan_usaha) : ($request->tracer_kesesuaian_prodi ?? ''));
+            $jabatanStr = is_array($request->posisi_jabatan) ? implode(', ', $request->posisi_jabatan) : ($request->posisi_jabatan ?? ($request->tracer_jabatan ?? ''));
+            $gajiStr = is_array($request->gaji_per_bulan) && count($request->gaji_per_bulan) ? implode(', ', $request->gaji_per_bulan) : (is_array($request->gaji_usaha) && count($request->gaji_usaha) ? implode(', ', $request->gaji_usaha) : ($request->gaji_per_bulan ?? ($request->tracer_pendapatan ?? '')));
+            $kesesuaianStr = is_array($request->keselarasan_pekerjaan) && count($request->keselarasan_pekerjaan) ? implode(', ', $request->keselarasan_pekerjaan) : (is_array($request->keselarasan_usaha) && count($request->keselarasan_usaha) ? implode(', ', $request->keselarasan_usaha) : ($request->keselarasan_pekerjaan ?? ($request->tracer_kesesuaian_prodi ?? '')));
 
             $wisudawan->update([
                 'is_tracer_study_filled' => true,
@@ -371,8 +431,13 @@ Route::middleware(['auth', 'role:wisudawan,admin_utama'])->prefix('wisudawan')->
                     'saran_masukan' => $request->saran_masukan,
                 ]
             );
+
+            return redirect()->route('wisudawan.dashboard')->with('success', 'Pengisian Data Tracer Study Berhasil! Data pelacakan karir alumni Anda telah tersimpan di sistem dan menu Biodata & Live Preview Layar Wisuda telah dibuka.');
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            throw $e;
+        } catch (\Throwable $e) {
+            return redirect()->back()->withInput()->with('error', 'Gagal menyimpan Tracer Study. Keterangan kendala: ' . $e->getMessage());
         }
-        return redirect()->route('wisudawan.dashboard')->with('success', 'Data Tracer Study berhasil disimpan!');
     })->name('tracer.store');
 
     // Pendaftaran / Biodata Form & Stage Preview
@@ -424,56 +489,73 @@ Route::middleware(['auth', 'role:wisudawan,admin_utama'])->prefix('wisudawan')->
 
     Route::post('/pendaftaran', function (\Illuminate\Http\Request $request) {
         $user = auth()->user();
-        $data = $request->validate([
-            'program_studi_id' => 'required',
-            'nim' => 'required',
-            'nama_lengkap' => 'required',
-            'gelar' => 'nullable',
-            'nik' => 'nullable',
-            'tempat_lahir' => 'nullable',
-            'tanggal_lahir' => 'nullable',
-            'jenis_kelamin' => 'nullable',
-            'nomor_hp' => 'nullable',
-            'alamat' => 'nullable',
-            'ipk' => 'nullable',
-            'judul_ta' => 'nullable',
-            'dosen_pembimbing_1' => 'nullable|string|max:255',
-            'dosen_pembimbing_2' => 'nullable|string|max:255',
-            'dosen_penguji' => 'nullable|string|max:255',
-            'tanggal_lulus' => 'nullable',
-            'nama_ayah' => 'nullable',
-            'nama_ibu' => 'nullable',
-            'pas_foto' => 'nullable|image|max:2048',
-        ]);
 
-        if ($request->hasFile('pas_foto')) {
-            $path = $request->file('pas_foto')->store('pas_foto', 'public');
-            $data['pas_foto'] = $path;
+        try {
+            $data = $request->validate([
+                'program_studi_id' => 'required|exists:program_studi,id',
+                'nim' => 'required|string|max:50',
+                'nama_lengkap' => 'required|string|max:255',
+                'gelar' => 'nullable|string|max:100',
+                'nik' => 'nullable|string|max:30',
+                'tempat_lahir' => 'nullable|string|max:100',
+                'tanggal_lahir' => 'nullable|date',
+                'jenis_kelamin' => 'nullable|in:L,P',
+                'nomor_hp' => 'nullable|string|max:30',
+                'alamat' => 'nullable|string|max:1000',
+                'ipk' => 'nullable',
+                'judul_ta' => 'nullable|string|max:1000',
+                'dosen_pembimbing_1' => 'nullable|string|max:255',
+                'dosen_pembimbing_2' => 'nullable|string|max:255',
+                'dosen_penguji' => 'nullable|string|max:255',
+                'tanggal_lulus' => 'nullable|date',
+                'nama_ayah' => 'nullable|string|max:255',
+                'nama_ibu' => 'nullable|string|max:255',
+                'pas_foto' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
+            ], [
+                'program_studi_id.required' => 'Program studi wajib dipilih.',
+                'program_studi_id.exists' => 'Program studi yang dipilih tidak valid di database.',
+                'nim.required' => 'NIM wajib diisi.',
+                'nama_lengkap.required' => 'Nama lengkap wajib diisi.',
+                'pas_foto.image' => 'File pas foto harus berupa berkas gambar.',
+                'pas_foto.mimes' => 'Format pas foto harus berupa JPG atau PNG.',
+                'pas_foto.max' => 'Ukuran file pas foto maksimal 2 MB.',
+                'tanggal_lahir.date' => 'Format tanggal lahir tidak valid.',
+                'tanggal_lulus.date' => 'Format tanggal lulus tidak valid.',
+            ]);
+
+            if ($request->hasFile('pas_foto')) {
+                $path = $request->file('pas_foto')->store('pas_foto', 'public');
+                $data['pas_foto'] = $path;
+            }
+
+            $data['is_biodata_filled'] = true;
+
+            if ($user->wisudawan) {
+                $user->wisudawan->update($data);
+                $wisudawan = $user->wisudawan;
+            } else {
+                $activePeriode = \App\Models\PeriodeWisuda::getActive() ?? \App\Models\PeriodeWisuda::latest()->first();
+                $data['user_id'] = $user->id;
+                $data['periode_wisuda_id'] = $activePeriode?->id ?? 1;
+                $data['qr_code_token'] = 'WSD-' . ($data['nim'] ?? 'MHS') . '-' . strtoupper(\Illuminate\Support\Str::random(4));
+                $wisudawan = \App\Models\Wisudawan::create($data);
+            }
+
+            // Update guest names if available
+            $guests = $wisudawan->tamuTambahan()->orderBy('id')->get();
+            if (isset($guests[0]) && !empty($request->nama_ayah)) {
+                $guests[0]->update(['nama_tamu' => $request->nama_ayah]);
+            }
+            if (isset($guests[1]) && !empty($request->nama_ibu)) {
+                $guests[1]->update(['nama_tamu' => $request->nama_ibu]);
+            }
+
+            return redirect()->route('wisudawan.dashboard')->with('success', 'Biodata Calon Wisudawan Berhasil Disimpan! Live preview layar wisuda panggung dan Barcode E-Ticket Anda telah aktif.');
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            throw $e;
+        } catch (\Throwable $e) {
+            return redirect()->back()->withInput()->with('error', 'Gagal menyimpan Biodata Wisudawan. Keterangan kendala: ' . $e->getMessage());
         }
-
-        $data['is_biodata_filled'] = true;
-
-        if ($user->wisudawan) {
-            $user->wisudawan->update($data);
-            $wisudawan = $user->wisudawan;
-        } else {
-            $activePeriode = \App\Models\PeriodeWisuda::getActive() ?? \App\Models\PeriodeWisuda::latest()->first();
-            $data['user_id'] = $user->id;
-            $data['periode_wisuda_id'] = $activePeriode?->id;
-            $data['qr_code_token'] = 'WSD-' . ($data['nim'] ?? 'MHS') . '-' . strtoupper(\Illuminate\Support\Str::random(4));
-            $wisudawan = \App\Models\Wisudawan::create($data);
-        }
-
-        // Update guest names if available
-        $guests = $wisudawan->tamuTambahan()->orderBy('id')->get();
-        if (isset($guests[0]) && !empty($request->nama_ayah)) {
-            $guests[0]->update(['nama_tamu' => $request->nama_ayah]);
-        }
-        if (isset($guests[1]) && !empty($request->nama_ibu)) {
-            $guests[1]->update(['nama_tamu' => $request->nama_ibu]);
-        }
-
-        return redirect()->route('wisudawan.dashboard')->with('success', 'Biodata wisudawan berhasil disimpan!');
     })->name('pendaftaran.store');
 });
 

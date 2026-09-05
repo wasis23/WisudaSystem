@@ -2,6 +2,8 @@
 import AdminLayout from '@/Layouts/AdminLayout.vue';
 import { Head, useForm, router } from '@inertiajs/vue3';
 import { ref } from 'vue';
+import { Cropper } from 'vue-advanced-cropper';
+import 'vue-advanced-cropper/dist/style.css';
 
 const props = defineProps({
     programStudis: Array,
@@ -16,8 +18,13 @@ const isEditing = ref(false);
 const editingId = ref(null);
 const selectedDosenId = ref('');
 const currentKaprodiFoto = ref(null);
-const fileInput = ref(null);
 const photoPreview = ref(null);
+
+// Cropper State
+const showCropModal = ref(false);
+const cropperRef = ref(null);
+const cropperFileInputRef = ref(null);
+const rawImageSrc = ref('');
 
 const form = useForm({
     kode_prodi: '',
@@ -38,16 +45,52 @@ const onDosenSelectChange = () => {
     }
 };
 
-const handleFileChange = (e) => {
+const openFilePicker = () => {
+    cropperFileInputRef.value?.click();
+};
+
+const handlePhotoChange = (e) => {
     const file = e.target.files[0];
-    if (file) {
-        form.kaprodi_foto = file;
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            photoPreview.value = e.target.result;
-        };
-        reader.readAsDataURL(file);
-    }
+    if (!file) return;
+    rawImageSrc.value = URL.createObjectURL(file);
+    showCropModal.value = true;
+    e.target.value = '';
+};
+
+const zoomIn = () => cropperRef.value?.zoom(1.15);
+const zoomOut = () => cropperRef.value?.zoom(0.85);
+const rotateLeft = () => cropperRef.value?.rotate(-90);
+const rotateRight = () => cropperRef.value?.rotate(90);
+const resetCrop = () => cropperRef.value?.refresh();
+
+const applyCrop = () => {
+    if (!cropperRef.value) return;
+    const { canvas } = cropperRef.value.getResult();
+    if (!canvas) return;
+
+    // Rescale canvas to 600x800 for high precision (3:4 ratio)
+    const finalCanvas = document.createElement('canvas');
+    finalCanvas.width = 600;
+    finalCanvas.height = 800;
+    const ctx = finalCanvas.getContext('2d');
+    
+    // Clear canvas to ensure alpha transparency is fully preserved
+    ctx.clearRect(0, 0, 600, 800);
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+    ctx.drawImage(canvas, 0, 0, 600, 800);
+
+    // Export as PNG so transparent background is maintained without turning black
+    finalCanvas.toBlob((blob) => {
+        const croppedFile = new File([blob], 'kaprodi_foto.png', { type: 'image/png' });
+        form.kaprodi_foto = croppedFile;
+        photoPreview.value = URL.createObjectURL(blob);
+        closeCropModal();
+    }, 'image/png');
+};
+
+const closeCropModal = () => {
+    showCropModal.value = false;
 };
 
 const openAddModal = () => {
@@ -56,6 +99,8 @@ const openAddModal = () => {
     selectedDosenId.value = '';
     currentKaprodiFoto.value = null;
     photoPreview.value = null;
+    rawImageSrc.value = '';
+    showCropModal.value = false;
     form.reset();
     form.clearErrors();
     showModal.value = true;
@@ -74,6 +119,8 @@ const openEditModal = (item) => {
     form.kaprodi_foto = null;
     currentKaprodiFoto.value = item.kaprodi_foto ? `/storage/${item.kaprodi_foto}` : null;
     photoPreview.value = null;
+    rawImageSrc.value = '';
+    showCropModal.value = false;
 
     // Match selected dosen if exists in list
     const match = props.dosenList.find(
@@ -90,6 +137,8 @@ const closeModal = () => {
     selectedDosenId.value = '';
     currentKaprodiFoto.value = null;
     photoPreview.value = null;
+    rawImageSrc.value = '';
+    showCropModal.value = false;
     form.reset();
     form.clearErrors();
 };
@@ -380,40 +429,68 @@ const deleteProdi = (item) => {
                             <!-- Upload Foto Kaprodi -->
                             <div class="pt-2">
                                 <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1.5">
-                                    Foto Resmi Kaprodi (Untuk Buku Kenangan)
+                                    Foto Resmi Kaprodi (Crop Rasio 3:4 Untuk Buku Kenangan)
                                 </label>
 
-                                <div class="flex items-center gap-4 bg-slate-50 dark:bg-slate-800/60 p-3 rounded-xl border border-slate-200 dark:border-slate-700">
+                                <div class="flex items-start gap-4 bg-slate-50 dark:bg-slate-800/60 p-4 rounded-xl border border-slate-200 dark:border-slate-700">
                                     <!-- Photo Preview -->
-                                    <div class="w-16 h-20 bg-slate-200 dark:bg-slate-700 rounded-lg overflow-hidden border border-slate-300 dark:border-slate-600 flex items-center justify-center shrink-0">
+                                    <div class="w-20 h-24 bg-slate-200 dark:bg-slate-700 rounded-lg overflow-hidden border border-slate-300 dark:border-slate-600 flex items-center justify-center shrink-0 shadow-inner">
                                         <img
                                             v-if="photoPreview || currentKaprodiFoto"
                                             :src="photoPreview || currentKaprodiFoto"
                                             alt="Preview Foto Kaprodi"
                                             class="w-full h-full object-cover"
                                         />
-                                        <span v-else class="text-[10px] text-slate-400 font-semibold text-center px-1">Foto Kaprodi</span>
+                                        <div v-else class="text-center p-1">
+                                            <svg class="w-6 h-6 mx-auto text-slate-400 mb-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                            </svg>
+                                            <span class="text-[9px] text-slate-400 font-semibold block leading-tight">Belum Ada Foto</span>
+                                        </div>
                                     </div>
 
-                                    <div class="flex-1 space-y-1.5">
-                                        <input
-                                            ref="fileInput"
-                                            type="file"
-                                            accept="image/jpeg,image/png,image/jpg,image/webp"
-                                            @change="handleFileChange"
-                                            class="block w-full text-xs text-slate-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 cursor-pointer"
-                                        />
-                                        <p class="text-[10px] text-slate-400">
-                                            Format: JPG, PNG, WEBP. Maks 5MB. Rasio portrait 3:4 atau 4:5 disarankan.
+                                    <div class="flex-1 space-y-2">
+                                        <div>
+                                            <button
+                                                type="button"
+                                                @click="openFilePicker"
+                                                class="px-3.5 py-2 bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-200 dark:border-indigo-800 hover:bg-indigo-100 dark:hover:bg-indigo-900/60 text-indigo-700 dark:text-indigo-300 text-xs font-bold rounded-lg transition inline-flex items-center gap-2 shadow-sm"
+                                            >
+                                                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                                </svg>
+                                                {{ photoPreview || currentKaprodiFoto ? 'Ganti & Posisikan Foto Kaprodi' : 'Pilih & Posisikan Foto Kaprodi' }}
+                                            </button>
+                                            <input
+                                                ref="cropperFileInputRef"
+                                                type="file"
+                                                accept="image/*"
+                                                @change="handlePhotoChange"
+                                                class="hidden"
+                                            />
+                                        </div>
+                                        <p class="text-[11px] text-slate-500 dark:text-slate-400 leading-tight">
+                                            Foto akan dipotong otomatis ke ukuran standar <strong>3:4</strong> (600×800px) sesuai posisi yang Anda atur.
                                         </p>
-                                        <button
-                                            v-if="isEditing && currentKaprodiFoto"
-                                            type="button"
-                                            @click="deleteKaprodiFoto({ id: editingId, nama_prodi: form.nama_prodi })"
-                                            class="text-[10px] font-bold text-rose-600 hover:underline"
-                                        >
-                                            Hapus Foto Saat Ini
-                                        </button>
+                                        <div class="flex items-center gap-2 pt-0.5">
+                                            <button
+                                                v-if="photoPreview"
+                                                type="button"
+                                                @click="photoPreview = null; form.kaprodi_foto = null;"
+                                                class="text-[11px] font-bold text-amber-600 dark:text-amber-400 hover:underline"
+                                            >
+                                                Batalkan Foto Baru
+                                            </button>
+                                            <span v-if="photoPreview && isEditing && currentKaprodiFoto" class="text-slate-300 text-xs">•</span>
+                                            <button
+                                                v-if="isEditing && currentKaprodiFoto"
+                                                type="button"
+                                                @click="deleteKaprodiFoto({ id: editingId, nama_prodi: form.nama_prodi })"
+                                                class="text-[11px] font-bold text-rose-600 dark:text-rose-400 hover:underline"
+                                            >
+                                                Hapus Foto Tersimpan
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
                                 <div v-if="form.errors.kaprodi_foto" class="text-rose-500 mt-1 text-[11px]">{{ form.errors.kaprodi_foto }}</div>
@@ -441,5 +518,134 @@ const deleteProdi = (item) => {
                 </div>
             </div>
         </Teleport>
+
+        <!-- ====== CROP MODAL OVERLAY ====== -->
+        <Teleport to="body">
+            <div
+                v-if="showCropModal"
+                class="fixed inset-0 z-[99999] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4"
+            >
+                <div class="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-full max-w-2xl flex flex-col overflow-hidden animate-in fade-in zoom-in duration-150">
+                    <!-- Modal Header -->
+                    <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+                        <div>
+                            <h3 class="text-base font-bold text-gray-900 dark:text-white">Posisikan & Sesuaikan Foto Kaprodi</h3>
+                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Geser / perbesar foto hingga posisi pas. Rasio otomatis <strong>3:4</strong> untuk Buku Kenangan.</p>
+                        </div>
+                        <button @click="closeCropModal" type="button" class="text-gray-400 hover:text-gray-700 dark:hover:text-white text-2xl leading-none">&times;</button>
+                    </div>
+
+                    <!-- Cropper Area -->
+                    <div class="relative w-full h-[450px] bg-slate-950 flex items-center justify-center overflow-hidden">
+                        <Cropper
+                            ref="cropperRef"
+                            class="w-full h-full"
+                            :src="rawImageSrc"
+                            :stencil-props="{
+                                aspectRatio: 3 / 4,
+                                movable: false,
+                                resizable: false
+                            }"
+                            image-restriction="none"
+                            :auto-zoom="true"
+                        />
+                    </div>
+
+                    <!-- Quick Control Toolbar (Rotate, Zoom, Reset) -->
+                    <div class="px-6 py-2.5 bg-slate-100 dark:bg-slate-800/80 border-t border-b border-gray-200 dark:border-gray-700/60 flex flex-wrap items-center justify-between gap-2">
+                        <div class="flex items-center gap-1.5">
+                            <span class="text-[11px] font-bold text-gray-500 dark:text-gray-400 mr-1 uppercase tracking-wider">Rotasi:</span>
+                            <button type="button" @click="rotateLeft" title="Putar 90° Kiri" class="p-1.5 rounded-lg bg-white dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 border border-gray-300 dark:border-gray-600 text-xs font-bold text-gray-700 dark:text-gray-200 transition flex items-center gap-1">
+                                ↪ 90° Kiri
+                            </button>
+                            <button type="button" @click="rotateRight" title="Putar 90° Kanan" class="p-1.5 rounded-lg bg-white dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 border border-gray-300 dark:border-gray-600 text-xs font-bold text-gray-700 dark:text-gray-200 transition flex items-center gap-1">
+                                ↩ 90° Kanan
+                            </button>
+                        </div>
+
+                        <div class="flex items-center gap-1.5">
+                            <span class="text-[11px] font-bold text-gray-500 dark:text-gray-400 mr-1 uppercase tracking-wider">Zoom & Reset:</span>
+                            <button type="button" @click="zoomOut" title="Zoom Out" class="px-2.5 py-1.5 rounded-lg bg-white dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 border border-gray-300 dark:border-gray-600 text-xs font-black text-gray-700 dark:text-gray-200 transition">
+                                Zoom Out
+                            </button>
+                            <button type="button" @click="zoomIn" title="Zoom In" class="px-2.5 py-1.5 rounded-lg bg-white dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 border border-gray-300 dark:border-gray-600 text-xs font-black text-gray-700 dark:text-gray-200 transition">
+                                Zoom In
+                            </button>
+                            <button type="button" @click="resetCrop" title="Reset Posisi" class="px-2.5 py-1.5 rounded-lg bg-amber-500/10 dark:bg-amber-500/20 hover:bg-amber-500/20 border border-amber-300 dark:border-amber-700 text-xs font-bold text-amber-700 dark:text-amber-300 transition">
+                                Reset
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Modal Footer Actions -->
+                    <div class="px-6 py-4 flex items-center justify-between gap-3">
+                        <div class="text-[11px] text-gray-500 dark:text-gray-400 space-y-0.5">
+                            <p class="flex items-center gap-1"><strong>Garis Panduan:</strong> Posisikan kepala & bahu di dalam area foto</p>
+                            <p class="flex items-center gap-1"><strong>Geser / Zoom:</strong> Sesuaikan ukuran wajah agar proporsional</p>
+                        </div>
+                        <div class="flex gap-3 shrink-0">
+                            <button
+                                type="button"
+                                @click="closeCropModal"
+                                class="px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 text-xs font-bold hover:bg-gray-50 dark:hover:bg-gray-800 transition"
+                            >
+                                Batal
+                            </button>
+                            <button
+                                type="button"
+                                @click="applyCrop"
+                                class="px-6 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-extrabold transition shadow-md shadow-indigo-500/20"
+                            >
+                                Gunakan Foto Ini
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </Teleport>
     </AdminLayout>
 </template>
+
+<style scoped>
+:deep(.vue-advanced-cropper) {
+    background: #090d16 !important;
+}
+
+:deep(.vue-rectangle-stencil) {
+    border: 2.5px solid #6366f1 !important;
+    box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.7) !important;
+}
+
+/* Face Alignment Oval Guide Overlay inside Stencil */
+:deep(.vue-rectangle-stencil::after) {
+    content: '';
+    position: absolute;
+    top: 14%;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 52%;
+    height: 48%;
+    border: 2px dashed rgba(255, 255, 255, 0.85);
+    border-radius: 50% 50% 45% 45%;
+    pointer-events: none;
+    box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.4);
+}
+
+:deep(.vue-rectangle-stencil::before) {
+    content: 'AREA WAJAH';
+    position: absolute;
+    top: 5%;
+    left: 50%;
+    transform: translateX(-50%);
+    color: #ffffff;
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 0.8px;
+    pointer-events: none;
+    white-space: nowrap;
+    background: rgba(99, 102, 241, 0.85);
+    padding: 2px 10px;
+    border-radius: 999px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+}
+</style>

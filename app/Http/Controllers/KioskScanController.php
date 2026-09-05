@@ -89,7 +89,7 @@ class KioskScanController extends Controller
                 'nim' => $wisudawan->nim,
                 'nama_lengkap' => $wisudawan->nama_lengkap,
                 'prodi' => $wisudawan->programStudi?->nama_prodi ?? 'Politeknik Indonusa',
-                'ipk' => $wisudawan->ipk ?? '3.50',
+                'ipk' => ($wisudawan->ipk && floatval($wisudawan->ipk) > 0) ? $wisudawan->ipk : '-',
                 'pas_foto' => $wisudawan->pas_foto ? asset('storage/' . $wisudawan->pas_foto) : '/img/avatar_placeholder.png',
                 'nama_ibu' => $siakadInfo['nama_ibu'] ?? $wisudawan->nama_ibu ?? '-',
                 'nama_ayah' => $siakadInfo['nama_ayah'] ?? $wisudawan->nama_ayah ?? '-',

@@ -28,8 +28,16 @@ class SikeuSyncController extends Controller
         $q = trim($request->input('q', ''));
         $status = $request->input('status', '');
 
+        $activePeriode = \App\Models\PeriodeWisuda::getActive() ?? \App\Models\PeriodeWisuda::latest()->first();
+        $periodeId = $activePeriode?->id;
+
         $query = SikeuPaymentCache::query()
             ->with(['wisudawan.programStudi'])
+            ->whereHas('wisudawan', function ($w) use ($periodeId) {
+                if ($periodeId) {
+                    $w->where('periode_wisuda_id', $periodeId);
+                }
+            })
             ->orderBy('status_bayar', 'asc') // belum_lunas first
             ->orderBy('nama', 'asc');
 
@@ -43,13 +51,21 @@ class SikeuSyncController extends Controller
             $query->belumLunas();
         }
 
-        $totalWisudawan = Wisudawan::count();
-        $totalCached = SikeuPaymentCache::count();
-        $totalLunas = SikeuPaymentCache::lunas()->count();
-        $totalBelumLunas = SikeuPaymentCache::belumLunas()->count();
-        $totalNominal = SikeuPaymentCache::lunas()->sum('total_bayar');
-        $totalExtraGuests = SikeuPaymentCache::sum('jumlah_undangan_extra');
-        $lastSync = SikeuPaymentCache::max('synced_at');
+        // Base query wisudawan pada periode ini
+        $baseStatsQuery = SikeuPaymentCache::query()
+            ->whereHas('wisudawan', function ($w) use ($periodeId) {
+                if ($periodeId) {
+                    $w->where('periode_wisuda_id', $periodeId);
+                }
+            });
+
+        $totalWisudawan = Wisudawan::when($periodeId, fn($w) => $w->where('periode_wisuda_id', $periodeId))->count();
+        $totalCached = (clone $baseStatsQuery)->count();
+        $totalLunas = (clone $baseStatsQuery)->lunas()->count();
+        $totalBelumLunas = (clone $baseStatsQuery)->belumLunas()->count();
+        $totalNominal = (clone $baseStatsQuery)->lunas()->sum('total_bayar');
+        $totalExtraGuests = (clone $baseStatsQuery)->lunas()->sum('jumlah_undangan_extra');
+        $lastSync = (clone $baseStatsQuery)->max('synced_at') ?? SikeuPaymentCache::max('synced_at');
 
         $recentLogs = DB::table('external_sync_logs')
             ->where('source', 'sikeu')
@@ -57,7 +73,6 @@ class SikeuSyncController extends Controller
             ->limit(10)
             ->get();
 
-        $activePeriode = \App\Models\PeriodeWisuda::getActive() ?? \App\Models\PeriodeWisuda::latest()->first();
         $maxExtraGuests = $activePeriode?->max_tamu_tambahan ?? 60;
 
         return Inertia::render('Admin/SikeuSync', [

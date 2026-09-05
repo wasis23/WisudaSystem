@@ -12,11 +12,34 @@ use Inertia\Inertia;
 
 class BukuKenanganController extends Controller
 {
+    /**
+     * Dapatkan SQL raw CASE untuk pengurutan Program Studi pada Buku Kenangan:
+     * 1. Teknologi Rekayasa Otomotif (ID: 4)
+     * 2. Teknologi Rekayasa Perangkat Lunak (ID: 5)
+     * 3. Produksi Media (ID: 6)
+     * 4. Perhotelan (ID: 7)
+     * 5. Farmasi (ID: 3)
+     * 6. Manajemen Informasi Kesehatan (ID: 8)
+     * 7. Teknologi Laboratorium Medis (ID: 9)
+     */
+    private function getProdiOrderRawSql(string $column = 'program_studi_id'): string
+    {
+        return "CASE 
+            WHEN {$column} = 4 THEN 1
+            WHEN {$column} = 5 THEN 2
+            WHEN {$column} = 6 THEN 3
+            WHEN {$column} = 7 THEN 4
+            WHEN {$column} = 3 THEN 5
+            WHEN {$column} = 8 THEN 6
+            WHEN {$column} = 9 THEN 7
+            ELSE 99 END ASC";
+    }
+
     public function index(Request $request)
     {
         $periodes = PeriodeWisuda::orderBy('id', 'desc')->get();
         $selectedPeriodeId = $request->periode_id ?? (PeriodeWisuda::getActive()?->id ?? $periodes->first()?->id);
-        $programStudis = ProgramStudi::all();
+        $programStudis = ProgramStudi::orderByRaw($this->getProdiOrderRawSql('id'))->get();
 
         $baseQuery = Wisudawan::where('periode_wisuda_id', $selectedPeriodeId);
         
@@ -52,7 +75,7 @@ class BukuKenanganController extends Controller
             });
         }
 
-        $wisudawans = $query->orderBy('program_studi_id')->orderBy('ipk', 'desc')
+        $wisudawans = $query->orderByRaw($this->getProdiOrderRawSql('program_studi_id'))->orderBy('ipk', 'desc')
             ->paginate(50)
             ->appends(array_merge([
                 'periode_id' => $selectedPeriodeId,
@@ -94,7 +117,7 @@ class BukuKenanganController extends Controller
             $query->where('program_studi_id', $request->program_studi_id);
         }
 
-        $wisudawans = $query->orderBy('program_studi_id')->orderBy('nim')->get();
+        $wisudawans = $query->orderByRaw($this->getProdiOrderRawSql('program_studi_id'))->orderBy('nim')->get();
 
         $filename = "Wisudawan_Belum_Upload_Foto_Periode_{$periode->nomor_periode}_" . date('Ymd_His') . ".csv";
 
@@ -345,7 +368,7 @@ class BukuKenanganController extends Controller
             $query->where('program_studi_id', $request->program_studi_id);
         }
 
-        $wisudawans = $query->orderBy('program_studi_id')->orderBy('ipk', 'desc')->get();
+        $wisudawans = $query->orderByRaw($this->getProdiOrderRawSql('program_studi_id'))->orderBy('ipk', 'desc')->get();
 
         $groupedByProdi = $wisudawans->groupBy('program_studi_id')->map(function ($items, $prodiId) {
             $prodi = $items->first()?->programStudi;

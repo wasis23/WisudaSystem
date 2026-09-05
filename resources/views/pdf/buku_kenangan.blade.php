@@ -65,23 +65,23 @@
         /* Kaprodi Section / Executive Separator Page */
         .kaprodi-page {
             text-align: center;
-            padding-top: 75px;
+            padding-top: 135px;
             page-break-after: always;
         }
         .kaprodi-badge-prodi {
             display: inline-block;
-            background-color: #312e81;
+            background-color: #000f63;
             color: #ffffff;
-            font-size: 11.5px;
+            font-size: 16.5px;
             font-weight: bold;
-            padding: 5px 20px;
-            border-radius: 20px;
+            padding: 6px 24px;
+            border-radius: 24px;
             text-transform: uppercase;
             letter-spacing: 1.5px;
             margin-bottom: 12px;
         }
         .kaprodi-prodi-title {
-            font-size: 23px;
+            font-size: 28px;
             font-weight: bold;
             color: #1e1b4b;
             text-transform: uppercase;
@@ -90,29 +90,27 @@
             line-height: 1.25;
         }
         .kaprodi-prodi-gelar {
-            font-size: 13.5px;
-            color: #4338ca;
+            font-size: 18.5px;
+            color: #ddae66;
             font-weight: bold;
-            margin-bottom: 24px;
+            margin-bottom: 20px;
         }
         .kaprodi-photo-container {
-            width: 300px;
-            height: 400px;
-            margin: 0 auto 24px auto;
+            width: 290px;
+            height: 385px;
+            margin: 0 auto 20px auto;
             background-color: #ffffff;
-            border: 4px solid #ffffff;
-            outline: 2px solid #cbd5e1;
+            border: 4px solid #ddae66;
             border-radius: 12px;
             overflow: hidden;
-            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.12);
         }
         .kaprodi-photo-container img {
-            width: 300px;
-            height: 400px;
+            width: 290px;
+            height: 385px;
             display: block;
         }
         .kaprodi-title-label {
-            font-size: 12px;
+            font-size: 17px;
             color: #64748b;
             font-weight: bold;
             text-transform: uppercase;
@@ -120,38 +118,39 @@
             margin-bottom: 4px;
         }
         .kaprodi-name {
-            font-size: 18px;
+            font-size: 23px;
             font-weight: bold;
             color: #0f172a;
             margin: 0 0 4px 0;
             letter-spacing: 0.3px;
         }
         .kaprodi-nip {
-            font-size: 12px;
+            font-size: 17px;
             color: #475569;
             font-family: monospace;
             font-weight: bold;
         }
         .kaprodi-stats-box {
-            margin-top: 25px;
+            margin-top: 20px;
         }
         .kaprodi-stats {
-            padding: 6px 22px;
-            background-color: #e0e7ff;
-            color: #3730a3;
-            border-radius: 20px;
+            padding: 8px 26px;
+            background-color: rgba(221, 174, 102, 0.18);
+            color: #8c5d0f;
+            border: 1.5px solid rgba(221, 174, 102, 0.5);
+            border-radius: 24px;
             display: inline-block;
-            font-size: 11px;
+            font-size: 16px;
             font-weight: bold;
             letter-spacing: 0.5px;
         }
 
         /* Section Header in Wisudawan Pages */
         .section-header {
-            background-color: #312e81;
+            background-color: #000f63;
             color: #ffffff;
             padding: 7px 12px;
-            font-size: 11px;
+            font-size: 11.5px;
             font-weight: bold;
             text-transform: uppercase;
             border-radius: 5px;
@@ -166,19 +165,19 @@
             width: 100%;
             border: 1px solid #e2e8f0;
             border-radius: 6px;
-            margin-bottom: 7px;
+            margin-bottom: 8px;
             background-color: #ffffff;
             border-collapse: collapse;
             page-break-inside: avoid;
         }
         .candidate-card td.photo-cell {
-            width: 80px;
-            padding: 7px 0 7px 7px;
+            width: 105px;
+            padding: 6px 0 6px 8px;
             vertical-align: top;
         }
         .photo-box {
-            width: 80px;
-            height: 108px;
+            width: 105px;
+            height: 140px;
             background-color: #f1f5f9;
             border: 1px solid #cbd5e1;
             border-radius: 4px;
@@ -186,47 +185,48 @@
             overflow: hidden;
         }
         .photo-box img {
-            width: 80px;
-            height: 108px;
+            width: 105px;
+            height: 140px;
             display: block;
         }
         .candidate-card td.details-cell {
-            padding: 7px 10px;
+            padding: 6px 14px;
             vertical-align: top;
         }
         .candidate-name {
-            font-size: 12px;
+            font-size: 15.5px;
             font-weight: bold;
             color: #0f172a;
             margin: 0 0 3px 0;
-            line-height: 1.2;
+            line-height: 1.25;
         }
         .candidate-meta {
-            font-size: 9.5px;
+            font-size: 12px;
             color: #475569;
-            margin-bottom: 4px;
+            margin-bottom: 5px;
         }
         .meta-tag {
             background-color: #e0e7ff;
             color: #3730a3;
-            padding: 1.5px 5px;
+            padding: 1.5px 6px;
             border-radius: 3px;
             font-weight: bold;
             font-family: monospace;
+            font-size: 12px;
         }
         .candidate-table {
             width: 100%;
             border-collapse: collapse;
-            font-size: 9px;
+            font-size: 11.5px;
             color: #334155;
-            margin-top: 2px;
+            margin-top: 3px;
         }
         .candidate-table td {
-            padding: 1px 0;
+            padding: 2px 0;
             vertical-align: top;
         }
         .candidate-table td.label-col {
-            width: 55px;
+            width: 70px;
             font-weight: bold;
             color: #475569;
             white-space: nowrap;
@@ -318,12 +318,12 @@
             </div>
         </div>
 
-        <!-- HALAMAN BERIKUTNYA: Data Wisudawan Program Studi (Maks 6 per halaman) -->
-        @foreach($item['wisudawans']->chunk(6) as $chunkIndex => $pageChunk)
+        <!-- HALAMAN BERIKUTNYA: Data Wisudawan Program Studi (Maks 5 per halaman) -->
+        @foreach($item['wisudawans']->chunk(5) as $chunkIndex => $pageChunk)
             <div class="section-header">
                 DAFTAR LULUSAN &mdash; {{ $item['jenjang_label'] }} {{ $item['nama_prodi_clean'] }}
-                @if($item['wisudawans']->count() > 6)
-                    (HALAMAN {{ $chunkIndex + 1 }} DARI {{ ceil($item['wisudawans']->count() / 6) }})
+                @if($item['wisudawans']->count() > 5)
+                    (HALAMAN {{ $chunkIndex + 1 }} DARI {{ ceil($item['wisudawans']->count() / 5) }})
                 @endif
             </div>
 
@@ -339,7 +339,7 @@
                                 @elseif(file_exists(public_path('images/default_toga_silhouette.png')))
                                     <img src="{{ public_path('images/default_toga_silhouette.png') }}" alt="Siluet Wisudawan">
                                 @else
-                                    <div style="line-height: 108px; font-size: 9px; color: #94a3b8;">[ Pas Foto ]</div>
+                                    <div style="line-height: 140px; font-size: 11px; color: #94a3b8;">[ Pas Foto ]</div>
                                 @endif
                             </div>
                         </td>
@@ -347,11 +347,15 @@
                             <h3 class="candidate-name">{{ $w->nama_lengkap }}{{ $w->gelar ? ', ' . $w->gelar : '' }}</h3>
                             <div class="candidate-meta">
                                 NIM: <span class="meta-tag">{{ $w->nim }}</span> &nbsp;|&nbsp;
-                                TTL: <strong>{{ $w->ttl }}</strong> &nbsp;|&nbsp;
-                                Orang Tua: <strong>{{ $w->orang_tua }}</strong>
+                                TTL: <strong>{{ $w->ttl }}</strong>
                             </div>
 
                             <table class="candidate-table">
+                                <tr>
+                                    <td class="label-col">Orang Tua</td>
+                                    <td class="colon-col">:</td>
+                                    <td class="val-col">{{ $w->orang_tua ?: '-' }}</td>
+                                </tr>
                                 <tr>
                                     <td class="label-col">Alamat</td>
                                     <td class="colon-col">:</td>

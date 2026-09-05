@@ -262,7 +262,7 @@ onUnmounted(() => {
                         }"
                         class="absolute font-mono font-bold text-emerald-400 leading-none flex items-center gap-3 drop-shadow-md"
                     >
-                        <span>IPK: {{ currentWisudawan.ipk }}</span>
+                        <span>IPK: {{ (currentWisudawan.ipk && Number(currentWisudawan.ipk) > 0) ? currentWisudawan.ipk : '-' }}</span>
                         <span v-if="Number(currentWisudawan.ipk) >= 3.51" class="px-3 py-1 bg-amber-500 text-slate-950 font-black text-xs uppercase tracking-wider rounded-full shadow-lg">
                             Cumlaude 
                         </span>

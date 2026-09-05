@@ -216,7 +216,7 @@ const openStageDisplay = () => {
                     </span>
                     <h3 class="text-2xl font-black tracking-tight">{{ wisudawans[activeIndex].nama_lengkap }}{{ wisudawans[activeIndex].gelar ? `, ${wisudawans[activeIndex].gelar}` : '' }}</h3>
                     <p class="text-slate-400 text-xs font-mono">
-                        NIM: {{ wisudawans[activeIndex].nim }} • {{ wisudawans[activeIndex].program_studi?.nama_prodi }} • IPK: {{ wisudawans[activeIndex].ipk }}
+                        NIM: {{ wisudawans[activeIndex].nim }} • {{ wisudawans[activeIndex].program_studi?.nama_prodi }} • IPK: {{ (wisudawans[activeIndex].ipk && Number(wisudawans[activeIndex].ipk) > 0) ? wisudawans[activeIndex].ipk : '-' }}
                     </p>
                     <p class="text-xs text-slate-300 italic max-w-xl">"{{ wisudawans[activeIndex].judul_ta }}"</p>
                 </div>

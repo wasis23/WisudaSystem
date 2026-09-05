@@ -19,6 +19,7 @@ class PeriodeWisuda extends Model
         'buku_kenangan_footer',
         'buku_kenangan_footer_image',
         'buku_kenangan_default_foto',
+        'manual_book_pdf',
         'tanggal_pelaksanaan',
         'kuota_peserta',
         'max_tamu_tambahan',

@@ -571,8 +571,8 @@ class SimantaSyncController extends Controller
                     'status_verifikasi'        => 'verified',
                     'email'                    => strtolower($nim) . '@students.poltekindonusa.ac.id',
                     'gelar'                    => $programStudi->gelar,
-                    'ipk'                      => 3.50,
-                    'predikat_kelulusan'       => 'Memuaskan',
+                    'ipk'                      => null,
+                    'predikat_kelulusan'       => '-',
                 ]);
 
                 // Auto-generate default 2 tamu pendamping

@@ -47,7 +47,7 @@ const form = useForm({
     jenis_kelamin: props.wisudawan?.jenis_kelamin || 'L',
     nomor_hp: props.wisudawan?.nomor_hp || '',
     alamat: props.wisudawan?.alamat || '',
-    ipk: props.wisudawan?.ipk || '3.50',
+    ipk: props.wisudawan?.ipk || '',
     judul_ta: props.wisudawan?.judul_ta || '',
     dosen_pembimbing_1: props.wisudawan?.dosen_pembimbing_1 || '',
     dosen_pembimbing_2: props.wisudawan?.dosen_pembimbing_2 || '',
@@ -145,9 +145,16 @@ onUnmounted(() => {
     if (resizeObserver) resizeObserver.disconnect();
 });
 
+const errorMessage = ref('');
+
 const submitForm = () => {
+    errorMessage.value = '';
     form.post(route('wisudawan.pendaftaran.store'), {
         preserveScroll: true,
+        onError: () => {
+            errorMessage.value = 'Gagal menyimpan biodata wisudawan. Silakan periksa kembali isian formulir dan berkas pas foto Anda.';
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
     });
 };
 </script>
@@ -173,6 +180,45 @@ const submitForm = () => {
                         <h3 class="font-extrabold text-lg text-slate-900 dark:text-white">
                             Biodata Calon Wisudawan
                         </h3>
+                    </div>
+
+                    <!-- ERROR / VALIDATION ALERT BANNER -->
+                    <div
+                        v-if="errorMessage || form.hasErrors || $page.props.flash?.error"
+                        class="p-5 rounded-2xl bg-gradient-to-r from-rose-500/15 via-red-500/10 to-rose-500/5 border-2 border-rose-500/40 text-rose-950 dark:text-rose-200 shadow-md animate-fadeIn"
+                    >
+                        <div class="flex items-start justify-between gap-3">
+                            <div class="flex items-start gap-3">
+                                <div class="w-9 h-9 rounded-xl bg-rose-500 text-white flex items-center justify-center shrink-0 shadow-sm">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                                    </svg>
+                                </div>
+                                <div class="space-y-1.5">
+                                    <h4 class="text-xs sm:text-sm font-black text-rose-900 dark:text-rose-100">
+                                        {{ errorMessage || 'Pendaftaran Biodata Tidak Sukses / Mengalami Kendala' }}
+                                    </h4>
+                                    <p v-if="$page.props.flash?.error" class="text-xs text-rose-800 dark:text-rose-300 font-medium">
+                                        <span class="font-bold">Keterangan:</span> {{ $page.props.flash.error }}
+                                    </p>
+                                    <div v-if="form.errors && Object.keys(form.errors).length > 0" class="space-y-1 pt-1">
+                                        <p class="text-[11px] font-bold text-rose-900 dark:text-rose-200">Keterangan penyebab tidak sukses:</p>
+                                        <ul class="list-disc list-inside text-xs text-rose-800 dark:text-rose-300 space-y-0.5">
+                                            <li v-for="(err, fieldKey) in form.errors" :key="fieldKey">{{ err }}</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                            <button
+                                type="button"
+                                @click="errorMessage = ''; form.clearErrors()"
+                                class="text-rose-700 hover:text-rose-950 dark:text-rose-300 p-1 rounded-lg transition"
+                            >
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                            </button>
+                        </div>
                     </div>
 
                     <form @submit.prevent="submitForm" class="space-y-4">
@@ -217,7 +263,7 @@ const submitForm = () => {
                                 <label class="block text-xs font-bold uppercase text-slate-500 mb-1">
                                     IPK
                                 </label>
-                                <input readonly v-model="form.ipk" type="number" step="0.01" min="0" max="4.00" class="w-full rounded-xl border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-900/80 text-slate-600 dark:text-slate-400 text-sm font-mono cursor-not-allowed" />
+                                <input readonly :value="(form.ipk && Number(form.ipk) > 0) ? form.ipk : '-'" type="text" class="w-full rounded-xl border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-900/80 text-slate-600 dark:text-slate-400 text-sm font-mono cursor-not-allowed" />
                             </div>
 
                             <div>
@@ -449,7 +495,7 @@ const submitForm = () => {
                                     }"
                                     class="absolute font-mono font-bold text-emerald-400 leading-none drop-shadow"
                                 >
-                                    IPK: {{ form.ipk || '3.50' }} {{ Number(form.ipk) >= 3.51 ? '(Cumlaude )' : '' }}
+                                    IPK: {{ (form.ipk && form.ipk !== '-' && Number(form.ipk) > 0) ? form.ipk : '-' }} {{ (Number(form.ipk) >= 3.51) ? '(Cumlaude )' : '' }}
                                 </div>
 
                                 <!-- Live TA Title -->
