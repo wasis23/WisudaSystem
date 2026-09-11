@@ -197,164 +197,166 @@ const printTickets = () => {
                     </div>
                 </div>
 
-                <!-- MANUAL BOOK & PANDUAN WISUDAWAN CARD (HIGHLIGHT) -->
-                <div class="bg-gradient-to-r from-slate-900 via-indigo-950 to-blue-950 rounded-3xl p-6 sm:p-7 text-white shadow-xl border border-indigo-800/40 relative overflow-hidden">
-                    <div class="absolute -right-8 -bottom-8 w-56 h-56 bg-blue-500/10 rounded-full blur-3xl pointer-events-none"></div>
+                <!-- 3-CARD SUMMARY / ACTION ROW (Manual Book, WhatsApp Group, SIKEU Status in 1 Row) -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
 
-                    <div class="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-5">
-                        <div class="space-y-2 max-w-2xl">
-                            <div class="flex items-center gap-2">
-                                <span class="px-3 py-1 bg-indigo-500/30 border border-indigo-400/40 text-indigo-300 rounded-full text-xs font-bold uppercase tracking-wider flex items-center gap-1.5">
-                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <!-- CARD 1: PANDUAN MANUAL BOOK -->
+                    <div class="bg-white dark:bg-slate-800 rounded-3xl p-5 sm:p-6 border border-slate-200 dark:border-slate-700 shadow-sm flex flex-col justify-between space-y-4 transition hover:shadow-md">
+                        <div class="space-y-3">
+                            <div class="flex items-center justify-between">
+                                <div class="w-10 h-10 rounded-2xl bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400 flex items-center justify-center border border-indigo-100 dark:border-indigo-800">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
                                     </svg>
-                                    <span>PANDUAN PENGGUNA (MANUAL BOOK)</span>
-                                </span>
-                                <span v-if="activePeriode?.manual_book_pdf || manualBookUrl" class="px-2 py-0.5 bg-emerald-500/20 text-emerald-300 rounded-md text-[10px] font-bold border border-emerald-400/30">
+                                </div>
+                                <span
+                                    v-if="activePeriode?.manual_book_pdf || manualBookUrl"
+                                    class="px-2.5 py-1 bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300 rounded-full text-[10px] font-extrabold border border-emerald-200 dark:border-emerald-800 flex items-center gap-1"
+                                >
+                                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
                                     PDF Resmi
+                                </span>
+                                <span
+                                    v-else
+                                    class="px-2.5 py-1 bg-slate-100 text-slate-500 dark:bg-slate-700 dark:text-slate-400 rounded-full text-[10px] font-bold"
+                                >
+                                    Belum Ada File
                                 </span>
                             </div>
 
-                            <h3 class="text-lg sm:text-xl font-black text-white tracking-tight">
-                                Buku Panduan Alur Wisudawan & Petunjuk Sistem
-                            </h3>
-
-                            <p class="text-xs sm:text-sm text-indigo-200/90 leading-relaxed font-normal">
-                                Pelajari petunjuk alur bertahap: pengisian kuesioner Tracer Study, verifikasi biodata & pas foto panggung, pendaftaran pendamping, hingga prosedur scan E-Ticket barcode pada hari pelaksanaan wisuda.
-                            </p>
+                            <div>
+                                <h4 class="font-extrabold text-sm sm:text-base text-slate-900 dark:text-white">
+                                    Buku Panduan Wisuda
+                                </h4>
+                                <p class="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
+                                    Petunjuk alur pengisian tracer study, kelengkapan biodata, pas foto, dan E-Ticket.
+                                </p>
+                            </div>
                         </div>
 
-                        <div class="shrink-0 flex flex-wrap sm:flex-nowrap items-center gap-3">
-                            <!-- Download PDF Button -->
+                        <div class="pt-2">
                             <a
                                 v-if="activePeriode?.manual_book_pdf || manualBookUrl"
                                 :href="manualBookUrl || route('manual-book.download')"
                                 target="_blank"
-                                class="px-5 py-3 bg-indigo-500 hover:bg-indigo-600 text-white font-extrabold text-xs rounded-2xl transition shadow-lg flex items-center gap-2 hover:scale-105 transform duration-150"
+                                class="w-full py-2.5 px-4 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl transition text-center flex items-center justify-center gap-2 shadow-sm"
                             >
                                 <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                                 </svg>
                                 <span>Unduh Manual Book (PDF)</span>
                             </a>
-
-                            <!-- Interactive Guide Modal Button -->
                             <button
-                                type="button"
-                                @click="showManualModal = true"
-                                class="px-4 py-3 bg-white/10 hover:bg-white/20 border border-white/20 text-white font-bold text-xs rounded-2xl transition flex items-center gap-2 backdrop-blur-sm hover:scale-105 transform duration-150"
+                                v-else
+                                disabled
+                                class="w-full py-2.5 px-4 bg-slate-100 dark:bg-slate-700/50 text-slate-400 text-xs font-semibold rounded-xl text-center cursor-not-allowed"
                             >
-                                <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                </svg>
-                                <span>Baca Panduan Interaktif</span>
+                                Berkas Belum Diunggah
                             </button>
                         </div>
                     </div>
-                </div>
-                
-                <!-- WhatsApp Group Announcement Banner -->
-                <div class="bg-gradient-to-r from-indigo-700 via-blue-800 to-indigo-950 rounded-3xl p-6 sm:p-8 text-white shadow-xl relative overflow-hidden">
-                    <div class="absolute -right-6 -bottom-6 w-48 h-48 bg-emerald-500/10 rounded-full blur-2xl pointer-events-none"></div>
-                    
-                    <div class="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
-                        <div class="space-y-2 max-w-2xl">
-                            <div class="flex items-center gap-2">
-                                <span class="px-3 py-1 bg-emerald-500/20 border border-emerald-400/40 text-emerald-300 rounded-full text-xs font-bold uppercase tracking-wider">
-                                    PENGUMUMAN PENTING WISUDAWAN
+
+                    <!-- CARD 2: WHATSAPP GROUP ANNOUNCEMENT -->
+                    <div class="bg-white dark:bg-slate-800 rounded-3xl p-5 sm:p-6 border border-slate-200 dark:border-slate-700 shadow-sm flex flex-col justify-between space-y-4 transition hover:shadow-md">
+                        <div class="space-y-3">
+                            <div class="flex items-center justify-between">
+                                <div class="w-10 h-10 rounded-2xl bg-emerald-50 dark:bg-emerald-950/50 text-emerald-600 dark:text-emerald-400 flex items-center justify-center border border-emerald-100 dark:border-emerald-800">
+                                    <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                                        <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z"/>
+                                    </svg>
+                                </div>
+                                <span class="px-2.5 py-1 bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300 rounded-full text-[10px] font-extrabold border border-emerald-200 dark:border-emerald-800">
+                                    Wajib Gabung
                                 </span>
                             </div>
-                            
-                            <p class="text-indigo-100 text-sm sm:text-base leading-relaxed pt-1">
-                                Seluruh calon wisudawan <strong class="text-white font-bold">WAJIB bergabung ke Grup WhatsApp Resmi Wisuda</strong>. Semua informasi penting, tata tertib, jadwal gladi bersih, pembagian nomor kursi, dan koordinasi wisuda akan disampaikan secara mendesak di grup WhatsApp tersebut.
-                            </p>
-                        </div>
 
-                        <!-- WhatsApp Join Button -->
-                        <div class="shrink-0 flex flex-col items-start lg:items-end gap-2">
-                            <a
-                                href="https://chat.whatsapp.com/Hc3ag9O2vBhLLqZT5TNXjx?s=cl&p=a&mlu=4"
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                class="px-6 py-3.5 bg-emerald-500 hover:bg-emerald-600 text-white font-extrabold text-sm rounded-2xl transition shadow-lg flex items-center gap-2.5 hover:scale-105 transform duration-150"
-                            >
-                                <span>Gabung Grup WhatsApp Wisuda →</span>
-                            </a>
-                            <span class="text-[11px] text-indigo-200/80">Tautan Resmi WhatsApp Politeknik Indonusa</span>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- SIKEU Financial Status Banner -->
-                <div
-                    :class="[
-                        'rounded-3xl p-6 sm:p-7 border shadow-md relative overflow-hidden transition',
-                        isLunas
-                            ? 'bg-gradient-to-r from-emerald-900/40 via-teal-900/30 to-slate-900/60 border-emerald-500/40 text-slate-100'
-                            : 'bg-gradient-to-r from-rose-950/70 via-amber-950/40 to-slate-900/80 border-rose-500/50 text-rose-100'
-                    ]"
-                >
-                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-5 relative z-10">
-                        <div class="flex items-start gap-4">
-                            <div
-                                :class="[
-                                    'w-12 h-12 rounded-2xl flex items-center justify-center font-bold text-xl shrink-0 border shadow-inner',
-                                    isLunas
-                                        ? 'bg-emerald-500/20 text-emerald-300 border-emerald-400/40'
-                                        : 'bg-rose-500/20 text-rose-300 border-rose-400/40 animate-pulse'
-                                ]"
-                            >
-                                <svg v-if="isLunas" class="w-6 h-6 text-emerald-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
-                                </svg>
-                                <svg v-else class="w-6 h-6 text-rose-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                                </svg>
-                            </div>
-                            <div class="space-y-1">
-                                <div class="flex items-center gap-2">
-                                    <span
-                                        :class="[
-                                            'px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider border',
-                                            isLunas
-                                                ? 'bg-emerald-500/20 text-emerald-300 border-emerald-400/40'
-                                                : 'bg-rose-500/20 text-rose-300 border-rose-400/40'
-                                        ]"
-                                    >
-                                        {{ isLunas ? 'STATUS PEMBAYARAN: LUNAS' : 'STATUS PEMBAYARAN: BELUM LUNAS' }}
-                                    </span>
-                                    <span v-if="sikeuQuota?.tanggal_bayar" class="text-[11px] text-emerald-300 font-mono">
-                                        Tgl: {{ sikeuQuota.tanggal_bayar }}
-                                    </span>
-                                </div>
-
-                                <h3 class="text-lg font-black text-white">
-                                    {{ isLunas ? 'Pembayaran Wisuda Terverifikasi Lunas (SIKEU)' : 'Harap Segera Selesaikan Pembayaran Tagihan Wisuda' }}
-                                </h3>
-
-                                <p class="text-xs text-slate-300 leading-relaxed max-w-3xl">
-                                    <template v-if="isLunas">
-                                        Anda berhak mendapatkan kuota <strong class="text-white">{{ sikeuQuota?.total_allowed_guests || 2 }} Undangan</strong> (2 Undangan Utama <span v-if="(sikeuQuota?.tambahan_wisuda_paid_quota || 0) > 0">+ {{ sikeuQuota.tambahan_wisuda_paid_quota }} Undangan Tambahan SIKEU</span>) serta total <strong class="text-white">{{ sikeuQuota?.snack_quota || 3 }} porsi snack</strong>. E-Ticket dan hak pemanggilan di prosesi layar panggung auditorium telah <strong>AKTIF</strong>.
-                                    </template>
-                                    <template v-else>
-                                        Menurut data Keuangan SIKEU, Anda <strong class="text-rose-300">belum menyelesaikan pembayaran wisuda</strong>. Harap segera melunasi biaya wisuda melalui loket keuangan atau transfer rekening resmi Politeknik Indonusa Surakarta. <span class="font-semibold text-rose-200">Perhatian: E-Ticket Barcode dan pemanggilan prosesi wisuda di panggung ballroom hanya akan aktif jika pembayaran berstatus LUNAS.</span>
-                                    </template>
+                            <div>
+                                <h4 class="font-extrabold text-sm sm:text-base text-slate-900 dark:text-white">
+                                    Grup WhatsApp Wisuda
+                                </h4>
+                                <p class="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
+                                    Informasi mendesak, jadwal gladi bersih, pembagian toga, dan denah kursi wisudawan.
                                 </p>
                             </div>
                         </div>
 
-                        <div class="shrink-0 flex sm:flex-col items-center sm:items-end gap-2">
+                        <div class="pt-2">
+                            <a
+                                href="https://chat.whatsapp.com/Hc3ag9O2vBhLLqZT5TNXjx?s=cl&p=a&mlu=4"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                class="w-full py-2.5 px-4 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl transition text-center flex items-center justify-center gap-2 shadow-sm"
+                            >
+                                <span>Gabung Grup WhatsApp →</span>
+                            </a>
+                        </div>
+                    </div>
+
+                    <!-- CARD 3: STATUS KEUANGAN SIKEU -->
+                    <div
+                        :class="[
+                            'rounded-3xl p-5 sm:p-6 border shadow-sm flex flex-col justify-between space-y-4 transition hover:shadow-md',
+                            isLunas
+                                ? 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700'
+                                : 'bg-rose-50/40 dark:bg-rose-950/20 border-rose-200 dark:border-rose-900/60'
+                        ]"
+                    >
+                        <div class="space-y-3">
+                            <div class="flex items-center justify-between">
+                                <div
+                                    :class="[
+                                        'w-10 h-10 rounded-2xl flex items-center justify-center border',
+                                        isLunas
+                                            ? 'bg-emerald-50 dark:bg-emerald-950/50 text-emerald-600 dark:text-emerald-400 border-emerald-100 dark:border-emerald-800'
+                                            : 'bg-rose-100 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 border-rose-200 dark:border-rose-800'
+                                    ]"
+                                >
+                                    <svg v-if="isLunas" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
+                                    </svg>
+                                    <svg v-else class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                                    </svg>
+                                </div>
+
+                                <span
+                                    :class="[
+                                        'px-2.5 py-1 rounded-full text-[10px] font-extrabold border uppercase tracking-wider',
+                                        isLunas
+                                            ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800'
+                                            : 'bg-rose-100 text-rose-700 dark:bg-rose-950/80 dark:text-rose-300 border-rose-300 dark:border-rose-800'
+                                    ]"
+                                >
+                                    {{ isLunas ? 'SIKEU Lunas' : 'Belum Lunas' }}
+                                </span>
+                            </div>
+
+                            <div>
+                                <h4 class="font-extrabold text-sm sm:text-base text-slate-900 dark:text-white">
+                                    Status Tagihan (SIKEU)
+                                </h4>
+                                <p v-if="isLunas" class="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
+                                    Kuota: <strong class="text-slate-700 dark:text-slate-200">{{ sikeuQuota?.total_allowed_guests || 2 }} Undangan</strong> & <strong class="text-slate-700 dark:text-slate-200">{{ sikeuQuota?.snack_quota || 3 }} Snack</strong>. E-Ticket aktif.
+                                </p>
+                                <p v-else class="text-xs text-rose-600 dark:text-rose-400 mt-1 leading-relaxed">
+                                    Harap lunasi biaya wisuda di Keuangan SIKEU agar E-Ticket & pemanggilan aktif.
+                                </p>
+                            </div>
+                        </div>
+
+                        <div class="pt-2">
                             <Link
                                 :href="route('wisudawan.tamu.form')"
-                                class="px-4 py-2.5 bg-white/10 hover:bg-white/20 border border-white/20 text-white font-bold text-xs rounded-xl transition flex items-center gap-2 backdrop-blur-sm"
+                                class="w-full py-2.5 px-4 bg-slate-900 hover:bg-slate-800 dark:bg-slate-700 dark:hover:bg-slate-600 text-white font-bold text-xs rounded-xl transition text-center flex items-center justify-center gap-1.5 shadow-sm"
                             >
-                                <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0zm-13.5 0a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0z" />
                                 </svg>
-                                <span>Kelola Tamu & Snack ({{ allGuests.length }}/{{ sikeuQuota?.total_allowed_guests || 2 }}) →</span>
+                                <span>Kelola Tamu ({{ allGuests.length }}/{{ sikeuQuota?.total_allowed_guests || 2 }}) →</span>
                             </Link>
                         </div>
                     </div>
+
                 </div>
 
                 <!-- Main Action Checklist Grid (2-Column Grid) -->

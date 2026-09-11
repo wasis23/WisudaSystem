@@ -171,6 +171,8 @@ Route::middleware(['auth', 'role:admin_utama'])->get('/database/database.sqlite'
 Route::middleware(['auth', 'role:security,admin_utama'])->prefix('security')->name('security.')->group(function () {
     Route::get('/scan', [PresensiWisudawanController::class, 'mobileSecurityScan'])->name('scan');
     Route::post('/scan', [PresensiWisudawanController::class, 'scan'])->name('scan.process');
+    Route::post('/checkout', [PresensiWisudawanController::class, 'checkoutGate'])->name('checkout');
+    Route::post('/approve-reentry', [PresensiWisudawanController::class, 'approveReentry'])->name('reentry.approve');
 });
 
 // 3. Receptionist Scan Gate Route

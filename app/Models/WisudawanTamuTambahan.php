@@ -16,6 +16,7 @@ class WisudawanTamuTambahan extends Model
         'nama_tamu',
         'hubungan',
         'qr_guest_token',
+        'foto_keluar_gate',
         'is_hadir',
         'is_hadir_gate',
         'is_hadir_venue',
@@ -23,6 +24,7 @@ class WisudawanTamuTambahan extends Model
         'waktu_presensi',
         'waktu_presensi_gate',
         'waktu_presensi_venue',
+        'waktu_keluar_gate',
     ];
 
     protected $casts = [
@@ -33,6 +35,7 @@ class WisudawanTamuTambahan extends Model
         'waktu_presensi' => 'datetime',
         'waktu_presensi_gate' => 'datetime',
         'waktu_presensi_venue' => 'datetime',
+        'waktu_keluar_gate' => 'datetime',
     ];
 
     public function wisudawan()

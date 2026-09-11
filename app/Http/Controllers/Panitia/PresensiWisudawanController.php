@@ -168,6 +168,9 @@ class PresensiWisudawanController extends Controller
             ->orWhere('nim', $token)
             ->first();
 
+        $isSecurity = $request->routeIs('security.*') || $request->is('security*') || $request->user()?->role === 'security';
+        $isReceptionist = $request->routeIs('receptionist.*') || $request->is('receptionist*') || $request->user()?->role === 'receptionist';
+
         if ($wisudawan) {
             if ($wisudawan->status_pembayaran_sikeu !== 'lunas') {
                 $err = "❌ AKSES DITOLAK: Wisudawan {$wisudawan->nama_lengkap} (NIM: {$wisudawan->nim}) BELUM MELAKUKAN PEMBAYARAN WISUDA di SIKEU!";
@@ -178,42 +181,95 @@ class PresensiWisudawanController extends Controller
             }
 
             if ($wisudawan->status_verifikasi !== 'verified') {
-                return redirect()->back()->with('error', "AKSES DITOLAK: Wisudawan {$wisudawan->nama_lengkap} (NIM: {$wisudawan->nim}) belum lolos verifikasi!");
+                $err = "❌ AKSES DITOLAK: Wisudawan {$wisudawan->nama_lengkap} (NIM: {$wisudawan->nim}) belum lolos verifikasi!";
+                if ($request->wantsJson()) {
+                    return response()->json(['status' => 'error', 'message' => $err], 422);
+                }
+                return redirect()->back()->with('error', $err);
             }
 
+            $siakadInfo = $this->siakadService->getStudentByNim($wisudawan->nim);
             $simantaInfo = $this->simantaService->getGraduationStatus($wisudawan->nim);
             $sikeuQuota = $this->sikeuService->getExtraWisudaQuota($wisudawan->nim);
 
-            // Stage 1 (Security / Gate) vs Stage 2 (Venue Entrance)
-            if (!$wisudawan->is_hadir) {
-                $wisudawan->update([
-                    'is_hadir' => true,
-                    'waktu_presensi' => now(),
-                    'status_kelulusan_simanta' => $simantaInfo['status_lulus'],
-                    'jumlah_tamu_tambahan' => $sikeuQuota['total_allowed_guests'],
-                ]);
-                $message = "🟢 SCAN 1 [SECURITY GATE] BERHASIL! Selamat Datang Wisudawan: {$wisudawan->nama_lengkap} (NIM: {$wisudawan->nim}). Presensi Halaman Depan.";
-            } elseif (!$wisudawan->is_in_auditorium) {
-                $wisudawan->update([
-                    'is_in_auditorium' => true,
-                    'waktu_presensi_venue' => now(),
-                ]);
-                $message = "🔵 SCAN 2 [STAF VENUE] PRESENSI AUDITORIUM BERHASIL! Wisudawan: {$wisudawan->nama_lengkap} (NIM: {$wisudawan->nim}) resmi memasuki venue.";
-            } else {
-                $message = "ℹ️ WISUDAWAN SUDAH DIPRESENSI 2X (GATE & VENUE): {$wisudawan->nama_lengkap} (NIM: {$wisudawan->nim}).";
+            $scanStatus = 'success';
+
+            // 1. SECURITY GATE SCAN
+            if ($isSecurity) {
+                if ($wisudawan->is_hadir) {
+                    $waktu = $wisudawan->waktu_presensi ? (is_string($wisudawan->waktu_presensi) ? $wisudawan->waktu_presensi : $wisudawan->waktu_presensi->format('H:i:s WIB')) : 'sebelumnya';
+                    $message = "⚠️ BARCODE SUDAH PERNAH DI-SCAN! Wisudawan {$wisudawan->nama_lengkap} (NIM: {$wisudawan->nim}) saat ini berada di DALAM (Presensi Masuk: {$waktu}).";
+                    $scanStatus = 'already_scanned';
+                } else {
+                    $isReentry = !empty($wisudawan->foto_keluar_gate);
+                    $wisudawan->update([
+                        'is_hadir' => true,
+                        'waktu_presensi' => now(),
+                        'status_kelulusan_simanta' => $simantaInfo['status_lulus'] ?? 'LULUS',
+                        'jumlah_tamu_tambahan' => $sikeuQuota['total_allowed_guests'] ?? 2,
+                    ]);
+                    if ($isReentry) {
+                        $waktuKeluar = $wisudawan->waktu_keluar_gate ? (is_string($wisudawan->waktu_keluar_gate) ? $wisudawan->waktu_keluar_gate : $wisudawan->waktu_keluar_gate->format('H:i:s WIB')) : 'sebelumnya';
+                        $message = "🟢 SCAN MASUK KEMBALI BERHASIL! Wisudawan {$wisudawan->nama_lengkap} (NIM: {$wisudawan->nim}) tercatat masuk kembali (Keluar pada {$waktuKeluar}). Foto saat keluar ditampilkan untuk verifikasi.";
+                    } else {
+                        $message = "🟢 SCAN [SECURITY GATE] BERHASIL! Selamat Datang Wisudawan: {$wisudawan->nama_lengkap} (NIM: {$wisudawan->nim}). Presensi Gate tercatat.";
+                    }
+                    $scanStatus = 'success';
+                }
+            }
+            // 2. RECEPTIONIST / VENUE SCAN
+            elseif ($isReceptionist) {
+                if ($wisudawan->is_in_auditorium) {
+                    $waktu = $wisudawan->waktu_presensi_venue ? (is_string($wisudawan->waktu_presensi_venue) ? $wisudawan->waktu_presensi_venue : $wisudawan->waktu_presensi_venue->format('H:i:s WIB')) : 'sebelumnya';
+                    $message = "⚠️ BARCODE SUDAH PERNAH DI-SCAN! Wisudawan {$wisudawan->nama_lengkap} (NIM: {$wisudawan->nim}) sudah tercatat masuk Venue / Receptionist pada {$waktu}.";
+                    $scanStatus = 'already_scanned';
+                } else {
+                    $wisudawan->update([
+                        'is_in_auditorium' => true,
+                        'waktu_presensi_venue' => now(),
+                        'is_hadir' => true,
+                        'waktu_presensi' => $wisudawan->waktu_presensi ?? now(),
+                    ]);
+                    $message = "🔵 SCAN [RECEPTIONIST VENUE] BERHASIL! Wisudawan: {$wisudawan->nama_lengkap} (NIM: {$wisudawan->nim}) resmi memasuki venue & verifikasi snack.";
+                    $scanStatus = 'success';
+                }
+            }
+            // 3. GENERAL PANITIA GATE
+            else {
+                if (!$wisudawan->is_hadir) {
+                    $wisudawan->update([
+                        'is_hadir' => true,
+                        'waktu_presensi' => now(),
+                        'status_kelulusan_simanta' => $simantaInfo['status_lulus'] ?? 'LULUS',
+                        'jumlah_tamu_tambahan' => $sikeuQuota['total_allowed_guests'] ?? 2,
+                    ]);
+                    $message = "🟢 SCAN GATE BERHASIL! Selamat Datang Wisudawan: {$wisudawan->nama_lengkap} (NIM: {$wisudawan->nim}).";
+                    $scanStatus = 'success';
+                } else {
+                    $waktu = $wisudawan->waktu_presensi ? (is_string($wisudawan->waktu_presensi) ? $wisudawan->waktu_presensi : $wisudawan->waktu_presensi->format('H:i:s WIB')) : 'sebelumnya';
+                    $message = "⚠️ BARCODE SUDAH PERNAH DI-SCAN! Wisudawan {$wisudawan->nama_lengkap} (NIM: {$wisudawan->nim}) telah presensi pada {$waktu}.";
+                    $scanStatus = 'already_scanned';
+                }
             }
 
             $scannedData = [
+                'token' => $token,
                 'nama_lengkap' => $wisudawan->nama_lengkap,
                 'nim' => $wisudawan->nim,
                 'prodi' => $wisudawan->programStudi?->nama_prodi,
                 'pas_foto' => $wisudawan->pas_foto ? "/storage/{$wisudawan->pas_foto}" : null,
-                'nama_ayah' => $siakadInfo['nama_ayah'] ?? $wisudawan->nama_ayah ?? 'Data SIAKAD',
-                'nama_ibu' => $siakadInfo['nama_ibu'] ?? $wisudawan->nama_ibu ?? 'Data SIAKAD',
-                'status_simanta' => $simantaInfo['status_lulus'],
-                'tamu_kuota' => $sikeuQuota['total_allowed_guests'],
-                'snack_porsi' => $sikeuQuota['snack_quota'],
-                'waktu_presensi' => $wisudawan->waktu_presensi ? (is_string($wisudawan->waktu_presensi) ? $wisudawan->waktu_presensi : $wisudawan->waktu_presensi->format('H:i:s WIB')) : now()->format('H:i:s WIB'),
+                'foto_keluar_gate' => $wisudawan->foto_keluar_gate ? "/storage/{$wisudawan->foto_keluar_gate}" : null,
+                'waktu_keluar_gate' => $wisudawan->waktu_keluar_gate ? (is_string($wisudawan->waktu_keluar_gate) ? $wisudawan->waktu_keluar_gate : $wisudawan->waktu_keluar_gate->format('H:i:s WIB')) : null,
+                'is_reentry' => !empty($wisudawan->foto_keluar_gate),
+                'nama_ayah' => $siakadInfo['nama_ayah'] ?? $wisudawan->nama_ayah ?? '-',
+                'nama_ibu' => $siakadInfo['nama_ibu'] ?? $wisudawan->nama_ibu ?? '-',
+                'status_simanta' => $simantaInfo['status_lulus'] ?? 'LULUS',
+                'tamu_kuota' => $sikeuQuota['total_allowed_guests'] ?? 2,
+                'snack_porsi' => $sikeuQuota['snack_quota'] ?? 2,
+                'is_hadir' => $wisudawan->is_hadir,
+                'is_in_auditorium' => $wisudawan->is_in_auditorium,
+                'waktu_presensi' => $wisudawan->waktu_presensi ? (is_string($wisudawan->waktu_presensi) ? $wisudawan->waktu_presensi : $wisudawan->waktu_presensi->format('H:i:s WIB')) : '-',
+                'waktu_presensi_venue' => $wisudawan->waktu_presensi_venue ? (is_string($wisudawan->waktu_presensi_venue) ? $wisudawan->waktu_presensi_venue : $wisudawan->waktu_presensi_venue->format('H:i:s WIB')) : '-',
                 'tamu_tambahan_list' => $wisudawan->tamuTambahan ? $wisudawan->tamuTambahan->map(function($t) {
                     return [
                         'id' => $t->id,
@@ -227,7 +283,7 @@ class PresensiWisudawanController extends Controller
 
             if ($request->wantsJson()) {
                 return response()->json([
-                    'status' => 'success',
+                    'status' => $scanStatus,
                     'message' => $message,
                     'wisudawan' => $wisudawan,
                     'scanned_data' => $scannedData,
@@ -238,7 +294,7 @@ class PresensiWisudawanController extends Controller
             }
 
             return redirect()->back()
-                ->with('success', $message)
+                ->with($scanStatus === 'success' ? 'success' : 'warning', $message)
                 ->with('scannedWisudawan', $scannedData);
         }
 
@@ -258,31 +314,210 @@ class PresensiWisudawanController extends Controller
                 return redirect()->back()->with('error', $err);
             }
 
-            if (!$guest->is_hadir_gate && !$guest->is_hadir) {
-                $guest->update([
-                    'is_hadir_gate' => true,
-                    'is_hadir' => true,
-                    'waktu_presensi_gate' => now(),
-                ]);
-                $message = "🟢 SCAN 1 [SECURITY GATE] BERHASIL! Tamu/Pendamping: {$guest->nama_tamu} (Wisudawan: {$wisudawanMain->nama_lengkap}). Presensi Halaman Depan.";
-            } elseif (!$guest->is_hadir_venue) {
-                $guest->update([
-                    'is_hadir_venue' => true,
-                    'snack_diambil' => true,
-                    'waktu_presensi_venue' => now(),
-                ]);
-                $message = "🔵 SCAN 2 [STAF VENUE] PRESENSI AUDITORIUM BERHASIL! Tamu/Pendamping: {$guest->nama_tamu} (Wisudawan: {$wisudawanMain->nama_lengkap}) & Penyerahan Paket Snack.";
-            } else {
-                $message = "ℹ️ TAMU/PENDAMPING SUDAH DIPRESENSI 2X (GATE & VENUE): {$guest->nama_tamu} (Wisudawan: {$wisudawanMain->nama_lengkap}).";
+            $scanStatus = 'success';
+
+            // 1. SECURITY GATE SCAN (GUEST)
+            if ($isSecurity) {
+                if ($guest->is_hadir_gate || $guest->is_hadir) {
+                    $waktu = $guest->waktu_presensi_gate ? (is_string($guest->waktu_presensi_gate) ? $guest->waktu_presensi_gate : $guest->waktu_presensi_gate->format('H:i:s WIB')) : 'sebelumnya';
+                    $message = "⚠️ BARCODE SUDAH PERNAH DI-SCAN! Tamu/Pendamping: {$guest->nama_tamu} (Wisudawan: {$wisudawanMain?->nama_lengkap}) saat ini berada di DALAM (Presensi Masuk: {$waktu}).";
+                    $scanStatus = 'already_scanned';
+                } else {
+                    $isReentry = !empty($guest->foto_keluar_gate);
+                    $guest->update([
+                        'is_hadir_gate' => true,
+                        'is_hadir' => true,
+                        'waktu_presensi_gate' => now(),
+                        'waktu_presensi' => now(),
+                    ]);
+                    if ($isReentry) {
+                        $waktuKeluar = $guest->waktu_keluar_gate ? (is_string($guest->waktu_keluar_gate) ? $guest->waktu_keluar_gate : $guest->waktu_keluar_gate->format('H:i:s WIB')) : 'sebelumnya';
+                        $message = "🟢 SCAN MASUK KEMBALI BERHASIL! Tamu/Pendamping: {$guest->nama_tamu} (Wisudawan: {$wisudawanMain?->nama_lengkap}) masuk kembali (Keluar pada {$waktuKeluar}). Foto saat keluar ditampilkan untuk verifikasi.";
+                    } else {
+                        $message = "🟢 SCAN [SECURITY GATE] BERHASIL! Tamu/Pendamping: {$guest->nama_tamu} (Wisudawan: {$wisudawanMain?->nama_lengkap}). Presensi Masuk Gate.";
+                    }
+                    $scanStatus = 'success';
+                }
+            }
+            // 2. RECEPTIONIST / VENUE SCAN (GUEST)
+            elseif ($isReceptionist) {
+                if ($guest->is_hadir_venue) {
+                    $waktu = $guest->waktu_presensi_venue ? (is_string($guest->waktu_presensi_venue) ? $guest->waktu_presensi_venue : $guest->waktu_presensi_venue->format('H:i:s WIB')) : 'sebelumnya';
+                    $message = "⚠️ BARCODE SUDAH PERNAH DI-SCAN! Tamu/Pendamping: {$guest->nama_tamu} (Wisudawan: {$wisudawanMain?->nama_lengkap}) sudah presensi Venue & paket snack telah diserahkan pada {$waktu}.";
+                    $scanStatus = 'already_scanned';
+                } else {
+                    $guest->update([
+                        'is_hadir_venue' => true,
+                        'snack_diambil' => true,
+                        'waktu_presensi_venue' => now(),
+                        'is_hadir_gate' => true,
+                        'is_hadir' => true,
+                        'waktu_presensi_gate' => $guest->waktu_presensi_gate ?? now(),
+                    ]);
+                    $message = "🔵 SCAN [RECEPTIONIST VENUE] BERHASIL! Tamu/Pendamping: {$guest->nama_tamu} (Wisudawan: {$wisudawanMain?->nama_lengkap}) & Penyerahan Paket Snack.";
+                    $scanStatus = 'success';
+                }
+            }
+            // 3. GENERAL PANITIA GATE (GUEST)
+            else {
+                if (!$guest->is_hadir_gate && !$guest->is_hadir) {
+                    $guest->update([
+                        'is_hadir_gate' => true,
+                        'is_hadir' => true,
+                        'waktu_presensi_gate' => now(),
+                    ]);
+                    $message = "🟢 SCAN GATE BERHASIL! Tamu/Pendamping: {$guest->nama_tamu} (Wisudawan: {$wisudawanMain?->nama_lengkap}).";
+                    $scanStatus = 'success';
+                } else {
+                    $message = "⚠️ BARCODE SUDAH PERNAH DI-SCAN! Tamu/Pendamping: {$guest->nama_tamu} (Wisudawan: {$wisudawanMain?->nama_lengkap}) sudah pernah presensi gate.";
+                    $scanStatus = 'already_scanned';
+                }
             }
 
+            $guestData = [
+                'token' => $token,
+                'nama_tamu' => $guest->nama_tamu,
+                'hubungan' => $guest->hubungan,
+                'wisudawan_nama' => $wisudawanMain?->nama_lengkap,
+                'wisudawan_nim' => $wisudawanMain?->nim,
+                'wisudawan_prodi' => $wisudawanMain?->programStudi?->nama_prodi,
+                'foto_keluar_gate' => $guest->foto_keluar_gate ? "/storage/{$guest->foto_keluar_gate}" : null,
+                'waktu_keluar_gate' => $guest->waktu_keluar_gate ? (is_string($guest->waktu_keluar_gate) ? $guest->waktu_keluar_gate : $guest->waktu_keluar_gate->format('H:i:s WIB')) : null,
+                'is_reentry' => !empty($guest->foto_keluar_gate),
+                'is_hadir' => $guest->is_hadir,
+                'is_hadir_gate' => $guest->is_hadir_gate,
+                'is_hadir_venue' => $guest->is_hadir_venue,
+                'snack_diambil' => $guest->snack_diambil,
+                'waktu_presensi_gate' => $guest->waktu_presensi_gate ? (is_string($guest->waktu_presensi_gate) ? $guest->waktu_presensi_gate : $guest->waktu_presensi_gate->format('H:i:s WIB')) : '-',
+                'waktu_presensi_venue' => $guest->waktu_presensi_venue ? (is_string($guest->waktu_presensi_venue) ? $guest->waktu_presensi_venue : $guest->waktu_presensi_venue->format('H:i:s WIB')) : '-',
+            ];
+
             if ($request->wantsJson()) {
-                return response()->json(['status' => 'success', 'message' => $message, 'guest' => $guest]);
+                return response()->json([
+                    'status' => $scanStatus,
+                    'message' => $message,
+                    'guest' => $guest,
+                    'guest_data' => $guestData,
+                ]);
             }
+            return redirect()->back()
+                ->with($scanStatus === 'success' ? 'success' : 'warning', $message)
+                ->with('scannedGuest', $guestData);
+        }
+
+        $notFoundErr = "❌ QR Code / NIM ($token) Tidak Ditemukan! Pastikan barcode / NIM valid.";
+        if ($request->wantsJson()) {
+            return response()->json(['status' => 'error', 'message' => $notFoundErr], 404);
+        }
+        return redirect()->back()->with('error', $notFoundErr);
+    }
+
+    /**
+     * Action Check-Out (Keluar Sementara & Upload Foto Wajah Keluar)
+     */
+    public function checkoutGate(Request $request)
+    {
+        $request->validate([
+            'qr_code_token' => 'required|string',
+            'foto_wajah' => 'nullable|string',
+        ]);
+
+        $token = trim($request->qr_code_token);
+        $fotoPath = null;
+
+        // Process Base64 photo if provided
+        if ($request->filled('foto_wajah') && str_starts_with($request->foto_wajah, 'data:image')) {
+            $imageParts = explode(';base64,', $request->foto_wajah);
+            $imageTypeAux = explode('image/', $imageParts[0]);
+            $imageType = $imageTypeAux[1] ?? 'jpg';
+            $imageBase64 = base64_decode($imageParts[1]);
+
+            $fileName = 'exit_' . time() . '_' . \Illuminate\Support\Str::random(8) . '.' . $imageType;
+            \Illuminate\Support\Facades\Storage::disk('public')->put('exit_photos/' . $fileName, $imageBase64);
+            $fotoPath = 'exit_photos/' . $fileName;
+        } elseif ($request->hasFile('foto_wajah')) {
+            $fotoPath = $request->file('foto_wajah')->store('exit_photos', 'public');
+        }
+
+        // 1. Search as Wisudawan
+        $wisudawan = Wisudawan::with(['programStudi', 'tamuTambahan'])
+            ->where('qr_code_token', $token)
+            ->orWhere('nim', $token)
+            ->first();
+
+        if ($wisudawan) {
+            $wisudawan->update([
+                'is_hadir' => false,
+                'foto_keluar_gate' => $fotoPath ?? $wisudawan->foto_keluar_gate,
+                'waktu_keluar_gate' => now(),
+            ]);
+
+            $message = "🚪 CHECK-OUT KELUAR BERHASIL: Wisudawan {$wisudawan->nama_lengkap} (NIM: {$wisudawan->nim}) diizinkan keluar sementara. Foto wajah tersimpan.";
+
+            $data = [
+                'token' => $token,
+                'nama_lengkap' => $wisudawan->nama_lengkap,
+                'nim' => $wisudawan->nim,
+                'prodi' => $wisudawan->programStudi?->nama_prodi,
+                'pas_foto' => $wisudawan->pas_foto ? "/storage/{$wisudawan->pas_foto}" : null,
+                'foto_keluar_gate' => $wisudawan->foto_keluar_gate ? "/storage/{$wisudawan->foto_keluar_gate}" : null,
+                'waktu_keluar_gate' => now()->format('H:i:s WIB'),
+                'is_hadir' => false,
+            ];
+
+            if ($request->wantsJson()) {
+                return response()->json([
+                    'status' => 'checkout_success',
+                    'message' => $message,
+                    'wisudawan' => $wisudawan,
+                    'scanned_data' => $data,
+                ]);
+            }
+
             return redirect()->back()->with('success', $message);
         }
 
-        return redirect()->back()->with('error', "QR Code Invalid ($token). Data wisudawan / tamu undangan tidak ditemukan.");
+        // 2. Search as Guest
+        $guest = WisudawanTamuTambahan::with('wisudawan.programStudi')
+            ->where('qr_guest_token', $token)
+            ->first();
+
+        if ($guest) {
+            $wisudawanMain = $guest->wisudawan;
+            $guest->update([
+                'is_hadir' => false,
+                'is_hadir_gate' => false,
+                'foto_keluar_gate' => $fotoPath ?? $guest->foto_keluar_gate,
+                'waktu_keluar_gate' => now(),
+            ]);
+
+            $message = "🚪 CHECK-OUT KELUAR BERHASIL: Tamu/Pendamping {$guest->nama_tamu} (Wisudawan: {$wisudawanMain?->nama_lengkap}) diizinkan keluar sementara. Foto wajah tersimpan.";
+
+            $data = [
+                'token' => $token,
+                'nama_tamu' => $guest->nama_tamu,
+                'hubungan' => $guest->hubungan,
+                'wisudawan_nama' => $wisudawanMain?->nama_lengkap,
+                'wisudawan_nim' => $wisudawanMain?->nim,
+                'wisudawan_prodi' => $wisudawanMain?->programStudi?->nama_prodi,
+                'foto_keluar_gate' => $guest->foto_keluar_gate ? "/storage/{$guest->foto_keluar_gate}" : null,
+                'waktu_keluar_gate' => now()->format('H:i:s WIB'),
+                'is_hadir' => false,
+            ];
+
+            if ($request->wantsJson()) {
+                return response()->json([
+                    'status' => 'checkout_success',
+                    'message' => $message,
+                    'guest' => $guest,
+                    'guest_data' => $data,
+                ]);
+            }
+
+            return redirect()->back()->with('success', $message);
+        }
+
+        return response()->json(['status' => 'error', 'message' => "Data token ($token) tidak ditemukan."], 404);
     }
 
     /**
@@ -326,5 +561,59 @@ class PresensiWisudawanController extends Controller
         }
 
         return redirect()->back()->with('success', "Status presensi {$wisudawan->nama_lengkap} berhasil diperbarui.");
+    }
+
+    /**
+     * Action Setujui Masuk Kembali (Reset Foto Keluar & Waktu Keluar Gate)
+     */
+    public function approveReentry(Request $request)
+    {
+        $request->validate([
+            'qr_code_token' => 'required|string',
+        ]);
+
+        $token = trim($request->qr_code_token);
+
+        // 1. Search Wisudawan
+        $wisudawan = Wisudawan::where('qr_code_token', $token)
+            ->orWhere('nim', $token)
+            ->first();
+
+        if ($wisudawan) {
+            if ($wisudawan->foto_keluar_gate && \Illuminate\Support\Facades\Storage::disk('public')->exists($wisudawan->foto_keluar_gate)) {
+                \Illuminate\Support\Facades\Storage::disk('public')->delete($wisudawan->foto_keluar_gate);
+            }
+            $wisudawan->update([
+                'is_hadir' => true,
+                'foto_keluar_gate' => null,
+                'waktu_keluar_gate' => null,
+            ]);
+
+            return response()->json([
+                'status' => 'success',
+                'message' => "Verifikasi masuk kembali disetujui. Foto keluar wisudawan {$wisudawan->nama_lengkap} telah di-reset.",
+            ]);
+        }
+
+        // 2. Search Guest
+        $guest = WisudawanTamuTambahan::where('qr_guest_token', $token)->first();
+        if ($guest) {
+            if ($guest->foto_keluar_gate && \Illuminate\Support\Facades\Storage::disk('public')->exists($guest->foto_keluar_gate)) {
+                \Illuminate\Support\Facades\Storage::disk('public')->delete($guest->foto_keluar_gate);
+            }
+            $guest->update([
+                'is_hadir' => true,
+                'is_hadir_gate' => true,
+                'foto_keluar_gate' => null,
+                'waktu_keluar_gate' => null,
+            ]);
+
+            return response()->json([
+                'status' => 'success',
+                'message' => "Verifikasi masuk kembali disetujui. Foto keluar tamu {$guest->nama_tamu} telah di-reset.",
+            ]);
+        }
+
+        return response()->json(['status' => 'error', 'message' => 'Token tidak ditemukan.'], 404);
     }
 }
