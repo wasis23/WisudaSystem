@@ -56,11 +56,32 @@ const closeEditFotoModal = (force = false) => {
 };
 
 const onWisudawanFotoChange = (e) => {
+    uploadWisudawanFotoError.value = null;
     const file = e.target.files[0];
     if (!file) return;
+
+    // Validasi format
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+    const fileName = file.name.toLowerCase();
+    const isAllowedExt = fileName.endsWith('.jpg') || fileName.endsWith('.jpeg') || fileName.endsWith('.png') || fileName.endsWith('.webp');
+
+    if (!allowedTypes.includes(file.type) && !isAllowedExt) {
+        uploadWisudawanFotoError.value = 'Format file tidak didukung! Harap unggah foto dengan format JPG, JPEG, PNG, atau WEBP.';
+        e.target.value = '';
+        return;
+    }
+
+    // Validasi ukuran (maks 3 MB)
+    const maxSizeBytes = 3 * 1024 * 1024;
+    if (file.size > maxSizeBytes) {
+        const actualSizeMb = (file.size / (1024 * 1024)).toFixed(2);
+        uploadWisudawanFotoError.value = `Ukuran file melebihi 3MB! Berkas berukuran ${actualSizeMb} MB. Harap gunakan file maksimal 3 MB.`;
+        e.target.value = '';
+        return;
+    }
+
     wisudawanFotoFile.value = file;
     wisudawanFotoPreview.value = URL.createObjectURL(file);
-    uploadWisudawanFotoError.value = null;
 };
 
 const submitWisudawanFoto = () => {

@@ -510,15 +510,15 @@ Route::middleware(['auth', 'role:wisudawan,admin_utama'])->prefix('wisudawan')->
                 'tanggal_lulus' => 'nullable|date',
                 'nama_ayah' => 'nullable|string|max:255',
                 'nama_ibu' => 'nullable|string|max:255',
-                'pas_foto' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
+                'pas_foto' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
             ], [
                 'program_studi_id.required' => 'Program studi wajib dipilih.',
                 'program_studi_id.exists' => 'Program studi yang dipilih tidak valid di database.',
                 'nim.required' => 'NIM wajib diisi.',
                 'nama_lengkap.required' => 'Nama lengkap wajib diisi.',
                 'pas_foto.image' => 'File pas foto harus berupa berkas gambar.',
-                'pas_foto.mimes' => 'Format pas foto harus berupa JPG atau PNG.',
-                'pas_foto.max' => 'Ukuran file pas foto maksimal 2 MB.',
+                'pas_foto.mimes' => 'Format pas foto harus berupa file JPG, JPEG, PNG, atau WEBP.',
+                'pas_foto.max' => 'Ukuran file pas foto melebihi batas maksimal 2 MB (2048 KB).',
                 'tanggal_lahir.date' => 'Format tanggal lahir tidak valid.',
                 'tanggal_lulus.date' => 'Format tanggal lulus tidak valid.',
             ]);
