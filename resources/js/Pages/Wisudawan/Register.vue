@@ -73,14 +73,39 @@ const formattedFullName = computed(() => {
     return `${name}${degree}`;
 });
 
+const photoUploadError = ref('');
+
 // Open file picker → open crop modal
 const openFilePicker = () => {
+    photoUploadError.value = '';
     cropperFileInputRef.value?.click();
 };
 
 const handlePhotoChange = (e) => {
+    photoUploadError.value = '';
     const file = e.target.files[0];
     if (!file) return;
+
+    // 1. Validasi Ekstensi / Tipe File (JPG, JPEG, PNG, WEBP)
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+    const fileName = file.name.toLowerCase();
+    const isAllowedExt = fileName.endsWith('.jpg') || fileName.endsWith('.jpeg') || fileName.endsWith('.png') || fileName.endsWith('.webp');
+
+    if (!allowedTypes.includes(file.type) && !isAllowedExt) {
+        photoUploadError.value = 'Format file tidak didukung! Harap unggah pas foto dengan format JPG, JPEG, PNG, atau WEBP.';
+        e.target.value = '';
+        return;
+    }
+
+    // 2. Validasi Ukuran File (Maksimal 2 MB = 2 * 1024 * 1024 bytes)
+    const maxSizeBytes = 2 * 1024 * 1024;
+    if (file.size > maxSizeBytes) {
+        const actualSizeMb = (file.size / (1024 * 1024)).toFixed(2);
+        photoUploadError.value = `Ukuran file melebihi 2MB! File Anda berukuran ${actualSizeMb} MB. Harap kompres foto atau gunakan foto dengan ukuran maksimal 2 MB.`;
+        e.target.value = '';
+        return;
+    }
+
     rawImageSrc.value = URL.createObjectURL(file);
     showCropModal.value = true;
     e.target.value = '';
@@ -376,12 +401,23 @@ const submitForm = () => {
                                         {{ photoPreview ? 'Ganti & Crop Ulang Foto' : 'Pilih & Posisikan Pas Foto' }}
                                     </button>
                                     <p class="text-[10px] text-slate-400 mt-1.5 leading-tight">
-                                        Foto akan di-crop otomatis ke ukuran <strong>3:4</strong> (600×800px) sesuai posisi yang Anda pilih.
+                                        Format didukung: <strong>JPG, JPEG, PNG, WEBP</strong> (Maksimal <strong>2 MB</strong>). Foto akan di-crop otomatis ke ukuran <strong>3:4</strong> (600×800px).
                                     </p>
                                 </div>
                             </div>
+
+                            <!-- Alert Error Upload Foto -->
+                            <div v-if="photoUploadError" class="mt-3 p-3 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 text-xs text-rose-700 dark:text-rose-300 flex items-start gap-2 animate-shake">
+                                <span class="text-base shrink-0">⚠️</span>
+                                <div class="flex-1">
+                                    <p class="font-bold">Gagal Mengunggah Berkas Foto:</p>
+                                    <p class="mt-0.5">{{ photoUploadError }}</p>
+                                </div>
+                                <button type="button" @click="photoUploadError = ''" class="text-rose-500 hover:text-rose-700">✕</button>
+                            </div>
+
                             <!-- Hidden file input -->
-                            <input ref="cropperFileInputRef" @change="handlePhotoChange" type="file" accept="image/*" class="hidden" />
+                            <input ref="cropperFileInputRef" @change="handlePhotoChange" type="file" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp" class="hidden" />
                         </div>
 
                         <!-- Alamat Lengkap (Editable) -->
