@@ -65,6 +65,10 @@ class SikeuIntegrationService
                         $hasPaidWisuda = false;
                         $totalBayar = 0;
                         $totalTagihan = 2650000;
+                        $cashPokok = 0;
+                        $potPokok = 0;
+                        $tagihanPokok = 0;
+                        $adaSisaKurang = false;
                         $lastPaymentDate = null;
                         $noTransaksi = null;
                         $keteranganList = [];
@@ -72,22 +76,47 @@ class SikeuIntegrationService
                         foreach ($payments as $payment) {
                             $keterangan = strtolower($payment->keterangan ?? '');
                             $namaBiaya = strtolower($payment->nama_biaya ?? '');
-                            $nominal = (int)($payment->jumlah_bayar ?? 0);
-                            $totalBayar += $nominal;
+                            $bayar = (int)($payment->jumlah_bayar ?? 0);
+                            $potongan = (int)($payment->jumlah_potongan ?? 0);
+                            // Efektif = bayar tunai + potongan (diskon/beasiswa SIKEU).
+                            // Contoh: bayar 1.950.000 + potongan 700.000 = 2.650.000 => lunas.
+                            $nominal = $bayar + $potongan;
+                            $totalBayar += $bayar;
                             $lastPaymentDate = $payment->tanggal ?? $payment->createdAt ?? null;
                             $noTransaksi = $payment->kode ?? ('TX-' . $payment->id);
-                            $keteranganList[] = $payment->nama_biaya . ($payment->keterangan ? ' (' . $payment->keterangan . ')' : '');
-
-                            if (str_contains($namaBiaya, 'wisuda ta') || str_contains($namaBiaya, 'wisuda 20') || $nominal >= 2000000) {
-                                $hasPaidWisuda = true;
+                            $ketItem = $payment->nama_biaya . ($payment->keterangan ? ' (' . $payment->keterangan . ')' : '');
+                            if ($potongan > 0) {
+                                $ketItem .= ' [Potongan Rp ' . number_format($potongan, 0, ',', '.') . ']';
                             }
+                            $keteranganList[] = $ketItem;
 
-                            if (str_contains($namaBiaya, 'tambahan') || str_contains($keterangan, 'tambahan') || str_contains($keterangan, 'undangan')) {
+                            $isTambahan = str_contains($namaBiaya, 'tambahan') || str_contains($keterangan, 'tambahan') || str_contains($keterangan, 'undangan');
+
+                            if ($isTambahan) {
                                 $totalExtraGuests += max(1, (int)round($nominal / 375000));
+                            } else {
+                                $cashPokok += $bayar;
+                                $potPokok += $potongan;
+                                // Tagihan SIKEU bisa NET (sudah dikurangi diskon, mis. 1.950.000)
+                                // atau GROSS (mis. 2.500.000): pakai max tagihan tercatat apa adanya,
+                                // JANGAN dipaksa minimal 2.650.000 agar tagihan diskon/era lama valid.
+                                $rowTagihan = (int)($payment->tagihan ?? 0);
+                                if ($rowTagihan > 0) {
+                                    $tagihanPokok = max($tagihanPokok, $rowTagihan);
+                                }
+                                if ((int)($payment->kekurangan ?? 0) > 0) {
+                                    $adaSisaKurang = true;
+                                }
                             }
                         }
 
-                        if ($totalBayar >= 2000000) {
+                        if ($tagihanPokok > 0) {
+                            $totalTagihan = $tagihanPokok;
+                            // Lunas bila: (1) tunai menutup tagihan, atau
+                            // (2) tunai + potongan menutup tagihan dan SIKEU menyatakan sisa 0.
+                            $hasPaidWisuda = ($cashPokok >= $tagihanPokok)
+                                || (($cashPokok + $potPokok) >= $tagihanPokok && !$adaSisaKurang);
+                        } elseif (($cashPokok + $potPokok) >= 2500000) {
                             $hasPaidWisuda = true;
                         }
 
@@ -267,7 +296,10 @@ class SikeuIntegrationService
 
                     $totalBayar = 0;
                     $totalExtra = 0;
-                    $totalTagihanPokok = 2650000;
+                    $totalTagihanPokok = 0;
+                    $cashPokok = 0;
+                    $potPokok = 0;
+                    $adaSisaKurang = false;
                     $lastDate = null;
                     $noTx = null;
                     $kets = [];
@@ -276,24 +308,48 @@ class SikeuIntegrationService
                         foreach ($payments as $p) {
                             $ket = strtolower($p->keterangan ?? '');
                             $namaBiaya = strtolower($p->nama_biaya ?? '');
-                            $jml = (int)($p->jumlah_bayar ?? 0);
-                            $totalBayar += $jml;
+                            $bayar = (int)($p->jumlah_bayar ?? 0);
+                            $potongan = (int)($p->jumlah_potongan ?? 0);
+                            // Efektif = bayar tunai + potongan (diskon/beasiswa SIKEU).
+                            $jml = $bayar + $potongan;
+                            $totalBayar += $bayar;
                             $lastDate = $p->tanggal ?? $p->createdAt ?? $lastDate;
                             $noTx = $p->kode ?? $noTx;
-                            $kets[] = $p->nama_biaya . ($p->keterangan ? ' (' . $p->keterangan . ')' : '');
+                            $ketItem = $p->nama_biaya . ($p->keterangan ? ' (' . $p->keterangan . ')' : '');
+                            if ($potongan > 0) {
+                                $ketItem .= ' [Potongan Rp ' . number_format($potongan, 0, ',', '.') . ']';
+                            }
+                            $kets[] = $ketItem;
 
                             if (str_contains($namaBiaya, 'tambahan') || str_contains($ket, 'tambahan') || str_contains($ket, 'undangan')) {
                                 $totalExtra += max(1, (int)round($jml / 375000));
                             } else {
-                                if (!empty($p->tagihan) && (int)$p->tagihan > 0) {
-                                    $totalTagihanPokok = max($totalTagihanPokok, (int)$p->tagihan);
+                                $cashPokok += $bayar;
+                                $potPokok += $potongan;
+                                // Tagihan SIKEU bisa NET (sudah dikurangi diskon, mis. 1.950.000)
+                                // atau GROSS (mis. 2.500.000): pakai max tagihan tercatat apa adanya,
+                                // JANGAN dipaksa minimal 2.650.000 agar tagihan diskon/era lama valid.
+                                $rowTagihan = (int)($p->tagihan ?? 0);
+                                if ($rowTagihan > 0) {
+                                    $totalTagihanPokok = max($totalTagihanPokok, $rowTagihan);
+                                }
+                                if ((int)($p->kekurangan ?? 0) > 0) {
+                                    $adaSisaKurang = true;
                                 }
                             }
                         }
                     }
 
-                    // Status lunas HANYA jika total pembayaran mencukupi tagihan wisuda penuh (minimal 2.500.000 / sesuai tagihan)
-                    $isLunas = ($totalBayar >= $totalTagihanPokok || $totalBayar >= 2500000);
+                    // Default tagihan periode berjalan bila tidak ada data pokok sama sekali.
+                    if ($totalTagihanPokok <= 0) {
+                        $totalTagihanPokok = 2650000;
+                    }
+
+                    // Lunas bila: (1) tunai menutup tagihan, atau
+                    // (2) tunai + potongan menutup tagihan dan SIKEU menyatakan sisa 0.
+                    // Contoh RAMADHAN KUSWORO (202220316): bayar 1.950.000 >= tagihan 1.950.000 => lunas.
+                    $isLunas = ($cashPokok >= $totalTagihanPokok)
+                        || (($cashPokok + $potPokok) >= $totalTagihanPokok && !$adaSisaKurang);
 
                     $exists = SikeuPaymentCache::where('nim', $nim)->exists();
                     $this->saveToCache([
