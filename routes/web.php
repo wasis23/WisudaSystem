@@ -108,6 +108,9 @@ Route::middleware(['auth', 'role:admin_utama'])->prefix('admin')->name('admin.')
     Route::delete('/buku-kenangan/default-foto', [BukuKenanganController::class, 'destroyDefaultFoto'])->name('buku-kenangan.default-foto.destroy');
     Route::post('/buku-kenangan/wisudawan/{id}/foto', [BukuKenanganController::class, 'updateFotoWisudawan'])->name('buku-kenangan.wisudawan.foto.update');
     Route::delete('/buku-kenangan/wisudawan/{id}/foto', [BukuKenanganController::class, 'deleteFotoWisudawan'])->name('buku-kenangan.wisudawan.foto.destroy');
+    Route::post('/buku-kenangan/import-ipk', [BukuKenanganController::class, 'importIpk'])->name('buku-kenangan.import-ipk');
+    Route::get('/buku-kenangan/template-ipk', [BukuKenanganController::class, 'downloadTemplateIpk'])->name('buku-kenangan.template-ipk');
+    Route::patch('/buku-kenangan/wisudawan/{id}/ipk', [BukuKenanganController::class, 'updateSingleIpk'])->name('buku-kenangan.wisudawan.ipk.update');
 
     // SIMPEG Scan Duty Assignment (Security & Receptionist)
     Route::get('/duty-assignments', [DutyAssignmentController::class, 'index'])->name('duty-assignments.index');
@@ -170,6 +173,7 @@ Route::middleware(['auth', 'role:admin_utama'])->get('/database/database.sqlite'
 // 2. Security Scan Gate Route
 Route::middleware(['auth', 'role:security,admin_utama'])->prefix('security')->name('security.')->group(function () {
     Route::get('/scan', [PresensiWisudawanController::class, 'mobileSecurityScan'])->name('scan');
+    Route::get('/stats', [PresensiWisudawanController::class, 'getLiveStats'])->name('stats');
     Route::post('/scan', [PresensiWisudawanController::class, 'scan'])->name('scan.process');
     Route::post('/checkout', [PresensiWisudawanController::class, 'checkoutGate'])->name('checkout');
     Route::post('/approve-reentry', [PresensiWisudawanController::class, 'approveReentry'])->name('reentry.approve');
@@ -178,6 +182,7 @@ Route::middleware(['auth', 'role:security,admin_utama'])->prefix('security')->na
 // 3. Receptionist Scan Gate Route
 Route::middleware(['auth', 'role:receptionist,admin_utama'])->prefix('receptionist')->name('receptionist.')->group(function () {
     Route::get('/scan', [PresensiWisudawanController::class, 'mobileReceptionistScan'])->name('scan');
+    Route::get('/stats', [PresensiWisudawanController::class, 'getLiveStats'])->name('stats');
     Route::post('/scan', [PresensiWisudawanController::class, 'scan'])->name('scan.process');
     Route::post('/guest-presensi/{id}', [PresensiWisudawanController::class, 'processGuestAttendance'])->name('guest.toggle');
 });
@@ -188,6 +193,7 @@ Route::middleware(['auth', 'role:admin_utama'])->prefix('panitia')->name('paniti
     Route::get('/presensi', [PresensiWisudawanController::class, 'index'])->name('presensi');
     Route::get('/presensi/gate', [PresensiWisudawanController::class, 'index'])->name('presensi.gate');
     Route::get('/presensi/scan-gate', [PresensiWisudawanController::class, 'index'])->name('presensi.index');
+    Route::get('/presensi/stats', [PresensiWisudawanController::class, 'getLiveStats'])->name('presensi.stats');
     Route::post('/presensi', [PresensiWisudawanController::class, 'scan'])->name('presensi.scan');
 
     // Presensi Wisudawan (Information & Status List)
@@ -526,8 +532,15 @@ Route::middleware(['auth', 'role:wisudawan,admin_utama'])->prefix('wisudawan')->
             ]);
 
             if ($request->hasFile('pas_foto')) {
+                // Hapus pas foto lama jika ada berkas fisiknya
+                if ($user->wisudawan && $user->wisudawan->pas_foto && \Illuminate\Support\Facades\Storage::disk('public')->exists($user->wisudawan->pas_foto)) {
+                    \Illuminate\Support\Facades\Storage::disk('public')->delete($user->wisudawan->pas_foto);
+                }
                 $path = $request->file('pas_foto')->store('pas_foto', 'public');
                 $data['pas_foto'] = $path;
+            } else {
+                // Jangan timpa pas foto yang sudah ada jika mahasiswa tidak mengunggah berkas baru
+                unset($data['pas_foto']);
             }
 
             $data['is_biodata_filled'] = true;

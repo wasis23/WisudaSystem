@@ -53,8 +53,24 @@ class LoginRequest extends FormRequest
         $password   = $this->input('password');
 
         // ─────────────────────────────────────────────────────────────
-        // STRATEGY 1: Email Input (mengandung '@')
+        // STRATEGY 0: Akun Dummy / Testing Wisudawan (Direct Local Auth)
         // ─────────────────────────────────────────────────────────────
+        $dummyWisudawan = Wisudawan::withoutGlobalScope('excludeDummy')
+            ->where('is_dummy', true)
+            ->where(function ($q) use ($loginInput) {
+                $q->where('nim', $loginInput)
+                  ->orWhere('email', $loginInput);
+            })
+            ->first();
+
+        if ($dummyWisudawan && $dummyWisudawan->user_id) {
+            $user = User::find($dummyWisudawan->user_id);
+            if ($user && Hash::check($password, $user->password)) {
+                Auth::login($user, $this->boolean('remember'));
+                RateLimiter::clear($this->throttleKey());
+                return;
+            }
+        }
         $isEmail = filter_var($loginInput, FILTER_VALIDATE_EMAIL) || str_contains($loginInput, '@');
 
         if ($isEmail) {

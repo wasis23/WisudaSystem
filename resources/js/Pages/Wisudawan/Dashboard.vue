@@ -38,8 +38,228 @@ watch(() => page.props.flash, () => {
     showWarningAlert.value = true;
 }, { deep: true });
 
-const printTickets = () => {
-    window.print();
+const isDownloadingAll = ref(false);
+
+const drawBarcodeCard = (data) => {
+    const canvas = document.createElement('canvas');
+    canvas.width = 800;
+    canvas.height = 1040;
+    const ctx = canvas.getContext('2d');
+
+    // Background Canvas
+    ctx.fillStyle = '#F8FAFC';
+    ctx.fillRect(0, 0, 800, 1040);
+
+    // Rounded rectangle helper
+    const drawRoundRect = (x, y, w, h, r, fill, stroke, strokeColor, lineWidth = 2) => {
+        ctx.beginPath();
+        let radii = { tl: 0, tr: 0, br: 0, bl: 0 };
+        if (typeof r === 'number') {
+            radii = { tl: r, tr: r, br: r, bl: r };
+        } else if (typeof r === 'object') {
+            radii = { ...radii, ...r };
+        }
+        ctx.moveTo(x + radii.tl, y);
+        ctx.lineTo(x + w - radii.tr, y);
+        ctx.quadraticCurveTo(x + w, y, x + w, y + radii.tr);
+        ctx.lineTo(x + w, y + h - radii.br);
+        ctx.quadraticCurveTo(x + w, y + h, x + w - radii.br, y + h);
+        ctx.lineTo(x + radii.bl, y + h);
+        ctx.quadraticCurveTo(x, y + h, x, y + h - radii.bl);
+        ctx.lineTo(x, y + radii.tl);
+        ctx.quadraticCurveTo(x, y, x + radii.tl, y);
+        ctx.closePath();
+        if (fill) {
+            ctx.fillStyle = fill;
+            ctx.fill();
+        }
+        if (stroke) {
+            ctx.strokeStyle = strokeColor || '#E2E8F0';
+            ctx.lineWidth = lineWidth;
+            ctx.stroke();
+        }
+    };
+
+    // 1. Card Container (White with clean shadow & border)
+    drawRoundRect(24, 24, 752, 992, 28, '#FFFFFF', true, '#E2E8F0', 3);
+
+    // 2. Header Banner (Gradient)
+    const gradient = ctx.createLinearGradient(24, 24, 776, 200);
+    gradient.addColorStop(0, data.roleColorStart);
+    gradient.addColorStop(1, data.roleColorEnd);
+    drawRoundRect(24, 24, 752, 175, { tl: 28, tr: 28, br: 0, bl: 0 }, gradient, false);
+
+    // Institution Title
+    ctx.fillStyle = '#EEF2FF';
+    ctx.font = 'bold 15px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('POLITEKNIK INDONUSA SURAKARTA', 400, 62);
+
+    // Pass Title
+    ctx.fillStyle = '#FFFFFF';
+    ctx.font = '900 22px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+    ctx.fillText('E-TICKET PRESENSI WISUDA', 400, 94);
+
+    // Category Pill Badge
+    drawRoundRect(180, 118, 440, 38, 19, 'rgba(255, 255, 255, 0.22)', true, 'rgba(255, 255, 255, 0.45)', 1.5);
+    ctx.fillStyle = '#FFFFFF';
+    ctx.font = 'bold 13px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+    ctx.fillText(data.roleTitle, 400, 142);
+
+    // 3. Holder Name & Info
+    ctx.fillStyle = '#0F172A';
+    ctx.font = 'bold 24px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+    const nameText = data.name.length > 38 ? data.name.substring(0, 35) + '...' : data.name;
+    ctx.fillText(nameText, 400, 240);
+
+    ctx.fillStyle = '#64748B';
+    ctx.font = '600 14px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+    ctx.fillText(data.subtitle, 400, 268);
+
+    if (data.studentNote) {
+        ctx.fillStyle = '#94A3B8';
+        ctx.font = '500 12px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+        ctx.fillText(data.studentNote, 400, 290);
+    }
+
+    // 4. QR Code Box
+    const qrBoxY = data.studentNote ? 310 : 295;
+    drawRoundRect(240, qrBoxY, 320, 320, 20, '#FFFFFF', true, '#CBD5E1', 2);
+
+    if (data.qrCanvas) {
+        ctx.imageSmoothingEnabled = false;
+        ctx.drawImage(data.qrCanvas, 260, qrBoxY + 20, 280, 280);
+    }
+
+    // 5. Token ID Monospace Pill
+    const tokenY = qrBoxY + 345;
+    drawRoundRect(220, tokenY, 360, 36, 12, '#F1F5F9', true, '#CBD5E1', 1.5);
+    ctx.fillStyle = '#1E293B';
+    ctx.font = 'bold 14px "Courier New", Courier, monospace';
+    ctx.fillText('ID: ' + data.token, 400, tokenY + 23);
+
+    // 6. Scan Steps Notice Box
+    const noticeY = tokenY + 55;
+    drawRoundRect(60, noticeY, 680, 120, 16, '#F8FAFC', true, '#E2E8F0', 1.5);
+
+    ctx.fillStyle = '#475569';
+    ctx.font = 'bold 12px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+    ctx.fillText('ALUR 2X SCAN PRESENSI DI LOKASI WISUDA', 400, noticeY + 26);
+
+    ctx.textAlign = 'left';
+    ctx.fillStyle = '#0F172A';
+    ctx.font = 'bold 12px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+    ctx.fillText('1. Pos Security (Gate Depan)', 85, noticeY + 58);
+    ctx.font = 'normal 11px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+    ctx.fillStyle = '#64748B';
+    ctx.fillText('Verifikasi awal kendaraan & akses area kampus', 85, noticeY + 76);
+
+    ctx.fillStyle = '#0F172A';
+    ctx.font = 'bold 12px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+    ctx.fillText('2. Pintu Masuk Auditorium', 430, noticeY + 58);
+    ctx.font = 'normal 11px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+    ctx.fillStyle = '#64748B';
+    ctx.fillText('Presensi kehadiran venue & jatah konsumsi', 430, noticeY + 76);
+
+    // 7. Footer
+    ctx.textAlign = 'center';
+    ctx.fillStyle = '#94A3B8';
+    ctx.font = '500 11px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+    ctx.fillText('Simpan file barcode PNG ini ke ponsel untuk ditunjukkan saat acara wisuda.', 400, 965);
+    ctx.fillText('Wisuda Smart System • Politeknik Indonusa Surakarta', 400, 985);
+
+    return canvas.toDataURL('image/png');
+};
+
+const triggerDownload = (dataUrl, filename) => {
+    const link = document.createElement('a');
+    link.href = dataUrl;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+};
+
+const downloadSingleBarcode = (type, guestIndex = 0) => {
+    let cardData = null;
+    let filename = '';
+    const cleanNim = wisudawanData.value?.nim || 'STUDENT';
+    const cleanStudentName = (wisudawanData.value?.nama_lengkap || 'Wisudawan').replace(/[^a-zA-Z0-9_-]/g, '_');
+
+    if (type === 'wisudawan') {
+        const qrElement = document.querySelector('#qr-wisudawan canvas');
+        const prodi = wisudawanData.value?.program_studi?.nama_prodi || '';
+        cardData = {
+            roleTitle: 'MAHASISWA WISUDAWAN',
+            roleColorStart: '#4338CA',
+            roleColorEnd: '#6366F1',
+            name: wisudawanData.value?.nama_lengkap || 'Mahasiswa Wisudawan',
+            subtitle: `NIM: ${cleanNim}${prodi ? ' • ' + prodi : ''}`,
+            studentNote: '',
+            token: wisudawanData.value?.qr_code_token || `WSD-${cleanNim}`,
+            qrCanvas: qrElement,
+        };
+        filename = `Barcode_Wisudawan_${cleanNim}_${cleanStudentName}.png`;
+    } else {
+        const guest = allGuests.value[guestIndex];
+        const qrElement = document.querySelector(`#qr-guest-${guestIndex} canvas`);
+        const guestName = guest?.nama_tamu || `Pendamping ${guestIndex + 1}`;
+        const cleanGuestName = guestName.replace(/[^a-zA-Z0-9_-]/g, '_');
+        const token = guest?.qr_guest_token || `GST-${guestIndex + 1}-${cleanNim}`;
+
+        let colorStart = '#1D4ED8';
+        let colorEnd = '#3B82F6';
+        if (guestIndex === 1) {
+            colorStart = '#7E22CE';
+            colorEnd = '#A855F7';
+        } else if (guestIndex >= 2) {
+            colorStart = '#0F766E';
+            colorEnd = '#14B8A6';
+        }
+
+        const rolePrefix = guestIndex >= 2 ? `TAMU PENDAMPING #${guestIndex + 1} (EKSTRA)` : `TAMU PENDAMPING #${guestIndex + 1}`;
+        const roleLabel = guest?.hubungan ? `${rolePrefix} • ${guest.hubungan.toUpperCase()}` : rolePrefix;
+
+        cardData = {
+            roleTitle: roleLabel,
+            roleColorStart: colorStart,
+            roleColorEnd: colorEnd,
+            name: guestName,
+            subtitle: `Hubungan: ${guest?.hubungan || 'Tamu Undangan'}`,
+            studentNote: `Wisudawan: ${wisudawanData.value?.nama_lengkap || ''} (NIM: ${cleanNim})`,
+            token: token,
+            qrCanvas: qrElement,
+        };
+        filename = `Barcode_Pendamping_${guestIndex + 1}_${cleanGuestName}_${cleanNim}.png`;
+    }
+
+    if (cardData) {
+        const dataUrl = drawBarcodeCard(cardData);
+        triggerDownload(dataUrl, filename);
+    }
+};
+
+const downloadAllBarcodesPng = async () => {
+    if (isDownloadingAll.value) return;
+    isDownloadingAll.value = true;
+    try {
+        // 1. Download Wisudawan Barcode
+        downloadSingleBarcode('wisudawan');
+
+        // 2. Download each Guest Barcode in sequence with small timeout for browser compatibility
+        if (allGuests.value && allGuests.value.length > 0) {
+            for (let i = 0; i < allGuests.value.length; i++) {
+                await new Promise((resolve) => setTimeout(resolve, 400));
+                downloadSingleBarcode('guest', i);
+            }
+        }
+    } catch (e) {
+        console.error('Download barcode error:', e);
+    } finally {
+        setTimeout(() => {
+            isDownloadingAll.value = false;
+        }, 600);
+    }
 };
 </script>
 
@@ -528,17 +748,39 @@ const printTickets = () => {
                             </p>
                         </div>
 
-                        <a
-                            v-if="isLunas"
-                            :href="route('wisudawan.tiket.export-pdf')"
-                            target="_blank"
-                            class="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl transition flex items-center gap-2 shrink-0 shadow-sm hover:scale-105 transform duration-150"
-                        >
-                            <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                            </svg>
-                            <span>Unduh E-Ticket Resmi (PDF)</span>
-                        </a>
+                        <div class="flex flex-wrap items-center gap-2.5 shrink-0">
+                            <!-- BUTTON DOWNLOAD ALL BARCODES PNG -->
+                            <button
+                                v-if="isLunas"
+                                type="button"
+                                @click="downloadAllBarcodesPng"
+                                :disabled="isDownloadingAll"
+                                class="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-bold text-xs rounded-xl transition flex items-center gap-2 shadow-sm hover:scale-105 transform duration-150"
+                                title="Unduh seluruh file barcode .PNG untuk wisudawan dan seluruh pendamping"
+                            >
+                                <svg v-if="!isDownloadingAll" class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                                </svg>
+                                <svg v-else class="animate-spin w-4 h-4 text-white" fill="none" viewBox="0 0 24 24">
+                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+                                </svg>
+                                <span>{{ isDownloadingAll ? 'Mengunduh Barcode PNG...' : `Unduh Semua Barcode PNG (${1 + allGuests.length} Orang)` }}</span>
+                            </button>
+
+                            <!-- BUTTON DOWNLOAD PDF -->
+                            <a
+                                v-if="isLunas"
+                                :href="route('wisudawan.tiket.export-pdf')"
+                                target="_blank"
+                                class="px-4 py-2.5 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/60 dark:hover:bg-indigo-900/80 text-indigo-700 dark:text-indigo-300 font-bold text-xs rounded-xl transition flex items-center gap-2 border border-indigo-200 dark:border-indigo-700 shadow-sm"
+                            >
+                                <svg class="w-4 h-4 text-indigo-600 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                </svg>
+                                <span>Unduh PDF Resmi</span>
+                            </a>
+                        </div>
                     </div>
 
                     <!-- WARNING IF UNPAID -->
@@ -565,12 +807,12 @@ const printTickets = () => {
                                 <span>Mahasiswa Wisudawan</span>
                             </div>
 
-                            <div class="bg-white p-3 rounded-2xl border border-indigo-100 shadow-inner">
+                            <div class="bg-white p-3 rounded-2xl border border-indigo-100 shadow-inner" id="qr-wisudawan">
                                 <QrcodeVue
                                     :value="wisudawanData?.qr_code_token || ('WSD-' + (wisudawanData?.nim || 'STUDENT'))"
-                                    :size="150"
+                                    :size="180"
                                     level="H"
-                                    render-as="svg"
+                                    render-as="canvas"
                                 />
                             </div>
 
@@ -585,6 +827,19 @@ const printTickets = () => {
                                     ID: {{ wisudawanData?.qr_code_token }}
                                 </span>
                             </div>
+
+                            <!-- BUTTON DOWNLOAD SINGLE PNG -->
+                            <button
+                                v-if="isLunas"
+                                type="button"
+                                @click="downloadSingleBarcode('wisudawan')"
+                                class="w-full py-2.5 px-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl transition flex items-center justify-center gap-1.5 shadow-sm hover:scale-[1.02] transform duration-150"
+                            >
+                                <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                                </svg>
+                                <span>Unduh Barcode (.PNG)</span>
+                            </button>
 
                             <!-- SCAN STATUS TIMELINE -->
                             <div class="w-full pt-3 border-t border-slate-100 dark:border-slate-700 space-y-1.5 text-left text-[11px]">
@@ -630,12 +885,12 @@ const printTickets = () => {
                                 <span>Pendamping #{{ index + 1 }} {{ index >= 2 ? '(Ekstra SIKEU)' : '' }}</span>
                             </div>
 
-                            <div class="bg-white p-3 rounded-2xl border border-slate-100 shadow-inner">
+                            <div class="bg-white p-3 rounded-2xl border border-slate-100 shadow-inner" :id="`qr-guest-${index}`">
                                 <QrcodeVue
                                     :value="guest.qr_guest_token || ('GST-' + (index + 1) + '-' + wisudawanData?.nim)"
-                                    :size="150"
+                                    :size="180"
                                     level="H"
-                                    render-as="svg"
+                                    render-as="canvas"
                                 />
                             </div>
 
@@ -657,6 +912,24 @@ const printTickets = () => {
                                     ID: {{ guest.qr_guest_token || ('GST-' + (index + 1) + '-' + wisudawanData?.nim) }}
                                 </span>
                             </div>
+
+                            <!-- BUTTON DOWNLOAD SINGLE PNG FOR GUEST -->
+                            <button
+                                v-if="isLunas"
+                                type="button"
+                                @click="downloadSingleBarcode('guest', index)"
+                                :class="[
+                                    'w-full py-2.5 px-3 text-white font-bold text-xs rounded-xl transition flex items-center justify-center gap-1.5 shadow-sm hover:scale-[1.02] transform duration-150',
+                                    index === 0
+                                        ? 'bg-blue-600 hover:bg-blue-700'
+                                        : (index === 1 ? 'bg-purple-600 hover:bg-purple-700' : 'bg-teal-600 hover:bg-teal-700')
+                                ]"
+                            >
+                                <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                                </svg>
+                                <span>Unduh Barcode (.PNG)</span>
+                            </button>
 
                             <!-- SCAN STATUS TIMELINE -->
                             <div class="w-full pt-3 border-t border-slate-100 dark:border-slate-700 space-y-1.5 text-left text-[11px]">

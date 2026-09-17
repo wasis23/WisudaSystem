@@ -62,9 +62,11 @@ class Wisudawan extends Model
         'tanggal_bayar_sikeu',
         'nomor_transaksi_sikeu',
         'sikeu_synced_at',
+        'is_dummy',
     ];
 
     protected $casts = [
+        'is_dummy' => 'boolean',
         'is_tracer_study_filled' => 'boolean',
         'is_biodata_filled' => 'boolean',
         'tracer_study_data' => 'array',
@@ -164,7 +166,7 @@ class Wisudawan extends Model
 
     public function tamuTambahan()
     {
-        return $this->hasMany(WisudawanTamuTambahan::class, 'wisudawan_id');
+        return $this->hasMany(WisudawanTamuTambahan::class, 'wisudawan_id')->withoutGlobalScope('excludeDummy');
     }
 
     public function tracerStudy()
@@ -193,5 +195,22 @@ class Wisudawan extends Model
             $q->where('status_pembayaran_sikeu', 'belum_lunas')
               ->orWhereNull('status_pembayaran_sikeu');
         });
+    }
+
+    protected static function booted(): void
+    {
+        static::addGlobalScope('excludeDummy', function ($builder) {
+            $builder->where('wisudawan.is_dummy', false);
+        });
+    }
+
+    public function scopeWithDummy($query)
+    {
+        return $query->withoutGlobalScope('excludeDummy');
+    }
+
+    public function scopeOnlyDummy($query)
+    {
+        return $query->withoutGlobalScope('excludeDummy')->where('wisudawan.is_dummy', true);
     }
 }

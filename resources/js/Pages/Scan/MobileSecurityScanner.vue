@@ -161,16 +161,6 @@ const checkoutFileInputRef = ref(null);
 let checkoutMediaStream = null;
 
 const showPopupNotification = (type, title, message, data = null, guestData = null) => {
-    if (popupTimer) clearTimeout(popupTimer);
-    if (popupCountdownInterval) clearInterval(popupCountdownInterval);
-
-    // Disable timer on checkout (warning / already scanned) and on re-entry face verification (manual verification required)
-    const isReentry = !!((data?.is_reentry && data?.foto_keluar_gate) || (guestData?.is_reentry && guestData?.foto_keluar_gate));
-    const isCheckout = type === 'warning' || title.includes('CHECK-OUT');
-    const noTimer = isReentry || isCheckout;
-
-    const countdownDuration = 3;
-
     popup.value = {
         show: true,
         type,
@@ -178,26 +168,10 @@ const showPopupNotification = (type, title, message, data = null, guestData = nu
         message,
         data,
         guestData,
-        hasTimer: !noTimer,
-        countdown: countdownDuration,
     };
 
     // Matikan kamera seketika saat informasi hasil scan muncul
     stopCamera();
-
-    if (!noTimer) {
-        popupCountdownInterval = setInterval(() => {
-            if (popup.value.countdown > 1) {
-                popup.value.countdown--;
-            }
-        }, 1000);
-
-        popupTimer = setTimeout(() => {
-            if (!isCapturingCheckout.value) {
-                closePopup();
-            }
-        }, countdownDuration * 1000);
-    }
 };
 
 const isApprovingReentry = ref(false);
@@ -223,11 +197,8 @@ const closePopup = async () => {
 
     popup.value.show = false;
     stopCheckoutCamera();
-    if (popupTimer) clearTimeout(popupTimer);
-    if (popupCountdownInterval) clearInterval(popupCountdownInterval);
-    // Aktifkan kembali kamera setelah timer habis atau tombol Selesai ditekan
+    // Aktifkan kembali kamera setelah tombol Selesai ditekan
     startCamera();
-    focusManualInput();
 };
 
 const openCheckoutDialog = async () => {
@@ -360,7 +331,13 @@ const processScan = async (rawToken) => {
 
         if (response.data.status === 'success') {
             playSuccessSound();
-            localStats.value.total_security_scanned++;
+            
+            // Sync realtime stats from server response
+            if (response.data?.stats?.total_security_scanned !== undefined) {
+                localStats.value.total_security_scanned = response.data.stats.total_security_scanned;
+            } else {
+                localStats.value.total_security_scanned++;
+            }
 
             const scanned = response.data.scanned_data;
             const guest = response.data.guest_data;
@@ -390,6 +367,10 @@ const processScan = async (rawToken) => {
             const scanned = response.data.scanned_data;
             const guest = response.data.guest_data;
 
+            if (response.data?.stats?.total_security_scanned !== undefined) {
+                localStats.value.total_security_scanned = response.data.stats.total_security_scanned;
+            }
+
             showPopupNotification(
                 'warning',
                 'SUDAH PERNAH DI-SCAN',
@@ -407,7 +388,21 @@ const processScan = async (rawToken) => {
         showPopupNotification('error', 'AKSES DITOLAK / TIDAK DITEMUKAN', msg);
     } finally {
         isProcessing.value = false;
-        focusManualInput();
+    }
+};
+
+let statsInterval = null;
+
+const syncLiveStats = async () => {
+    try {
+        const res = await axios.get(route('security.stats'), {
+            headers: { 'Accept': 'application/json' }
+        });
+        if (res.data?.stats?.total_security_scanned !== undefined) {
+            localStats.value.total_security_scanned = res.data.stats.total_security_scanned;
+        }
+    } catch (e) {
+        // Silently ignore temporary network jitter
     }
 };
 
@@ -472,15 +467,15 @@ const handleGlobalKeyDown = (e) => {
 
 onMounted(() => {
     startCamera();
-    focusManualInput();
     window.addEventListener('keydown', handleGlobalKeyDown);
+    syncLiveStats();
+    statsInterval = setInterval(syncLiveStats, 3000);
 });
 
 onUnmounted(() => {
     stopCamera();
     window.removeEventListener('keydown', handleGlobalKeyDown);
-    if (popupTimer) clearTimeout(popupTimer);
-    if (popupCountdownInterval) clearInterval(popupCountdownInterval);
+    if (statsInterval) clearInterval(statsInterval);
 });
 </script>
 
@@ -700,18 +695,14 @@ onUnmounted(() => {
 
                         <!-- Footer Action & Next Scan Indicator -->
                         <div class="pt-2 flex items-center justify-between gap-3">
-                            <div v-if="popup.hasTimer" class="text-[11px] text-slate-400 flex items-center gap-1.5 font-medium">
-                                <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
-                                <span>Siap scan berikutnya ({{ popup.countdown }}s)</span>
-                            </div>
-                            <div v-else class="text-[11px] text-amber-400 flex items-center gap-1.5 font-semibold">
+                            <div class="text-[11px] text-slate-400 flex items-center gap-1.5 font-medium">
                                 <span class="w-2 h-2 rounded-full bg-amber-400"></span>
-                                <span>Memerlukan aksi petugas</span>
+                                <span>Tekan Selesai untuk lanjut scan</span>
                             </div>
                             <button 
                                 @click="closePopup"
                                 :disabled="isApprovingReentry"
-                                class="px-4 py-2 text-xs font-bold rounded-xl transition bg-slate-800 hover:bg-slate-700 disabled:opacity-50 text-white border border-slate-700 flex items-center gap-1.5"
+                                class="px-5 py-2 text-xs font-bold rounded-xl transition bg-slate-800 hover:bg-slate-700 disabled:opacity-50 text-white border border-slate-700 flex items-center gap-1.5 shadow-md"
                             >
                                 <span v-if="isApprovingReentry" class="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
                                 <span>{{ (popup.data?.is_reentry || popup.guestData?.is_reentry) ? '✓ Setujui Masuk & Reset Foto' : '✓ Selesai' }}</span>

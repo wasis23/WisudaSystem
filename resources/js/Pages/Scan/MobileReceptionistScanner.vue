@@ -154,11 +154,6 @@ const playWarningSound = () => {
 };
 
 const showPopupNotification = (type, title, message, data = null, guestData = null) => {
-    if (popupTimer) clearTimeout(popupTimer);
-    if (popupCountdownInterval) clearInterval(popupCountdownInterval);
-
-    const countdownDuration = type === 'success' ? 3 : 4;
-
     popup.value = {
         show: true,
         type,
@@ -166,40 +161,20 @@ const showPopupNotification = (type, title, message, data = null, guestData = nu
         message,
         data,
         guestData,
-        countdown: countdownDuration,
     };
 
     // Matikan kamera seketika saat informasi hasil scan muncul
     stopCamera();
-
-    popupCountdownInterval = setInterval(() => {
-        if (popup.value.countdown > 1) {
-            popup.value.countdown--;
-        }
-    }, 1000);
-
-    popupTimer = setTimeout(() => {
-        closePopup();
-    }, countdownDuration * 1000);
 };
 
 const closePopup = () => {
     popup.value.show = false;
-    if (popupTimer) clearTimeout(popupTimer);
-    if (popupCountdownInterval) clearInterval(popupCountdownInterval);
-    // Aktifkan kembali kamera setelah timer habis atau tombol Selesai ditekan
+    // Aktifkan kembali kamera setelah tombol Selesai ditekan
     startCamera();
-    focusManualInput();
-};
-
-const focusManualInput = () => {
-    nextTick(() => {
-        manualInputRef.value?.focus();
-    });
 };
 
 const processScan = async (rawToken) => {
-    // HARD LOCK: DO NOT scan if popup is open (timer not expired or waiting for button press) or already processing
+    // HARD LOCK: DO NOT scan if popup is open (waiting for button press) or already processing
     if (popup.value.show || isProcessing.value) return;
 
     const token = String(rawToken || '').trim();
@@ -226,7 +201,14 @@ const processScan = async (rawToken) => {
 
         if (response.data.status === 'success') {
             playSuccessSound();
-            localStats.value.total_reception_scanned++;
+
+            // Sync realtime stats from server response
+            if (response.data?.stats?.total_reception_scanned !== undefined) {
+                localStats.value.total_reception_scanned = response.data.stats.total_reception_scanned;
+                localStats.value.total_snack_issued = response.data.stats.total_snack_issued;
+            } else {
+                localStats.value.total_reception_scanned++;
+            }
 
             const scanned = response.data.scanned_data;
             const guest = response.data.guest_data;
@@ -257,6 +239,11 @@ const processScan = async (rawToken) => {
             const scanned = response.data.scanned_data;
             const guest = response.data.guest_data;
 
+            if (response.data?.stats?.total_reception_scanned !== undefined) {
+                localStats.value.total_reception_scanned = response.data.stats.total_reception_scanned;
+                localStats.value.total_snack_issued = response.data.stats.total_snack_issued;
+            }
+
             showPopupNotification(
                 'warning',
                 'SUDAH PERNAH DI-SCAN',
@@ -274,22 +261,22 @@ const processScan = async (rawToken) => {
         showPopupNotification('error', 'AKSES DITOLAK / TIDAK DITEMUKAN', msg);
     } finally {
         isProcessing.value = false;
-        focusManualInput();
     }
 };
 
-const toggleGuestStatus = async (guestId, field) => {
+let statsInterval = null;
+
+const syncLiveStats = async () => {
     try {
-        await axios.post(route('receptionist.guest.toggle', guestId), {
-            [field]: true,
+        const res = await axios.get(route('receptionist.stats'), {
+            headers: { 'Accept': 'application/json' }
         });
-        if (popup.value.data?.tamu_tambahan_list) {
-            const item = popup.value.data.tamu_tambahan_list.find(g => g.id === guestId);
-            if (item) item[field] = !item[field];
+        if (res.data?.stats?.total_reception_scanned !== undefined) {
+            localStats.value.total_reception_scanned = res.data.stats.total_reception_scanned;
+            localStats.value.total_snack_issued = res.data.stats.total_snack_issued;
         }
-        playSuccessSound();
     } catch (e) {
-        console.error(e);
+        // Silently ignore temporary network jitter
     }
 };
 
@@ -354,15 +341,15 @@ const handleGlobalKeyDown = (e) => {
 
 onMounted(() => {
     startCamera();
-    focusManualInput();
     window.addEventListener('keydown', handleGlobalKeyDown);
+    syncLiveStats();
+    statsInterval = setInterval(syncLiveStats, 3000);
 });
 
 onUnmounted(() => {
     stopCamera();
     window.removeEventListener('keydown', handleGlobalKeyDown);
-    if (popupTimer) clearTimeout(popupTimer);
-    if (popupCountdownInterval) clearInterval(popupCountdownInterval);
+    if (statsInterval) clearInterval(statsInterval);
 });
 </script>
 
@@ -445,9 +432,12 @@ onUnmounted(() => {
                                 </div>
                             </div>
 
-                            <!-- Interactive Extra Guest Snack Status -->
+                            <!-- Guest Snack Status (Read-Only Informational) -->
                             <div v-if="popup.data.tamu_tambahan_list?.length > 0" class="pt-2 border-t border-slate-800 space-y-1.5">
-                                <span class="text-[10px] font-bold text-purple-300 uppercase tracking-wider block">Tamu Pendamping & Penyerahan Snack:</span>
+                                <div class="flex items-center justify-between">
+                                    <span class="text-[10px] font-bold text-purple-300 uppercase tracking-wider block">Daftar Tamu Pendamping:</span>
+                                    <span class="text-[9px] text-slate-400">Scan Barcode Tamu untuk Snack</span>
+                                </div>
                                 <div class="space-y-1.5 max-h-32 overflow-y-auto">
                                     <div 
                                         v-for="g in popup.data.tamu_tambahan_list" 
@@ -458,13 +448,12 @@ onUnmounted(() => {
                                             <div class="font-bold text-slate-200 truncate">{{ g.nama_tamu }}</div>
                                             <span class="text-[9px] text-slate-400">({{ g.hubungan || 'Tamu' }})</span>
                                         </div>
-                                        <button 
-                                            @click="toggleGuestStatus(g.id, 'snack_diambil')"
-                                            class="px-2.5 py-1 text-[10px] font-bold rounded-lg transition shrink-0"
-                                            :class="g.snack_diambil ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-purple-600 text-white hover:bg-purple-700'"
+                                        <span 
+                                            class="px-2 py-1 text-[10px] font-bold rounded-lg shrink-0 border"
+                                            :class="g.snack_diambil ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30' : 'bg-slate-800 text-slate-400 border-slate-700'"
                                         >
-                                            {{ g.snack_diambil ? '✓ Snack Diserahkan' : 'Serahkan Snack' }}
-                                        </button>
+                                            {{ g.snack_diambil ? '✓ Snack Diserahkan' : 'Belum Scan Tamu' }}
+                                        </span>
                                     </div>
                                 </div>
                             </div>
@@ -491,12 +480,12 @@ onUnmounted(() => {
                         <!-- Footer Action & Next Scan Indicator -->
                         <div class="pt-2 flex items-center justify-between gap-3">
                             <div class="text-[11px] text-slate-400 flex items-center gap-1.5 font-medium">
-                                <span class="w-2 h-2 rounded-full bg-purple-400 animate-ping"></span>
-                                <span>Siap scan berikutnya ({{ popup.countdown }}s)</span>
+                                <span class="w-2 h-2 rounded-full bg-purple-400"></span>
+                                <span>Tekan Selesai untuk lanjut scan</span>
                             </div>
                             <button 
                                 @click="closePopup"
-                                class="px-4 py-2 text-xs font-bold rounded-xl transition bg-slate-850 hover:bg-slate-800 text-white border border-slate-700"
+                                class="px-5 py-2 text-xs font-bold rounded-xl transition bg-slate-800 hover:bg-slate-700 text-white border border-slate-700 shadow-md"
                             >
                                 ✓ Selesai
                             </button>

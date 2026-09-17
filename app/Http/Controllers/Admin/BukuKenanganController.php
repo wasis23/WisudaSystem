@@ -8,6 +8,7 @@ use App\Models\ProgramStudi;
 use App\Models\Wisudawan;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 
 class BukuKenanganController extends Controller
@@ -443,5 +444,346 @@ class BukuKenanganController extends Controller
         ])->setPaper('a4', 'portrait');
 
         return $pdf->stream("Buku_Kenangan_Wisuda_{$periode->nomor_periode}.pdf");
+    }
+
+    /**
+     * Download CSV template for importing IPK with all wisudawan in the period pre-filled
+     */
+    public function downloadTemplateIpk(Request $request)
+    {
+        $selectedPeriodeId = $request->periode_id ?? (PeriodeWisuda::getActive()?->id ?? PeriodeWisuda::latest()->first()?->id);
+        $periode = PeriodeWisuda::findOrFail($selectedPeriodeId);
+        $jenis = $request->input('jenis', 'all');
+
+        $wisudawans = Wisudawan::with('programStudi')
+            ->where('periode_wisuda_id', $periode->id)
+            ->where('is_dummy', 0)
+            ->orderByRaw($this->getProdiOrderRawSql('program_studi_id'))
+            ->orderBy('nim')
+            ->get();
+
+        $prefix = match ($jenis) {
+            'cumlaude' => 'Template_Import_IPK_Cumlaude_',
+            'non_cumlaude' => 'Template_Import_IPK_Non_Cumlaude_',
+            default => 'Template_Import_IPK_',
+        };
+
+        $filename = "{$prefix}Wisuda_{$periode->nomor_periode}.csv";
+
+        $headers = [
+            'Content-Type' => 'text/csv; charset=utf-8',
+            'Content-Disposition' => "attachment; filename=\"{$filename}\"",
+        ];
+
+        $callback = function () use ($wisudawans) {
+            $file = fopen('php://output', 'w');
+            // Add UTF-8 BOM for Microsoft Excel compatibility
+            fputs($file, "\xEF\xBB\xBF");
+            fputcsv($file, ['NIM', 'IPK']);
+
+            foreach ($wisudawans as $w) {
+                fputcsv($file, [
+                    $w->nim,
+                    ($w->ipk !== null && (float)$w->ipk > 0) ? number_format((float)$w->ipk, 2, '.', '') : '',
+                ]);
+            }
+
+            fclose($file);
+        };
+
+        return response()->stream($callback, 200, $headers);
+    }
+
+    /**
+     * Import IPK massal via file upload (CSV/TXT/XLSX) or direct textarea copy-paste
+     * Berdasarkan 2 jenis import: Cumlaude atau Bukan Cumlaude
+     */
+    public function importIpk(Request $request)
+    {
+        $request->validate([
+            'periode_id' => 'required|exists:periode_wisuda,id',
+            'jenis_import' => 'required|in:cumlaude,non_cumlaude',
+            'file' => 'nullable|file|max:5120',
+            'raw_text' => 'nullable|string',
+        ]);
+
+        if (!$request->hasFile('file') && empty(trim($request->raw_text ?? ''))) {
+            return redirect()->back()->with('error', 'Silakan pilih file CSV/Excel atau tempel teks data NIM & IPK.');
+        }
+
+        $periodeId = (int) $request->periode_id;
+        $isCumlaude = ($request->input('jenis_import') === 'cumlaude');
+        $parsedData = $this->parseIpkData($request);
+
+        if (empty($parsedData)) {
+            return redirect()->back()->with('error', 'Tidak ditemukan data pasangan NIM dan IPK yang valid. Pastikan format mengandung NIM dan nilai IPK (contoh: D23102 3.75).');
+        }
+
+        $updatedCount = 0;
+        $skippedNims = [];
+
+        DB::transaction(function () use ($parsedData, $periodeId, $isCumlaude, &$updatedCount, &$skippedNims) {
+            foreach ($parsedData as $item) {
+                $nim = $item['nim'];
+                $ipk = (float) $item['ipk'];
+                $predikat = $this->calculatePredikat($ipk, $isCumlaude);
+
+                $wisudawan = Wisudawan::where('periode_wisuda_id', $periodeId)
+                    ->where('nim', $nim)
+                    ->first();
+
+                if ($wisudawan) {
+                    $wisudawan->update([
+                        'ipk' => $ipk,
+                        'predikat_kelulusan' => $predikat,
+                    ]);
+                    $updatedCount++;
+                } else {
+                    $skippedNims[] = $nim;
+                }
+            }
+        });
+
+        $kategoriLabel = $isCumlaude ? 'CUMLAUDE (Dengan Pujian)' : 'BUKAN CUMLAUDE (Non-Cumlaude)';
+        $msg = "✅ Berhasil memperbarui nilai IPK untuk {$updatedCount} wisudawan dengan kategori [{$kategoriLabel}]!";
+        if (!empty($skippedNims)) {
+            $skippedCount = count($skippedNims);
+            $sampleSkipped = implode(', ', array_slice($skippedNims, 0, 5));
+            $msg .= " ({$skippedCount} NIM dilewati karena tidak terdaftar di periode ini: {$sampleSkipped}" . ($skippedCount > 5 ? " dsb." : "") . ").";
+        }
+
+        return redirect()->back()->with('success', $msg);
+    }
+
+    /**
+     * Update single wisudawan IPK inline with explicit Cumlaude choice
+     */
+    public function updateSingleIpk(Request $request, $id)
+    {
+        $validated = $request->validate([
+            'ipk' => 'nullable|numeric|min:0|max:4.00',
+            'is_cumlaude' => 'nullable|boolean',
+        ]);
+
+        $wisudawan = Wisudawan::findOrFail($id);
+        $ipk = isset($validated['ipk']) && $validated['ipk'] !== '' && $validated['ipk'] !== null ? (float)$validated['ipk'] : null;
+        $isCumlaude = filter_var($request->input('is_cumlaude', false), FILTER_VALIDATE_BOOLEAN);
+
+        $predikat = '-';
+        if ($ipk !== null) {
+            $predikat = $this->calculatePredikat($ipk, $isCumlaude);
+        }
+
+        $wisudawan->update([
+            'ipk' => $ipk,
+            'predikat_kelulusan' => $predikat,
+        ]);
+
+        $formattedIpk = $ipk !== null ? number_format($ipk, 2, '.', '') : '-';
+        $statusInfo = $isCumlaude ? ' [Cumlaude]' : " [Bukan Cumlaude: {$predikat}]";
+        return redirect()->back()->with('success', "Nilai IPK untuk {$wisudawan->nama_lengkap} ({$wisudawan->nim}) berhasil diperbarui menjadi {$formattedIpk}{$statusInfo}.");
+    }
+
+    /**
+     * Hitung predikat kelulusan berdasarkan penentuan Cumlaude atau Standar Non-Cumlaude
+     */
+    private function calculatePredikat(float $ipk, bool $isCumlaude = false): string
+    {
+        if ($isCumlaude) {
+            return 'Dengan Pujian (Cumlaude)';
+        }
+
+        if ($ipk >= 3.01) {
+            return 'Sangat Memuaskan';
+        } elseif ($ipk >= 2.76) {
+            return 'Memuaskan';
+        } elseif ($ipk > 0) {
+            return 'Cukup';
+        }
+        return '-';
+    }
+
+    /**
+     * Ekstraksi dan parsing data NIM & IPK dari file atau input teks
+     */
+    private function parseIpkData(Request $request): array
+    {
+        if ($request->hasFile('file')) {
+            $file = $request->file('file');
+            $ext = strtolower($file->getClientOriginalExtension());
+            $path = $file->getRealPath();
+
+            if ($ext === 'xlsx') {
+                return $this->parseXlsxFile($path);
+            }
+
+            $content = file_get_contents($path);
+            return $this->parseCsvOrTextContent($content);
+        }
+
+        if ($request->filled('raw_text')) {
+            return $this->parseCsvOrTextContent($request->raw_text);
+        }
+
+        return [];
+    }
+
+    /**
+     * Parse file XLSX secara native menggunakan ZipArchive + SimpleXML
+     */
+    private function parseXlsxFile(string $filePath): array
+    {
+        if (!class_exists('ZipArchive')) {
+            return [];
+        }
+
+        $zip = new \ZipArchive();
+        if ($zip->open($filePath) !== true) {
+            return [];
+        }
+
+        $sharedStrings = [];
+        $stringsXml = $zip->getFromName('xl/sharedStrings.xml');
+        if ($stringsXml) {
+            $xml = @simplexml_load_string($stringsXml);
+            if ($xml && isset($xml->si)) {
+                foreach ($xml->si as $si) {
+                    if (isset($si->t)) {
+                        $sharedStrings[] = (string)$si->t;
+                    } elseif (isset($si->r)) {
+                        $textParts = [];
+                        foreach ($si->r as $r) {
+                            $textParts[] = (string)$r->t;
+                        }
+                        $sharedStrings[] = implode('', $textParts);
+                    } else {
+                        $sharedStrings[] = '';
+                    }
+                }
+            }
+        }
+
+        $rawRows = [];
+        $sheetXml = $zip->getFromName('xl/worksheets/sheet1.xml');
+        if ($sheetXml) {
+            $xml = @simplexml_load_string($sheetXml);
+            if ($xml && isset($xml->sheetData->row)) {
+                foreach ($xml->sheetData->row as $r) {
+                    $cells = [];
+                    foreach ($r->c as $c) {
+                        $val = (string)$c->v;
+                        $type = (string)$c['t'];
+                        if ($type === 's' && isset($sharedStrings[(int)$val])) {
+                            $val = $sharedStrings[(int)$val];
+                        }
+                        $cells[] = trim($val);
+                    }
+                    if (!empty($cells)) {
+                        $rawRows[] = $cells;
+                    }
+                }
+            }
+        }
+        $zip->close();
+
+        return $this->extractNimIpkFromRows($rawRows);
+    }
+
+    /**
+     * Parse konten teks atau CSV baris demi baris
+     */
+    private function parseCsvOrTextContent(string $content): array
+    {
+        $lines = preg_split('/\r\n|\r|\n/', trim($content));
+        $rawRows = [];
+
+        foreach ($lines as $line) {
+            $line = trim($line);
+            if (empty($line)) continue;
+
+            if (str_contains($line, "\t")) {
+                $parts = explode("\t", $line);
+            } elseif (str_contains($line, ";")) {
+                $parts = str_getcsv($line, ";");
+            } elseif (str_contains($line, ",")) {
+                $parts = str_getcsv($line, ",");
+            } elseif (str_contains($line, "|")) {
+                $parts = explode("|", $line);
+            } else {
+                $parts = preg_split('/\s+/', $line);
+            }
+
+            $rawRows[] = array_map('trim', $parts);
+        }
+
+        return $this->extractNimIpkFromRows($rawRows);
+    }
+
+    /**
+     * Ekstraksi NIM dan IPK dari array sel/kolom
+     */
+    private function extractNimIpkFromRows(array $rawRows): array
+    {
+        $results = [];
+
+        foreach ($rawRows as $row) {
+            if (count($row) < 2) continue;
+
+            $nim = null;
+            $ipk = null;
+
+            foreach ($row as $idx => $col) {
+                $cleanCol = trim($col);
+                if ($cleanCol === '') continue;
+
+                // Cek jika kolom adalah NIM (alphanumeric 4-15 karakter, bukan header)
+                if (!$nim && !in_array(strtoupper($cleanCol), ['NIM', 'NIPD', 'NO', 'NOMOR', 'NAMA', 'STUDENT_ID'])) {
+                    if (preg_match('/^[a-zA-Z0-9\-_]{4,15}$/', $cleanCol) && !is_numeric($cleanCol) && !str_contains($cleanCol, '.')) {
+                        $nim = strtoupper($cleanCol);
+                        continue;
+                    }
+                }
+
+                // Cek jika kolom adalah IPK (0.00 - 4.00)
+                $colNumeric = str_replace(',', '.', $cleanCol);
+                if ($ipk === null && is_numeric($colNumeric)) {
+                    $num = (float)$colNumeric;
+                    if ($num >= 0.0 && $num <= 4.0) {
+                        $ipk = $num;
+                    }
+                }
+            }
+
+            // Fallback: Jika NIM belum ketemu dari regex, ambil kolom pertama jika bukan header
+            if (!$nim && !empty($row[0])) {
+                $firstCol = strtoupper(trim($row[0]));
+                if (!in_array($firstCol, ['NIM', 'NIPD', 'NO', 'NOMOR', 'NAMA', 'STUDENT_ID']) && preg_match('/^[a-zA-Z0-9\-_]{4,20}$/', $firstCol)) {
+                    $nim = $firstCol;
+                }
+            }
+
+            // Fallback: Jika IPK belum ketemu, cari angka desimal dari kolom kanan ke kiri
+            if ($ipk === null) {
+                for ($i = count($row) - 1; $i >= 1; $i--) {
+                    $val = str_replace(',', '.', trim($row[$i]));
+                    if (is_numeric($val)) {
+                        $num = (float)$val;
+                        if ($num >= 0.0 && $num <= 4.0) {
+                            $ipk = $num;
+                            break;
+                        }
+                    }
+                }
+            }
+
+            if ($nim && $ipk !== null) {
+                $results[] = [
+                    'nim' => $nim,
+                    'ipk' => number_format($ipk, 2, '.', ''),
+                ];
+            }
+        }
+
+        return $results;
     }
 }

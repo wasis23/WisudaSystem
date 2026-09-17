@@ -30,24 +30,100 @@ class PresensiWisudawanController extends Controller
     }
 
     /**
+     * Hitung Statistik Kehadiran Terpadu (Wisudawan + Pendamping + Extra)
+     */
+    public function getScannerStats($activePeriodeId = null)
+    {
+        if (!$activePeriodeId) {
+            $activePeriode = PeriodeWisuda::getActive() ?? PeriodeWisuda::latest()->first();
+            $activePeriodeId = $activePeriode?->id;
+        }
+
+        $baseWisudawanQuery = Wisudawan::where('periode_wisuda_id', $activePeriodeId)->where('status_verifikasi', 'verified');
+        $baseTamuQuery = WisudawanTamuTambahan::whereHas('wisudawan', function ($q) use ($activePeriodeId) {
+            $q->where('periode_wisuda_id', $activePeriodeId)->where('status_verifikasi', 'verified');
+        });
+
+        // 1. Total Scan Gate (Security Gate - Kumulatif): Wisudawan Hadir Gate + Pendamping Hadir Gate
+        $wisudawanHadirGate = (clone $baseWisudawanQuery)->where('is_hadir', true)->count();
+        $tamuHadirGate = (clone $baseTamuQuery)->where(function ($q) {
+            $q->where('is_hadir_gate', true)->orWhere('is_hadir', true);
+        })->count();
+        $totalSecurityScanned = $wisudawanHadirGate + $tamuHadirGate;
+
+        // 2. Total Scan Venue / Receptionist (Masuk Auditorium): Wisudawan Masuk Venue + Pendamping Masuk Venue
+        $wisudawanInAuditorium = (clone $baseWisudawanQuery)->where('is_in_auditorium', true)->count();
+        $tamuInAuditorium = (clone $baseTamuQuery)->where('is_hadir_venue', true)->count();
+        $totalReceptionScanned = $wisudawanInAuditorium + $tamuInAuditorium;
+
+        // 3. Standby Area Luar (Scan Gate tapi belum masuk auditorium)
+        $wisudawanGateOnly = (clone $baseWisudawanQuery)->where('is_hadir', true)->where('is_in_auditorium', false)->count();
+        $tamuGateOnly = (clone $baseTamuQuery)->where(function ($q) {
+            $q->where('is_hadir_gate', true)->orWhere('is_hadir', true);
+        })->where('is_hadir_venue', false)->count();
+        $totalGateOnly = $wisudawanGateOnly + $tamuGateOnly;
+
+        // 4. Belum Hadir
+        $wisudawanBelumHadir = (clone $baseWisudawanQuery)->where('is_hadir', false)->count();
+        $tamuBelumHadir = (clone $baseTamuQuery)->where(function ($q) {
+            $q->where('is_hadir_gate', false)->where('is_hadir', false);
+        })->count();
+        $totalBelumHadir = $wisudawanBelumHadir + $tamuBelumHadir;
+
+        // Total target hadirin
+        $totalWisudawan = (clone $baseWisudawanQuery)->count();
+        $totalTamu = (clone $baseTamuQuery)->count();
+
+        return [
+            'total_security_scanned' => $totalSecurityScanned,
+            'total_reception_scanned' => $totalReceptionScanned,
+            'total_snack_issued' => WisudawanTamuTambahan::whereHas('wisudawan', function ($q) use ($activePeriodeId) {
+                $q->where('periode_wisuda_id', $activePeriodeId)->where('status_verifikasi', 'verified');
+            })->where('snack_diambil', true)->count(),
+            'total_hadirin' => $totalWisudawan + $totalTamu,
+            'total_belum_hadir' => $totalBelumHadir,
+            'total_gate_only' => $totalGateOnly,
+            'breakdown' => [
+                'total_wisudawan' => $totalWisudawan,
+                'total_tamu' => $totalTamu,
+                'wisudawan_hadir_gate' => $wisudawanHadirGate,
+                'tamu_hadir_gate' => $tamuHadirGate,
+                'wisudawan_in_auditorium' => $wisudawanInAuditorium,
+                'tamu_in_auditorium' => $tamuInAuditorium,
+                'wisudawan_gate_only' => $wisudawanGateOnly,
+                'tamu_gate_only' => $tamuGateOnly,
+                'wisudawan_belum_hadir' => $wisudawanBelumHadir,
+                'tamu_belum_hadir' => $tamuBelumHadir,
+            ],
+        ];
+    }
+
+    /**
+     * API Realtime Polling Endpoint for Live Scanner Sync
+     */
+    public function getLiveStats(Request $request)
+    {
+        $activePeriode = PeriodeWisuda::getActive() ?? PeriodeWisuda::latest()->first();
+        $stats = $this->getScannerStats($activePeriode?->id);
+
+        return response()->json([
+            'status' => 'success',
+            'stats' => $stats,
+        ]);
+    }
+
+    /**
      * Halaman 1: Presensi Gate (Scanner Barcode / Kamera)
      */
     public function index()
     {
         $activePeriode = PeriodeWisuda::getActive() ?? PeriodeWisuda::latest()->first();
+        $stats = $this->getScannerStats($activePeriode?->id);
 
-        $query = Wisudawan::with(['programStudi', 'tamuTambahan'])
+        $recentAttendance = Wisudawan::withoutGlobalScope('excludeDummy')
             ->where('periode_wisuda_id', $activePeriode?->id)
-            ->where('status_verifikasi', 'verified');
-
-        $stats = [
-            'total_verified' => (clone $query)->count(),
-            'hadir' => (clone $query)->where('is_hadir', true)->count(),
-            'belum_hadir' => (clone $query)->where('is_hadir', false)->count(),
-            'in_auditorium' => (clone $query)->where('is_in_auditorium', true)->count(),
-        ];
-
-        $recentAttendance = (clone $query)->where('is_hadir', true)
+            ->where('status_verifikasi', 'verified')
+            ->where('is_hadir', true)
             ->orderBy('waktu_presensi', 'desc')
             ->take(10)
             ->get();
@@ -65,10 +141,7 @@ class PresensiWisudawanController extends Controller
     public function mobileSecurityScan()
     {
         $activePeriode = PeriodeWisuda::getActive() ?? PeriodeWisuda::latest()->first();
-
-        $stats = [
-            'total_security_scanned' => Wisudawan::where('periode_wisuda_id', $activePeriode?->id)->where('is_hadir', true)->count(),
-        ];
+        $stats = $this->getScannerStats($activePeriode?->id);
 
         return Inertia::render('Scan/MobileSecurityScanner', [
             'activePeriode' => $activePeriode,
@@ -82,11 +155,7 @@ class PresensiWisudawanController extends Controller
     public function mobileReceptionistScan()
     {
         $activePeriode = PeriodeWisuda::getActive() ?? PeriodeWisuda::latest()->first();
-
-        $stats = [
-            'total_reception_scanned' => Wisudawan::where('periode_wisuda_id', $activePeriode?->id)->where('is_hadir', true)->count(),
-            'total_snack_issued' => WisudawanTamuTambahan::where('snack_diambil', true)->count(),
-        ];
+        $stats = $this->getScannerStats($activePeriode?->id);
 
         return Inertia::render('Scan/MobileReceptionistScanner', [
             'activePeriode' => $activePeriode,
@@ -104,7 +173,8 @@ class PresensiWisudawanController extends Controller
         $selectedPeriodeId = $request->periode_id ?? $activePeriode?->id;
         $programStudis = ProgramStudi::all();
 
-        $query = Wisudawan::with('programStudi')
+        $query = Wisudawan::withoutGlobalScope('excludeDummy')
+            ->with(['programStudi', 'tamuTambahan'])
             ->where('periode_wisuda_id', $selectedPeriodeId)
             ->where('status_verifikasi', 'verified');
 
@@ -123,7 +193,11 @@ class PresensiWisudawanController extends Controller
         if ($request->filled('status')) {
             if ($request->status === 'belum_hadir') {
                 $query->where('is_hadir', false);
-            } elseif ($request->status === 'hadir') {
+            } elseif ($request->status === 'hadir' || $request->status === 'hadir_gate') {
+                // Total Scan Security Gate (Kumulatif, tidak dikurangi reception)
+                $query->where('is_hadir', true);
+            } elseif ($request->status === 'gate_only') {
+                // Sudah scan di security tapi belum scan di reception
                 $query->where('is_hadir', true)->where('is_in_auditorium', false);
             } elseif ($request->status === 'in_auditorium') {
                 $query->where('is_in_auditorium', true);
@@ -132,12 +206,52 @@ class PresensiWisudawanController extends Controller
 
         $wisudawans = $query->orderBy('program_studi_id')->orderBy('nama_lengkap')->paginate(50)->withQueryString();
 
-        $baseQuery = Wisudawan::where('periode_wisuda_id', $selectedPeriodeId)->where('status_verifikasi', 'verified');
+        // Hitung Total Hadirin (Wisudawan + Pendamping + Extra Pendamping)
+        $baseWisudawanQuery = Wisudawan::where('periode_wisuda_id', $selectedPeriodeId)->where('status_verifikasi', 'verified');
+        $baseTamuQuery = WisudawanTamuTambahan::whereHas('wisudawan', function ($q) use ($selectedPeriodeId) {
+            $q->where('periode_wisuda_id', $selectedPeriodeId)->where('status_verifikasi', 'verified');
+        });
+
+        $totalWisudawan = (clone $baseWisudawanQuery)->count();
+        $totalTamu = (clone $baseTamuQuery)->count();
+
+        $wisudawanBelumHadir = (clone $baseWisudawanQuery)->where('is_hadir', false)->count();
+        $tamuBelumHadir = (clone $baseTamuQuery)->where(function ($q) {
+            $q->where('is_hadir_gate', false)->where('is_hadir', false);
+        })->count();
+
+        $wisudawanHadirGate = (clone $baseWisudawanQuery)->where('is_hadir', true)->count();
+        $tamuHadirGate = (clone $baseTamuQuery)->where(function ($q) {
+            $q->where('is_hadir_gate', true)->orWhere('is_hadir', true);
+        })->count();
+
+        $wisudawanGateOnly = (clone $baseWisudawanQuery)->where('is_hadir', true)->where('is_in_auditorium', false)->count();
+        $tamuGateOnly = (clone $baseTamuQuery)->where(function ($q) {
+            $q->where('is_hadir_gate', true)->orWhere('is_hadir', true);
+        })->where('is_hadir_venue', false)->count();
+
+        $wisudawanInAuditorium = (clone $baseWisudawanQuery)->where('is_in_auditorium', true)->count();
+        $tamuInAuditorium = (clone $baseTamuQuery)->where('is_hadir_venue', true)->count();
+
         $counts = [
-            'total' => (clone $baseQuery)->count(),
-            'belum_hadir' => (clone $baseQuery)->where('is_hadir', false)->count(),
-            'hadir' => (clone $baseQuery)->where('is_hadir', true)->where('is_in_auditorium', false)->count(),
-            'in_auditorium' => (clone $baseQuery)->where('is_in_auditorium', true)->count(),
+            'total' => $totalWisudawan + $totalTamu,
+            'belum_hadir' => $wisudawanBelumHadir + $tamuBelumHadir,
+            'hadir' => $wisudawanHadirGate + $tamuHadirGate,
+            'hadir_gate' => $wisudawanHadirGate + $tamuHadirGate,
+            'gate_only' => $wisudawanGateOnly + $tamuGateOnly,
+            'in_auditorium' => $wisudawanInAuditorium + $tamuInAuditorium,
+            'breakdown' => [
+                'total_wisudawan' => $totalWisudawan,
+                'total_tamu' => $totalTamu,
+                'wisudawan_belum_hadir' => $wisudawanBelumHadir,
+                'tamu_belum_hadir' => $tamuBelumHadir,
+                'wisudawan_hadir_gate' => $wisudawanHadirGate,
+                'tamu_hadir_gate' => $tamuHadirGate,
+                'wisudawan_gate_only' => $wisudawanGateOnly,
+                'tamu_gate_only' => $tamuGateOnly,
+                'wisudawan_in_auditorium' => $wisudawanInAuditorium,
+                'tamu_in_auditorium' => $tamuInAuditorium,
+            ],
         ];
 
         return Inertia::render('Panitia/PresensiList', [
@@ -163,9 +277,12 @@ class PresensiWisudawanController extends Controller
         $token = trim($request->qr_code_token);
 
         // 1. Search as Wisudawan Token
-        $wisudawan = Wisudawan::with(['programStudi', 'tamuTambahan'])
-            ->where('qr_code_token', $token)
-            ->orWhere('nim', $token)
+        $wisudawan = Wisudawan::withoutGlobalScope('excludeDummy')
+            ->with(['programStudi', 'tamuTambahan'])
+            ->where(function ($q) use ($token) {
+                $q->where('qr_code_token', $token)
+                  ->orWhere('nim', $token);
+            })
             ->first();
 
         $isSecurity = $request->routeIs('security.*') || $request->is('security*') || $request->user()?->role === 'security';
@@ -219,6 +336,15 @@ class PresensiWisudawanController extends Controller
             }
             // 2. RECEPTIONIST / VENUE SCAN
             elseif ($isReceptionist) {
+                // Wajib scan di Security Gate terlebih dahulu
+                if (!$wisudawan->is_hadir) {
+                    $err = "❌ AKSES DITOLAK: Wisudawan {$wisudawan->nama_lengkap} (NIM: {$wisudawan->nim}) BELUM SCAN di Security Gate! Alur presensi wajib melalui pos Security terlebih dahulu.";
+                    if ($request->wantsJson()) {
+                        return response()->json(['status' => 'error', 'message' => $err], 422);
+                    }
+                    return redirect()->back()->with('error', $err);
+                }
+
                 if ($wisudawan->is_in_auditorium) {
                     $waktu = $wisudawan->waktu_presensi_venue ? (is_string($wisudawan->waktu_presensi_venue) ? $wisudawan->waktu_presensi_venue : $wisudawan->waktu_presensi_venue->format('H:i:s WIB')) : 'sebelumnya';
                     $message = "⚠️ BARCODE SUDAH PERNAH DI-SCAN! Wisudawan {$wisudawan->nama_lengkap} (NIM: {$wisudawan->nim}) sudah tercatat masuk Venue / Receptionist pada {$waktu}.";
@@ -227,8 +353,6 @@ class PresensiWisudawanController extends Controller
                     $wisudawan->update([
                         'is_in_auditorium' => true,
                         'waktu_presensi_venue' => now(),
-                        'is_hadir' => true,
-                        'waktu_presensi' => $wisudawan->waktu_presensi ?? now(),
                     ]);
                     $message = "🔵 SCAN [RECEPTIONIST VENUE] BERHASIL! Wisudawan: {$wisudawan->nama_lengkap} (NIM: {$wisudawan->nim}) resmi memasuki venue & verifikasi snack.";
                     $scanStatus = 'success';
@@ -281,6 +405,8 @@ class PresensiWisudawanController extends Controller
                 }) : [],
             ];
 
+            $periodeId = $wisudawan->periode_wisuda_id;
+
             if ($request->wantsJson()) {
                 return response()->json([
                     'status' => $scanStatus,
@@ -290,6 +416,7 @@ class PresensiWisudawanController extends Controller
                     'siakad' => $siakadInfo,
                     'simanta' => $simantaInfo,
                     'sikeu' => $sikeuQuota,
+                    'stats' => $this->getScannerStats($periodeId),
                 ]);
             }
 
@@ -299,7 +426,8 @@ class PresensiWisudawanController extends Controller
         }
 
         // 2. Search as Guest Token
-        $guest = WisudawanTamuTambahan::with('wisudawan.programStudi')
+        $guest = WisudawanTamuTambahan::withoutGlobalScope('excludeDummy')
+            ->with('wisudawan.programStudi')
             ->where('qr_guest_token', $token)
             ->first();
 
@@ -341,6 +469,15 @@ class PresensiWisudawanController extends Controller
             }
             // 2. RECEPTIONIST / VENUE SCAN (GUEST)
             elseif ($isReceptionist) {
+                // Wajib scan di Security Gate terlebih dahulu
+                if (!$guest->is_hadir_gate && !$guest->is_hadir) {
+                    $err = "❌ AKSES DITOLAK: Tamu/Pendamping {$guest->nama_tamu} (Wisudawan: {$wisudawanMain?->nama_lengkap}) BELUM SCAN di Security Gate! Alur presensi wajib melalui pos Security terlebih dahulu.";
+                    if ($request->wantsJson()) {
+                        return response()->json(['status' => 'error', 'message' => $err], 422);
+                    }
+                    return redirect()->back()->with('error', $err);
+                }
+
                 if ($guest->is_hadir_venue) {
                     $waktu = $guest->waktu_presensi_venue ? (is_string($guest->waktu_presensi_venue) ? $guest->waktu_presensi_venue : $guest->waktu_presensi_venue->format('H:i:s WIB')) : 'sebelumnya';
                     $message = "⚠️ BARCODE SUDAH PERNAH DI-SCAN! Tamu/Pendamping: {$guest->nama_tamu} (Wisudawan: {$wisudawanMain?->nama_lengkap}) sudah presensi Venue & paket snack telah diserahkan pada {$waktu}.";
@@ -350,9 +487,6 @@ class PresensiWisudawanController extends Controller
                         'is_hadir_venue' => true,
                         'snack_diambil' => true,
                         'waktu_presensi_venue' => now(),
-                        'is_hadir_gate' => true,
-                        'is_hadir' => true,
-                        'waktu_presensi_gate' => $guest->waktu_presensi_gate ?? now(),
                     ]);
                     $message = "🔵 SCAN [RECEPTIONIST VENUE] BERHASIL! Tamu/Pendamping: {$guest->nama_tamu} (Wisudawan: {$wisudawanMain?->nama_lengkap}) & Penyerahan Paket Snack.";
                     $scanStatus = 'success';
@@ -392,12 +526,15 @@ class PresensiWisudawanController extends Controller
                 'waktu_presensi_venue' => $guest->waktu_presensi_venue ? (is_string($guest->waktu_presensi_venue) ? $guest->waktu_presensi_venue : $guest->waktu_presensi_venue->format('H:i:s WIB')) : '-',
             ];
 
+            $periodeId = $wisudawanMain?->periode_wisuda_id;
+
             if ($request->wantsJson()) {
                 return response()->json([
                     'status' => $scanStatus,
                     'message' => $message,
                     'guest' => $guest,
                     'guest_data' => $guestData,
+                    'stats' => $this->getScannerStats($periodeId),
                 ]);
             }
             return redirect()->back()
@@ -440,9 +577,12 @@ class PresensiWisudawanController extends Controller
         }
 
         // 1. Search as Wisudawan
-        $wisudawan = Wisudawan::with(['programStudi', 'tamuTambahan'])
-            ->where('qr_code_token', $token)
-            ->orWhere('nim', $token)
+        $wisudawan = Wisudawan::withoutGlobalScope('excludeDummy')
+            ->with(['programStudi', 'tamuTambahan'])
+            ->where(function ($q) use ($token) {
+                $q->where('qr_code_token', $token)
+                  ->orWhere('nim', $token);
+            })
             ->first();
 
         if ($wisudawan) {
@@ -471,6 +611,7 @@ class PresensiWisudawanController extends Controller
                     'message' => $message,
                     'wisudawan' => $wisudawan,
                     'scanned_data' => $data,
+                    'stats' => $this->getScannerStats($wisudawan->periode_wisuda_id),
                 ]);
             }
 
@@ -478,7 +619,8 @@ class PresensiWisudawanController extends Controller
         }
 
         // 2. Search as Guest
-        $guest = WisudawanTamuTambahan::with('wisudawan.programStudi')
+        $guest = WisudawanTamuTambahan::withoutGlobalScope('excludeDummy')
+            ->with('wisudawan.programStudi')
             ->where('qr_guest_token', $token)
             ->first();
 
@@ -511,6 +653,7 @@ class PresensiWisudawanController extends Controller
                     'message' => $message,
                     'guest' => $guest,
                     'guest_data' => $data,
+                    'stats' => $this->getScannerStats($wisudawanMain?->periode_wisuda_id),
                 ]);
             }
 
@@ -525,7 +668,7 @@ class PresensiWisudawanController extends Controller
      */
     public function processGuestAttendance(Request $request, $id)
     {
-        $guest = WisudawanTamuTambahan::findOrFail($id);
+        $guest = WisudawanTamuTambahan::withoutGlobalScope('excludeDummy')->findOrFail($id);
 
         $guest->update([
             'is_hadir' => $request->has('is_hadir') ? $request->boolean('is_hadir') : !$guest->is_hadir,
@@ -541,7 +684,7 @@ class PresensiWisudawanController extends Controller
      */
     public function toggleStatus(Request $request, $id)
     {
-        $wisudawan = Wisudawan::findOrFail($id);
+        $wisudawan = Wisudawan::withoutGlobalScope('excludeDummy')->findOrFail($id);
         $field = $request->input('field', 'is_hadir');
 
         if ($field === 'is_hadir') {
@@ -575,8 +718,11 @@ class PresensiWisudawanController extends Controller
         $token = trim($request->qr_code_token);
 
         // 1. Search Wisudawan
-        $wisudawan = Wisudawan::where('qr_code_token', $token)
-            ->orWhere('nim', $token)
+        $wisudawan = Wisudawan::withoutGlobalScope('excludeDummy')
+            ->where(function ($q) use ($token) {
+                $q->where('qr_code_token', $token)
+                  ->orWhere('nim', $token);
+            })
             ->first();
 
         if ($wisudawan) {
@@ -592,11 +738,12 @@ class PresensiWisudawanController extends Controller
             return response()->json([
                 'status' => 'success',
                 'message' => "Verifikasi masuk kembali disetujui. Foto keluar wisudawan {$wisudawan->nama_lengkap} telah di-reset.",
+                'stats' => $this->getScannerStats($wisudawan->periode_wisuda_id),
             ]);
         }
 
         // 2. Search Guest
-        $guest = WisudawanTamuTambahan::where('qr_guest_token', $token)->first();
+        $guest = WisudawanTamuTambahan::withoutGlobalScope('excludeDummy')->with('wisudawan')->where('qr_guest_token', $token)->first();
         if ($guest) {
             if ($guest->foto_keluar_gate && \Illuminate\Support\Facades\Storage::disk('public')->exists($guest->foto_keluar_gate)) {
                 \Illuminate\Support\Facades\Storage::disk('public')->delete($guest->foto_keluar_gate);
@@ -611,6 +758,7 @@ class PresensiWisudawanController extends Controller
             return response()->json([
                 'status' => 'success',
                 'message' => "Verifikasi masuk kembali disetujui. Foto keluar tamu {$guest->nama_tamu} telah di-reset.",
+                'stats' => $this->getScannerStats($guest->wisudawan?->periode_wisuda_id),
             ]);
         }
 

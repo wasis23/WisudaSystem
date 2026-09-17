@@ -143,14 +143,14 @@ const closeCropModal = () => {
     showCropModal.value = false;
 };
 
-// Canvas scale observer for exact 1280x720 preview
+// Canvas scale observer for exact 1080x1980 portrait preview
 const previewWrapperRef = ref(null);
 const scaleFactor = ref(0.4);
 
 const updateScale = () => {
     if (previewWrapperRef.value) {
         const width = previewWrapperRef.value.clientWidth;
-        scaleFactor.value = width / 1280;
+        scaleFactor.value = width / 1080;
     }
 };
 
@@ -445,15 +445,15 @@ const submitForm = () => {
                         <p class="text-xs text-indigo-200 mt-1">Begini penayangan nama, foto, dan data Anda di layar proyektor panggung saat prosesi wisuda!</p>
                     </div>
 
-                    <!-- Outer Wrapper Responsive Container -->
+                    <!-- Outer Wrapper Responsive Container (Portrait 1080x1980) -->
                     <div
                         ref="previewWrapperRef"
-                        class="w-full aspect-video bg-slate-950 rounded-2xl border-4 border-slate-800 shadow-2xl relative overflow-hidden select-none"
-                        :style="{ height: `${1280 * scaleFactor * 9 / 16}px` }"
+                        class="w-full bg-slate-950 rounded-2xl border-4 border-slate-800 shadow-2xl relative overflow-hidden select-none max-w-sm mx-auto"
+                        :style="{ height: `${1980 * scaleFactor}px` }"
                     >
-                        <!-- Inner Canvas 1280x720 with Scale Transformation -->
+                        <!-- Inner Canvas 1080x1980 with Scale Transformation -->
                         <div
-                            class="absolute top-0 left-0 w-[1280px] h-[720px] origin-top-left pointer-events-none"
+                            class="absolute top-0 left-0 w-[1080px] h-[1980px] origin-top-left pointer-events-none"
                             :style="{ transform: `scale(${scaleFactor})` }"
                         >
                             <!-- Template Background PNG Image -->
@@ -462,9 +462,14 @@ const submitForm = () => {
                                 :src="`/storage/${stageConfig.bg_image}`"
                                 class="absolute inset-0 w-full h-full object-cover z-0"
                             />
+                            <img
+                                v-else
+                                src="/background.png"
+                                class="absolute inset-0 w-full h-full object-cover z-0"
+                            />
                             
                             <!-- Gradient Glow Fallback if no PNG uploaded -->
-                            <div v-else class="absolute inset-0 bg-gradient-to-br from-indigo-950 via-slate-950 to-purple-950 z-0">
+                            <div class="absolute inset-0 bg-gradient-to-br from-indigo-950 via-slate-950 to-purple-950 z-[-1]">
                                 <div class="absolute top-10 left-10 w-96 h-96 bg-indigo-600/20 rounded-full blur-3xl"></div>
                                 <div class="absolute bottom-10 right-10 w-96 h-96 bg-purple-600/20 rounded-full blur-3xl"></div>
                             </div>
@@ -472,79 +477,99 @@ const submitForm = () => {
                             <!-- Elements at Exact Presisi Coordinates -->
                             <div class="relative z-10 w-full h-full text-white font-sans">
                                 
-                                <!-- Live Photo -->
+                                <!-- Live Candidate Name & Gelar (Bottom-Anchored: Baris paling bawah/default tepat di atas foto, jika > 1 baris tumbuh ke atas) -->
                                 <div
                                     :style="{
-                                        left: (stageConfig?.photo_x || 100) + 'px',
-                                        top: (stageConfig?.photo_y || 150) + 'px',
-                                        width: (stageConfig?.photo_w || 320) + 'px',
-                                        height: (stageConfig?.photo_h || 420) + 'px',
+                                        left: (stageConfig?.nama_x || 40) + 'px',
+                                        top: (stageConfig?.nama_y || 440) + 'px',
+                                        width: (1080 - 2 * (stageConfig?.nama_x || 40)) + 'px',
+                                        transform: 'translateY(-100%)',
                                     }"
-                                    class="absolute border-4 border-white/20 bg-slate-900 rounded-2xl overflow-hidden shadow-2xl"
+                                    class="absolute flex flex-col items-center pointer-events-none"
                                 >
-                                    <img v-if="photoPreview" :src="photoPreview" class="w-full h-full object-cover" />
+                                    <div
+                                        :style="{
+                                            fontSize: (stageConfig?.nama_font_size || 44) + 'px',
+                                        }"
+                                        class="w-full text-center font-black tracking-tight leading-tight uppercase drop-shadow-[0_4px_14px_rgba(245,158,11,0.6)]"
+                                        style="color: #FCD34D; text-shadow: 0 0 20px rgba(251, 191, 36, 0.5), 0 2px 4px rgba(0, 0, 0, 0.8);"
+                                    >
+                                        {{ formattedFullName }}
+                                    </div>
+                                </div>
+
+                                <!-- Live Photo (Foto Asli) -->
+                                <div
+                                    :style="{
+                                        left: (stageConfig?.photo_x || 300) + 'px',
+                                        top: (stageConfig?.photo_y || 470) + 'px',
+                                        width: (stageConfig?.photo_w || 480) + 'px',
+                                        height: (stageConfig?.photo_h || 600) + 'px',
+                                    }"
+                                    class="absolute border-4 border-amber-400/60 bg-slate-900 rounded-3xl overflow-hidden shadow-2xl flex items-center justify-center"
+                                >
+                                    <img v-if="photoPreview" :src="photoPreview" class="w-full h-full object-cover object-top" />
                                     <div v-else class="w-full h-full flex items-center justify-center text-sm text-slate-500 font-bold">Pas Foto</div>
                                 </div>
 
-                                <!-- Live Candidate Name & Gelar -->
+                                <!-- Tabel Informasi Wisudawan (Font Lebih Besar & Judul TA Tidak Terpotong) -->
                                 <div
                                     :style="{
-                                        left: (stageConfig?.nama_x || 480) + 'px',
-                                        top: (stageConfig?.nama_y || 180) + 'px',
-                                        fontSize: (stageConfig?.nama_font_size || 35) + 'px',
+                                        left: (stageConfig?.nim_x || 80) + 'px',
+                                        top: (stageConfig?.nim_y || 1100) + 'px',
+                                        width: (stageConfig?.ta_max_w || 920) + 'px',
                                     }"
-                                    class="absolute font-black text-white whitespace-nowrap leading-none drop-shadow-lg"
+                                    class="absolute bg-slate-950/75 border border-amber-500/40 rounded-3xl p-7 backdrop-blur-md shadow-2xl"
                                 >
-                                    {{ formattedFullName }}
-                                </div>
+                                    <table class="w-full text-left border-collapse">
+                                        <tbody>
+                                            <tr class="border-b border-white/10">
+                                                <td class="py-4 px-4 text-amber-300 font-extrabold uppercase tracking-wider text-2xl w-64 shrink-0">
+                                                    NIM
+                                                </td>
+                                                <td class="py-4 px-2 text-amber-400 font-black text-2xl w-8">:</td>
+                                                <td class="py-4 px-4 font-mono font-black text-3xl text-white tracking-widest">
+                                                    {{ form.nim || '2026XXXXXX' }}
+                                                </td>
+                                            </tr>
 
-                                <!-- Live NIM -->
-                                <div
-                                    :style="{
-                                        left: (stageConfig?.nim_x || 480) + 'px',
-                                        top: (stageConfig?.nim_y || 250) + 'px',
-                                        fontSize: (stageConfig?.nim_font_size || 24) + 'px',
-                                    }"
-                                    class="absolute font-mono font-bold text-indigo-400 leading-none drop-shadow"
-                                >
-                                    NIM: {{ form.nim || '2026XXXXXX' }}
-                                </div>
+                                            <tr class="border-b border-white/10">
+                                                <td class="py-4 px-4 text-amber-300 font-extrabold uppercase tracking-wider text-2xl">
+                                                    Program Studi
+                                                </td>
+                                                <td class="py-4 px-2 text-amber-400 font-black text-2xl">:</td>
+                                                <td class="py-4 px-4 font-extrabold text-3xl text-slate-100">
+                                                    {{ selectedProdiName || 'Program Studi' }} - Politeknik Indonusa Surakarta
+                                                </td>
+                                            </tr>
 
-                                <!-- Live Prodi -->
-                                <div
-                                    :style="{
-                                        left: (stageConfig?.prodi_x || 480) + 'px',
-                                        top: (stageConfig?.prodi_y || 290) + 'px',
-                                        fontSize: (stageConfig?.prodi_font_size || 24) + 'px',
-                                    }"
-                                    class="absolute font-semibold text-slate-200 leading-none drop-shadow"
-                                >
-                                    {{ selectedProdiName }} - Politeknik Indonusa Surakarta
-                                </div>
+                                            <tr class="border-b border-white/10">
+                                                <td class="py-4 px-4 text-amber-300 font-extrabold uppercase tracking-wider text-2xl">
+                                                    IPK
+                                                </td>
+                                                <td class="py-4 px-2 text-amber-400 font-black text-2xl">:</td>
+                                                <td class="py-4 px-4 font-mono font-black text-3xl text-emerald-400 flex items-center gap-5">
+                                                    <span>{{ (form.ipk && form.ipk !== '-' && Number(form.ipk) > 0) ? form.ipk : '-' }}</span>
+                                                    <span
+                                                        v-if="form.predikat_kelulusan === 'Dengan Pujian (Cumlaude)' || (form.predikat_kelulusan && form.predikat_kelulusan.toLowerCase().includes('cumlaude'))"
+                                                        class="px-5 py-1.5 bg-gradient-to-r from-amber-400 to-amber-500 text-slate-950 font-black text-base uppercase tracking-wider rounded-full shadow-lg"
+                                                    >
+                                                        Cumlaude
+                                                    </span>
+                                                </td>
+                                            </tr>
 
-                                <!-- Live IPK -->
-                                <div
-                                    :style="{
-                                        left: (stageConfig?.ipk_x || 480) + 'px',
-                                        top: (stageConfig?.ipk_y || 340) + 'px',
-                                        fontSize: (stageConfig?.ipk_font_size || 28) + 'px',
-                                    }"
-                                    class="absolute font-mono font-bold text-emerald-400 leading-none drop-shadow"
-                                >
-                                    IPK: {{ (form.ipk && form.ipk !== '-' && Number(form.ipk) > 0) ? form.ipk : '-' }} {{ (Number(form.ipk) >= 3.51) ? '(Cumlaude )' : '' }}
-                                </div>
-
-                                <!-- Live TA Title -->
-                                <div
-                                    :style="{
-                                        left: (stageConfig?.ta_x || 480) + 'px',
-                                        top: (stageConfig?.ta_y || 400) + 'px',
-                                        fontSize: (stageConfig?.ta_font_size || 20) + 'px',
-                                        maxWidth: (stageConfig?.ta_max_w || 700) + 'px',
-                                    }"
-                                    class="absolute font-medium italic text-slate-300 leading-snug line-clamp-2 drop-shadow"
-                                >
-                                    "{{ form.judul_ta || 'Judul Tugas Akhir / Skripsi Mahasiswa...' }}"
+                                            <tr v-if="form.judul_ta">
+                                                <td class="py-4 px-4 text-amber-300 font-extrabold uppercase tracking-wider text-2xl align-top">
+                                                    Judul Tugas Akhir
+                                                </td>
+                                                <td class="py-4 px-2 text-amber-400 font-black text-2xl align-top">:</td>
+                                                <td class="py-4 px-4 font-semibold italic text-2xl text-slate-100 leading-snug">
+                                                    "{{ form.judul_ta }}"
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
                                 </div>
 
                             </div>

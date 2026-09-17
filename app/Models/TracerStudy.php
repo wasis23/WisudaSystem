@@ -72,11 +72,20 @@ class TracerStudy extends Model
 
     public function wisudawan()
     {
-        return $this->belongsTo(Wisudawan::class, 'wisudawan_id');
+        return $this->belongsTo(Wisudawan::class, 'wisudawan_id')->withoutGlobalScope('excludeDummy');
     }
 
     public function user()
     {
         return $this->belongsTo(User::class, 'user_id');
+    }
+
+    protected static function booted(): void
+    {
+        static::addGlobalScope('excludeDummy', function ($builder) {
+            $builder->whereHas('wisudawan', function ($query) {
+                $query->where('wisudawan.is_dummy', false);
+            });
+        });
     }
 }

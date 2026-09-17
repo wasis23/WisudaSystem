@@ -43,9 +43,12 @@ class KioskScanController extends Controller
             return response()->json(['status' => 'error', 'message' => 'Token QR tidak boleh kosong.'], 400);
         }
 
-        $wisudawan = Wisudawan::with(['programStudi', 'tamuTambahan'])
-            ->where('qr_code_token', $token)
-            ->orWhere('nim', $token)
+        $wisudawan = Wisudawan::withoutGlobalScope('excludeDummy')
+            ->with(['programStudi', 'tamuTambahan'])
+            ->where(function ($q) use ($token) {
+                $q->where('qr_code_token', $token)
+                  ->orWhere('nim', $token);
+            })
             ->first();
 
         if (!$wisudawan) {

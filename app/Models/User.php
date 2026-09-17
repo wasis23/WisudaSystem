@@ -16,6 +16,7 @@ class User extends Authenticatable
         'password',
         'role',
         'program_studi_id',
+        'is_dummy',
     ];
 
     protected $hidden = [
@@ -28,6 +29,7 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'is_dummy' => 'boolean',
         ];
     }
 
@@ -38,7 +40,7 @@ class User extends Authenticatable
 
     public function wisudawan()
     {
-        return $this->hasOne(Wisudawan::class, 'user_id');
+        return $this->hasOne(Wisudawan::class, 'user_id')->withoutGlobalScope('excludeDummy');
     }
 
     public function isAdminUtama(): bool
